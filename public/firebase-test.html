@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firebase Login Test — CMS Img Store</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0f1117;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: .25rem;
+    }
+
+    .subtitle {
+      font-size: .85rem;
+      color: #64748b;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: #1e2230;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card h2 {
+      font-size: .95rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 1rem;
+    }
+
+    .form-group { margin-bottom: .9rem; }
+
+    label {
+      display: block;
+      font-size: .8rem;
+      color: #94a3b8;
+      margin-bottom: .3rem;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: .6rem .9rem;
+      font-size: .875rem;
+      color: #e2e8f0;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    input:focus { border-color: #6366f1; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .65rem 1.25rem;
+      border-radius: 8px;
+      font-size: .875rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity .2s, transform .1s;
+    }
+
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .btn-google {
+      background: #fff;
+      color: #1f2937;
+      width: 100%;
+      justify-content: center;
+      font-size: .95rem;
+    }
+
+    .btn-api {
+      background: #6366f1;
+      color: #fff;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-copy {
+      background: #2d3748;
+      color: #94a3b8;
+      font-size: .75rem;
+      padding: .35rem .75rem;
+    }
+
+    .token-box {
+      position: relative;
+    }
+
+    .token-display {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: .75rem;
+      font-size: .72rem;
+      font-family: 'Courier New', monospace;
+      color: #34d399;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+      min-height: 48px;
+    }
+
+    .token-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: .5rem;
+    }
+
+    .token-label { font-size: .75rem; color: #64748b; }
+
+    pre.response {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: .9rem;
+      font-size: .78rem;
+      font-family: 'Courier New', monospace;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      min-height: 60px;
+      color: #e2e8f0;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: .2rem .55rem;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 700;
+    }
+
+    .badge-success { background: #14532d; color: #4ade80; }
+    .badge-error   { background: #450a0a; color: #f87171; }
+    .badge-info    { background: #1e3a5f; color: #60a5fa; }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .6rem;
+      font-size: .8rem;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .8rem;
+      color: #64748b;
+      margin-bottom: .5rem;
+    }
+
+    .step .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #2d3748;
+      flex-shrink: 0;
+    }
+
+    .step.done   .dot { background: #4ade80; }
+    .step.active .dot { background: #6366f1; animation: pulse 1s infinite; }
+    .step.error  .dot { background: #f87171; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .3; }
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #2d3748;
+      margin: 1rem 0;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .75rem;
+      background: #0f1117;
+      border-radius: 8px;
+      margin-bottom: .75rem;
+    }
+
+    .user-info img {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .user-info .name { font-weight: 600; font-size: .9rem; }
+    .user-info .email { font-size: .78rem; color: #64748b; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>🔥 Firebase Login Test</h1>
+  <p class="subtitle">POST <code>http://127.0.0.1:82/api/v1/login</code> — dev tool only</p>
+
+  <!-- STEP 1: Firebase Config -->
+  <div class="card">
+    <h2>① Firebase Web Config</h2>
+    <p class="step" style="margin-bottom:1rem; color:#64748b; font-size:.8rem;">
+      Ambil dari Firebase Console → Project Settings → Your Apps → Web App Config
+    </p>
+
+    <div class="form-group">
+      <label>API Key <span style="color:#f87171">*</span></label>
+      <input type="text" id="apiKey" placeholder="AIzaSy..." />
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label>Auth Domain</label>
+        <input type="text" id="authDomain" value="img-royalcorp-dev.firebaseapp.com" />
+      </div>
+      <div class="form-group">
+        <label>Project ID</label>
+        <input type="text" id="projectId" value="img-royalcorp-dev" readonly
+               style="opacity:.6; cursor:not-allowed;" />
+      </div>
+    </div>
+
+    <button class="btn btn-google" id="btnGoogleLogin" onclick="initAndLogin()" disabled>
+      <svg width="18" height="18" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.33 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.67 14.62 48 24 48z"/>
+      </svg>
+      Sign in with Google
+    </button>
+  </div>
+
+  <!-- Progress Steps -->
+  <div class="card" id="stepsCard" style="display:none;">
+    <h2>Progress</h2>
+    <div class="step" id="step1"><div class="dot"></div> Firebase initialized</div>
+    <div class="step" id="step2"><div class="dot"></div> Google Sign-In berhasil</div>
+    <div class="step" id="step3"><div class="dot"></div> ID Token didapat</div>
+    <div class="step" id="step4"><div class="dot"></div> POST ke backend</div>
+    <div class="step" id="step5"><div class="dot"></div> Response diterima</div>
+  </div>
+
+  <!-- STEP 2: Firebase ID Token -->
+  <div class="card" id="tokenCard" style="display:none;">
+    <h2>② Firebase ID Token</h2>
+
+    <div id="userInfo" style="display:none;" class="user-info">
+      <img id="userPhoto" src="" alt="photo" onerror="this.style.display='none'" />
+      <div>
+        <div class="name" id="userName"></div>
+        <div class="email" id="userEmail"></div>
+      </div>
+      <span class="badge badge-success" style="margin-left:auto;">✓ Verified</span>
+    </div>
+
+    <div class="token-box">
+      <div class="token-display" id="tokenDisplay">— Belum ada token. Login Google dulu. —</div>
+      <div class="token-actions">
+        <span class="token-label" id="tokenExpiry"></span>
+        <button class="btn btn-copy" onclick="copyToken()">📋 Copy Token</button>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <button class="btn btn-api" id="btnHitApi" onclick="hitApi()" disabled>
+      🚀 POST /api/v1/login
+    </button>
+  </div>
+
+  <!-- STEP 3: API Response -->
+  <div class="card" id="responseCard" style="display:none;">
+    <h2>③ API Response</h2>
+    <div class="status-bar">
+      <span id="httpStatus"></span>
+      <span id="responseTime" style="color:#64748b;"></span>
+    </div>
+    <pre class="response" id="responseBody">—</pre>
+
+    <div id="jwtInfo" style="display:none; margin-top:1rem;">
+      <hr class="divider" />
+      <h2>JWT Payload (decoded)</h2>
+      <pre class="response" id="jwtPayload" style="color:#fbbf24;">—</pre>
+    </div>
+  </div>
+
+</div>
+
+<!-- Firebase SDK v9 (compat mode) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+<script>
+  let firebaseApp = null;
+  let idToken = null;
+
+  // Enable button when apiKey is filled
+  document.getElementById('apiKey').addEventListener('input', function () {
+    document.getElementById('btnGoogleLogin').disabled = !this.value.trim();
+  });
+
+  function setStep(id, state) {
+    const el = document.getElementById(id);
+    el.classList.remove('done', 'active', 'error');
+    el.classList.add(state);
+  }
+
+  async function initAndLogin() {
+    const apiKey    = document.getElementById('apiKey').value.trim();
+    const authDomain = document.getElementById('authDomain').value.trim();
+    const projectId  = document.getElementById('projectId').value.trim();
+
+    if (!apiKey) {
+      alert('Masukkan Firebase API Key terlebih dahulu!');
+      return;
+    }
+
+    document.getElementById('stepsCard').style.display = 'block';
+    document.getElementById('tokenCard').style.display = 'block';
+    document.getElementById('responseCard').style.display = 'none';
+    document.getElementById('btnGoogleLogin').disabled = true;
+
+    try {
+      // Init Firebase
+      setStep('step1', 'active');
+
+      if (firebaseApp) {
+        await firebaseApp.delete();
+      }
+
+      firebaseApp = firebase.initializeApp({ apiKey, authDomain, projectId }, 'test-' + Date.now());
+      const auth = firebase.auth(firebaseApp);
+      setStep('step1', 'done');
+
+      // Google Sign-In
+      setStep('step2', 'active');
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+
+      const result = await auth.signInWithPopup(provider);
+      const user = result.user;
+      setStep('step2', 'done');
+
+      // Show user info
+      document.getElementById('userInfo').style.display = 'flex';
+      document.getElementById('userName').textContent  = user.displayName || '—';
+      document.getElementById('userEmail').textContent = user.email || '—';
+      document.getElementById('userPhoto').src         = user.photoURL || '';
+
+      // Get ID Token
+      setStep('step3', 'active');
+      idToken = await user.getIdToken(true);
+
+      // Decode token untuk tampilkan expiry
+      const parts   = idToken.split('.');
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const expDate = new Date(payload.exp * 1000);
+
+      document.getElementById('tokenDisplay').textContent = idToken;
+      document.getElementById('tokenExpiry').textContent =
+        `exp: ${expDate.toLocaleTimeString('id-ID')} — provider: ${payload.firebase?.sign_in_provider ?? '?'}`;
+      setStep('step3', 'done');
+
+      document.getElementById('btnHitApi').disabled = false;
+
+    } catch (err) {
+      console.error(err);
+      const step = document.querySelector('.step.active');
+      if (step) step.classList.replace('active', 'error');
+      alert('Error: ' + err.message);
+    } finally {
+      document.getElementById('btnGoogleLogin').disabled = false;
+    }
+  }
+
+  async function hitApi() {
+    if (!idToken) { alert('Login Google dulu!'); return; }
+
+    document.getElementById('responseCard').style.display = 'block';
+    document.getElementById('btnHitApi').disabled = true;
+    document.getElementById('responseBody').textContent = 'Mengirim request...';
+    document.getElementById('httpStatus').innerHTML = '';
+    document.getElementById('jwtInfo').style.display = 'none';
+    setStep('step4', 'active');
+
+    const start = Date.now();
+
+    try {
+      const resp = await fetch('/api/v1/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ firebase_token: idToken }),
+      });
+
+      const elapsed = Date.now() - start;
+      const data    = await resp.json();
+
+      setStep('step4', 'done');
+      setStep('step5', 'done');
+
+      const isOk   = resp.ok;
+      const badge  = isOk ? 'badge-success' : 'badge-error';
+      const label  = isOk ? '✓ ' + resp.status + ' OK' : '✗ ' + resp.status;
+
+      document.getElementById('httpStatus').innerHTML =
+        `<span class="badge ${badge}">${label}</span>`;
+      document.getElementById('responseTime').textContent = `${elapsed}ms`;
+      document.getElementById('responseBody').textContent =
+        JSON.stringify(data, null, 2);
+
+      // Decode JWT dari response jika ada
+      if (data?.data?.token) {
+        const parts = data.data.token.split('.');
+        if (parts.length === 3) {
+          try {
+            const jwtPayload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            document.getElementById('jwtPayload').textContent =
+              JSON.stringify(jwtPayload, null, 2);
+            document.getElementById('jwtInfo').style.display = 'block';
+          } catch (_) {}
+        }
+      }
+
+    } catch (err) {
+      setStep('step4', 'error');
+      document.getElementById('responseBody').textContent = 'Network error: ' + err.message;
+      document.getElementById('httpStatus').innerHTML =
+        '<span class="badge badge-error">✗ Network Error</span>';
+    } finally {
+      document.getElementById('btnHitApi').disabled = false;
+    }
+  }
+
+  function copyToken() {
+    if (!idToken) return;
+    navigator.clipboard.writeText(idToken).then(() => {
+      const btn = document.querySelector('.btn-copy');
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => btn.textContent = '📋 Copy Token', 2000);
+    });
+  }
+</script>
+</body>
+</html>

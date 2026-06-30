@@ -1,0 +1,9 @@
+/* Icons styles */
+[class^="solar-"], [class*=" solar-"] {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.bx {
+    font-family: "boxicons" !important;
+}
