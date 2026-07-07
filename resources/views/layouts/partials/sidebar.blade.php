@@ -2,7 +2,7 @@
     <div class="px-6 mb-6 flex items-center justify-between">
         <span class="font-headline-xl text-headline-xl font-bold text-sidebar-active tracking-tight">IMG</span>
     </div>
-    <nav class="flex-1 overflow-y-auto sidebar-scroll">
+    <nav class="flex-1 min-h-0 overflow-y-auto sidebar-scroll">
         @php
         $menuGroups = [
             ['title' => 'General', 'order' => 1, 'children' => [
@@ -75,14 +75,14 @@
         @endphp
         <div class="flex items-center gap-3">
             @if($admin && $admin->photo_url)
-                <img class="w-10 h-10 rounded-full object-cover border-2 border-primary-container shrink-0 sidebar-bottom-img" src="{{ $admin->photo_url }}" alt="{{ $admin->name }}"/>
+                <img class="w-10 h-10 rounded-full object-cover border-2 border-primary-container shrink-0 sidebar-bottom-img" src="{{ $admin->photo_url }}" alt="{{ $admin?->name }}"/>
             @else
                 <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center border-2 border-primary-container shrink-0 sidebar-bottom-img">
-                    <span class="text-sidebar-active font-bold text-sm">{{ strtoupper(substr($admin->name ?? 'A', 0, 1)) }}</span>
+                    <span class="text-sidebar-active font-bold text-sm">{{ strtoupper(substr($admin?->name ?? 'A', 0, 1)) }}</span>
                 </div>
             @endif
             <div class="sidebar-bottom-text">
-                <p class="font-label-md text-label-md text-sidebar-active">{{ $admin->name ?? 'Admin User' }}</p>
+                <p class="font-label-md text-label-md text-sidebar-active">{{ $admin?->name ?? 'Admin User' }}</p>
                 <p class="text-[10px] font-label-sm text-sidebar-text uppercase">Admin</p>
             </div>
         </div>
