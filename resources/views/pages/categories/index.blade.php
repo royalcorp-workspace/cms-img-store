@@ -3,87 +3,87 @@
 @section('title', 'Categories')
 
 @section('content')
-<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-    <div>
-        <h1 class="font-headline-lg text-headline-lg text-on-surface">Categories</h1>
-        <nav class="flex items-center gap-2 text-body-md text-on-surface-variant mt-1">
-            <a href="{{ route('dashboard') }}" class="text-primary hover:underline">Dashboard</a>
-            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-            <span>Categories</span>
-        </nav>
-    </div>
-    <div class="relative group">
-        <button type="button" class="flex items-center gap-2 px-3 py-1.5 text-on-surface-variant hover:text-on-surface rounded-lg transition-colors">
-            <span class="material-symbols-outlined text-[18px]">info</span>
-            <span class="text-label-md font-label-md">Tutorial</span>
-        </button>
-        <div class="hidden group-hover:block absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 z-10">
-            <h4 class="font-label-md text-label-md text-on-surface mb-2">How to use Category Tree:</h4>
-            <ul class="text-body-md text-on-surface-variant space-y-1 list-disc list-inside">
-                <li>Right-click on any node to create child category</li>
-                <li>Right-click to rename or delete existing categories</li>
-                <li>Drag to reorder categories (if enabled)</li>
-                <li>Use the modal form to edit category details</li>
-            </ul>
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="font-headline-lg text-headline-lg text-on-surface">Categories</h1>
+            <nav class="flex items-center gap-2 text-body-md text-on-surface-variant mt-1">
+                <a href="{{ route('dashboard') }}" class="text-primary hover:underline">Dashboard</a>
+                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                <span>Categories</span>
+            </nav>
+        </div>
+        <div class="relative group">
+            <button type="button" class="flex items-center gap-2 px-3 py-1.5 text-on-surface-variant hover:text-on-surface rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-[18px]">info</span>
+                <span class="text-label-md font-label-md">Tutorial</span>
+            </button>
+            <div class="hidden group-hover:block absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 z-10">
+                <h4 class="font-label-md text-label-md text-on-surface mb-2">How to use Category Tree:</h4>
+                <ul class="text-body-md text-on-surface-variant space-y-1 list-disc list-inside">
+                    <li>Right-click on any node to create child category</li>
+                    <li>Right-click to rename or delete existing categories</li>
+                    <li>Drag to reorder categories (if enabled)</li>
+                    <li>Use the modal form to edit category details</li>
+                </ul>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
-    <div class="p-4 border-b border-outline-variant flex items-center gap-2">
-        <button onclick="createCategory()" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Add Category</button>
-        <button onclick="refreshTree()" class="px-4 py-2 border border-outline-variant text-on-surface rounded-lg font-label-md hover:bg-surface-container transition-colors">Refresh</button>
-    </div>
-    <div class="p-4">
-        <div id="categoryTree">Loading categories...</div>
-    </div>
-</div>
-
-<div id="categoryModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-    <div class="bg-white rounded-xl shadow-lg border border-outline-variant w-full max-w-md mx-4">
-        <div class="p-6 border-b border-outline-variant">
-            <h3 id="modalTitle" class="font-headline-md text-headline-md text-on-surface">Create Category</h3>
+    <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
+        <div class="p-4 border-b border-outline-variant flex items-center gap-2">
+            <button onclick="createCategory()" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Add Category</button>
+            <button onclick="refreshTree()" class="px-4 py-2 border border-outline-variant text-on-surface rounded-lg font-label-md hover:bg-surface-container transition-colors">Refresh</button>
         </div>
-        <form id="categoryForm" class="p-6 space-y-4">
-            <input type="hidden" id="categoryId" name="id">
-            <div class="space-y-1.5">
-                <label class="block text-label-sm font-medium text-on-surface-variant">Name <span class="text-danger">*</span></label>
-                <input type="text" id="categoryName" name="name" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Category name" required>
+        <div class="p-4">
+            <div id="categoryTree">Loading categories...</div>
+        </div>
+    </div>
+
+    <div id="categoryModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl shadow-lg border border-outline-variant w-full max-w-md mx-4">
+            <div class="p-6 border-b border-outline-variant">
+                <h3 id="modalTitle" class="font-headline-md text-headline-md text-on-surface">Create Category</h3>
             </div>
-            <div class="space-y-1.5">
-                <label class="block text-label-sm font-medium text-on-surface-variant">Slug</label>
-                <input type="text" id="categorySlug" name="slug" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="auto-generated">
-            </div>
-            <div class="space-y-1.5">
-                <label class="block text-label-sm font-medium text-on-surface-variant">Description</label>
-                <textarea id="categoryDesc" name="description" rows="3" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Optional description"></textarea>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
+            <form id="categoryForm" class="p-6 space-y-4">
+                <input type="hidden" id="categoryId" name="id">
                 <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Parent</label>
-                    <select id="categoryParent" name="parent_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                        <option value="">None (Top Level)</option>
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Name <span class="text-danger">*</span></label>
+                    <input type="text" id="categoryName" name="name" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Category name" required>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Slug</label>
+                    <input type="text" id="categorySlug" name="slug" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="auto-generated">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Description</label>
+                    <textarea id="categoryDesc" name="description" rows="3" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Optional description"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Parent</label>
+                        <select id="categoryParent" name="parent_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                            <option value="">None (Top Level)</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Sort Order</label>
+                        <input type="number" id="categorySort" name="sort_order" value="0" min="0" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                    </div>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
+                    <select id="categoryStatus" name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
                     </select>
                 </div>
-                <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Sort Order</label>
-                    <input type="number" id="categorySort" name="sort_order" value="0" min="0" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
-                </div>
+            </form>
+            <div class="p-6 border-t border-outline-variant flex justify-end gap-3">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</button>
+                <button type="submit" form="categoryForm" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Save</button>
             </div>
-            <div class="space-y-1.5">
-                <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                <select id="categoryStatus" name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                    <option value="1">Active</option>
-                    <option value="0">Inactive</option>
-                </select>
-            </div>
-        </form>
-        <div class="p-6 border-t border-outline-variant flex justify-end gap-3">
-            <button type="button" onclick="closeModal()" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</button>
-            <button type="submit" form="categoryForm" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Save</button>
         </div>
     </div>
-</div>
 @endsection
 
 @push('styles')

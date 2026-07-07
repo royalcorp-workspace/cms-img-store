@@ -49,11 +49,20 @@ class VoucherController extends ApiController
 
         $voucher = Voucher::create($validated);
 
-        if ((int)$voucher->scope === 2 && !empty($productIds)) {
-            $voucher->products()->attach($productIds);
-        }
-        if ((int)$voucher->scope === 3 && !empty($categoryIds)) {
-            $voucher->categories()->attach($categoryIds);
+        if ((int)$voucher->type === 4) {
+            if (!empty($productIds)) {
+                $voucher->products()->attach($productIds);
+            }
+            if ((int)$voucher->scope === 3 && !empty($categoryIds)) {
+                $voucher->categories()->attach($categoryIds);
+            }
+        } else {
+            if ((int)$voucher->scope === 2 && !empty($productIds)) {
+                $voucher->products()->attach($productIds);
+            }
+            if ((int)$voucher->scope === 3 && !empty($categoryIds)) {
+                $voucher->categories()->attach($categoryIds);
+            }
         }
 
         return $this->successResponse($voucher, 'Voucher created', 201);

@@ -68,7 +68,18 @@ class Product extends Model
 
     public function getThumbnailUrlAttribute(): ?string
     {
-        return $this->thumbnail ? asset('storage/' . $this->thumbnail) : null;
+        if ($this->thumbnail) {
+            if (filter_var($this->thumbnail, FILTER_VALIDATE_URL)) {
+                return $this->thumbnail;
+            }
+            return asset('storage/' . ltrim($this->thumbnail, '/'));
+        }
+
+        if ($this->relationLoaded('images') && $this->images->isNotEmpty()) {
+            return $this->images->first()->url;
+        }
+
+        return null;
     }
 
     public function getDiscountsAttribute(): array
@@ -149,5 +160,10 @@ class Product extends Model
     {
         return $this->belongsToMany(\App\Models\Promo\PriceProductSetting::class, 'price_product_setting_items', 'product_id', 'price_product_setting_id')
             ->withPivot('discount_type', 'discount_value');
+    }
+
+    public function storePricings(): HasMany
+    {
+        return $this->hasMany(\App\Models\Promo\StorePricing::class, 'product_id', 'id');
     }
 }

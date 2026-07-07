@@ -91,13 +91,24 @@ class VoucherController extends Controller
 
         $voucher->update($validated);
 
-        if ((int)$voucher->scope === 2) {
+        if ((int)$voucher->type === 4) {
             $voucher->products()->sync($productIds);
-        } elseif ((int)$voucher->scope === 3) {
-            $voucher->categories()->sync($categoryIds);
+            if ((int)$voucher->scope === 3) {
+                $voucher->categories()->sync($categoryIds);
+            } else {
+                $voucher->categories()->detach();
+            }
         } else {
-            $voucher->products()->detach();
-            $voucher->categories()->detach();
+            if ((int)$voucher->scope === 2) {
+                $voucher->products()->sync($productIds);
+                $voucher->categories()->detach();
+            } elseif ((int)$voucher->scope === 3) {
+                $voucher->categories()->sync($categoryIds);
+                $voucher->products()->detach();
+            } else {
+                $voucher->products()->detach();
+                $voucher->categories()->detach();
+            }
         }
 
         return redirect()->route('vouchers.index')->with('success', 'Voucher updated successfully');
@@ -138,11 +149,20 @@ class VoucherController extends Controller
 
         $voucher = Voucher::create($validated);
 
-        if ((int)$voucher->scope === 2 && !empty($productIds)) {
-            $voucher->products()->attach($productIds);
-        }
-        if ((int)$voucher->scope === 3 && !empty($categoryIds)) {
-            $voucher->categories()->attach($categoryIds);
+        if ((int)$voucher->type === 4) {
+            if (!empty($productIds)) {
+                $voucher->products()->attach($productIds);
+            }
+            if ((int)$voucher->scope === 3 && !empty($categoryIds)) {
+                $voucher->categories()->attach($categoryIds);
+            }
+        } else {
+            if ((int)$voucher->scope === 2 && !empty($productIds)) {
+                $voucher->products()->attach($productIds);
+            }
+            if ((int)$voucher->scope === 3 && !empty($categoryIds)) {
+                $voucher->categories()->attach($categoryIds);
+            }
         }
 
         return redirect()->route('vouchers.index')->with('success', 'Voucher created successfully');

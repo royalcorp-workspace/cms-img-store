@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
 use App\Models\Promo\PriceProductSetting;
+use App\Models\Store\Store;
+use App\Models\Store\StoreChannelGroup;
+use App\Models\Store\StoreTier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PriceProductSettingController extends Controller
 {
@@ -52,12 +56,39 @@ class PriceProductSettingController extends Controller
 
     public function create()
     {
-        $products = \App\Models\Product\Product::where('deleted', false)
+        $productsQuery = \App\Models\Product\Product::where('deleted', false)
+            ->select(['id', 'name', 'category_id', 'base_price'])
             ->with(['variants' => function ($q) {
-                $q->orderBy('sort_order')->orderBy('variant_name');
-            }, 'category'])
-            ->orderBy('name')
-            ->get();
+                $q->select(['id', 'product_id', 'variant_name', 'sku', 'price', 'stock_qty', 'sort_order'])
+                  ->orderBy('sort_order')->orderBy('variant_name');
+            }, 'category' => function ($q) {
+                $q->select(['id', 'name', 'slug']);
+            }, 'images' => function ($q) {
+                $q->select(['id', 'product_id', 'url']);
+            }])
+            ->orderBy('name');
+
+        if (request()->has('search') && request('search') != '') {
+            $productsQuery->where('name', 'like', '%' . request('search') . '%');
+        }
+
+        if (request()->has('category') && request('category') != 'all') {
+            $productsQuery->whereHas('category', function($q) {
+                $q->where('slug', request('category'))
+                  ->orWhereIn('parent_id', function($q2) {
+                      $q2->select('id')->from('product_category')->where('slug', request('category'));
+                  });
+            });
+        }
+
+        $products = $productsQuery->paginate(12);
+
+        if (request()->ajax()) {
+            return response()->json([
+                'html' => view('pages.promo.partials.product-cards', compact('products'))->render(),
+                'hasMore' => $products->hasMorePages()
+            ]);
+        }
 
         $categories = \App\Models\Product\Category::where('parent_id', null)
             ->where('status', true)
@@ -67,18 +98,53 @@ class PriceProductSettingController extends Controller
             ->orderBy('sort_order')->orderBy('name')
             ->get();
 
-        return view('pages.promo.price-product-setting-create', compact('products', 'categories'));
+        $stores = Store::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
+        $tiers = StoreTier::where('status', true)->where('deleted', false)->orderBy('level')->get(['id', 'name', 'code', 'level']);
+        $channelGroups = StoreChannelGroup::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
+
+        return view('pages.promo.price-product-setting-create', compact('products', 'categories', 'stores', 'tiers', 'channelGroups'));
     }
 
     public function edit($id)
     {
         $setting = PriceProductSetting::withoutGlobalScope('active')->findOrFail($id);
-        $products = \App\Models\Product\Product::where('deleted', false)
+        
+        $productsQuery = \App\Models\Product\Product::where('deleted', false)
+            ->select(['id', 'name', 'category_id', 'base_price'])
             ->with(['variants' => function ($q) {
-                $q->orderBy('sort_order')->orderBy('variant_name');
-            }, 'category'])
-            ->orderBy('name')
-            ->get();
+                $q->select(['id', 'product_id', 'variant_name', 'sku', 'price', 'stock_qty', 'sort_order'])
+                  ->orderBy('sort_order')->orderBy('variant_name');
+            }, 'category' => function ($q) {
+                $q->select(['id', 'name', 'slug']);
+            }, 'images' => function ($q) {
+                $q->select(['id', 'product_id', 'url']);
+            }])
+            ->orderBy('name');
+
+        if (request()->has('search') && request('search') != '') {
+            $productsQuery->where('name', 'like', '%' . request('search') . '%');
+        }
+
+        if (request()->has('category') && request('category') != 'all') {
+            $productsQuery->whereHas('category', function($q) {
+                $q->where('slug', request('category'))
+                  ->orWhereIn('parent_id', function($q2) {
+                      $q2->select('id')->from('product_category')->where('slug', request('category'));
+                  });
+            });
+        }
+
+        $products = $productsQuery->paginate(12);
+
+        $selectedVariantIds = $setting->variants()->pluck('product_variants.id')->toArray();
+        $variantPricesFromPivot = $setting->variants()->pluck('discount_value', 'product_variants.id')->toArray();
+
+        if (request()->ajax()) {
+            return response()->json([
+                'html' => view('pages.promo.partials.product-cards', compact('products', 'selectedVariantIds', 'variantPricesFromPivot'))->render(),
+                'hasMore' => $products->hasMorePages()
+            ]);
+        }
 
         $categories = \App\Models\Product\Category::where('parent_id', null)
             ->where('status', true)
@@ -88,20 +154,34 @@ class PriceProductSettingController extends Controller
             ->orderBy('sort_order')->orderBy('name')
             ->get();
 
-        $volumeTiers = $setting->volumeTiers()->orderBy('sort_order')->get();
-        $selectedVariantIds = $setting->variants()->pluck('product_variants.id')->toArray();
-        $variantPricesFromPivot = $setting->variants()->pluck('discount_value', 'product_variants.id')->toArray();
+        $stores = Store::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
+        $tiers = StoreTier::where('status', true)->where('deleted', false)->orderBy('level')->get(['id', 'name', 'code', 'level']);
+        $channelGroups = StoreChannelGroup::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
 
-        return view('pages.promo.price-product-setting-edit', compact('setting', 'products', 'categories', 'volumeTiers', 'selectedVariantIds', 'variantPricesFromPivot'));
+        $volumeTiers = $setting->volumeTiers()->orderBy('sort_order')->get();
+
+        return view('pages.promo.price-product-setting-edit', compact('setting', 'products', 'categories', 'volumeTiers', 'selectedVariantIds', 'variantPricesFromPivot', 'stores', 'tiers', 'channelGroups'));
     }
 
     public function update(Request $request, $id)
     {
         $setting = PriceProductSetting::withoutGlobalScope('active')->findOrFail($id);
 
+        $code = $request->input('code');
+        if (empty($code)) {
+            $code = 'PROMO-' . strtoupper(bin2hex(random_bytes(4)));
+        }
+
+        $request->merge([
+            'scope_store_id' => $request->input('scope_store_id') ?: null,
+            'scope_tier_id' => $request->input('scope_tier_id') ?: null,
+            'scope_channel_group_id' => $request->input('scope_channel_group_id') ?: null,
+            'code' => $code,
+        ]);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'code' => 'nullable|string|max:255|unique:price_product_settings,code,' . $id,
+            'code' => 'required|string|max:255|unique:price_product_settings,code,' . $id,
             'description' => 'nullable|string',
             'type' => 'required|integer|in:1,2',
             'discount_type' => 'required|integer|in:1,2',
@@ -114,6 +194,10 @@ class PriceProductSettingController extends Controller
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'scope' => 'required|integer|in:1,2,3',
+            'scope_store_type' => 'nullable|integer|in:0,1,2,3',
+            'scope_store_id' => 'nullable|uuid|exists:store,id',
+            'scope_tier_id' => 'nullable|uuid|exists:store_tier,id',
+            'scope_channel_group_id' => 'nullable|uuid|exists:store_channel_group,id',
             'variant_ids' => 'nullable|array',
             'variant_ids.*' => 'uuid|exists:product_variants,id',
             'variant_prices' => 'nullable|array',
@@ -127,31 +211,61 @@ class PriceProductSettingController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_featured'] = $request->boolean('is_featured');
 
+        $scopeStoreType = (int) $request->input('scope_store_type', 0);
+        $scopeStoreId = null;
+
+        if ($scopeStoreType === 1) {
+            $scopeStoreId = $request->input('scope_tier_id');
+        } elseif ($scopeStoreType === 2) {
+            $scopeStoreId = $request->input('scope_store_id');
+        } elseif ($scopeStoreType === 3) {
+            $scopeStoreId = $request->input('scope_channel_group_id');
+        }
+
+        $validated['scope_store_type'] = $scopeStoreType;
+        $validated['scope_store_id'] = $scopeStoreId;
+
         $variantIds = $request->input('variant_ids', []);
 
-        $setting->update($validated);
+        try {
+            DB::beginTransaction();
 
-        if (!empty($variantIds)) {
-            $pivotData = [];
-            $variantPrices = $request->input('variant_prices', []);
-            foreach ($variantIds as $variantId) {
-                $pivotData[$variantId] = [
-                    'discount_type' => $validated['discount_type'],
-                    'discount_value' => $variantPrices[$variantId] ?? $validated['discount_value'],
-                ];
+            unset($validated['volume_tiers']);
+            $setting->update($validated);
+
+            if (!empty($variantIds)) {
+                $pivotData = [];
+                $variantPrices = $request->input('variant_prices', []);
+                // Fetch product_id for each variant to prevent Not-Null constraint errors
+                $variants = Variant::whereIn('id', $variantIds)->get(['id', 'product_id'])->keyBy('id');
+
+                foreach ($variantIds as $variantId) {
+                    $variant = $variants->get($variantId);
+                    $productId = $variant ? $variant->product_id : null;
+
+                    $pivotData[$variantId] = [
+                        'product_id' => $productId,
+                        'discount_type' => $validated['discount_type'],
+                        'discount_value' => $variantPrices[$variantId] ?? $validated['discount_value'],
+                    ];
+                }
+                $setting->variants()->sync($pivotData);
+            } else {
+                $setting->variants()->detach();
             }
-            $setting->variants()->sync($pivotData);
-        } else {
-            $setting->variants()->detach();
-        }
 
-        if ($validated['type'] == 2 && $request->has('volume_tiers')) {
-            $this->saveVolumeTiers($setting, $request->input('volume_tiers'));
-        } elseif ($validated['type'] != 2) {
-            $setting->volumeTiers()->delete();
-        }
+            if ($validated['type'] == 2 && $request->has('volume_tiers')) {
+                $this->saveVolumeTiers($setting, $request->input('volume_tiers'));
+            } elseif ($validated['type'] != 2) {
+                $setting->volumeTiers()->delete();
+            }
 
-        return redirect()->route('price-settings.index')->with('success', 'Price setting updated successfully');
+            DB::commit();
+            return redirect()->route('price-settings.index')->with('success', 'Price setting updated successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui price setting: ' . $e->getMessage());
+        }
     }
 
     private function saveVolumeTiers(PriceProductSetting $setting, array $tiers): void
@@ -230,9 +344,21 @@ class PriceProductSettingController extends Controller
 
     public function store(Request $request)
     {
+        $code = $request->input('code');
+        if (empty($code)) {
+            $code = 'PROMO-' . strtoupper(bin2hex(random_bytes(4)));
+        }
+
+        $request->merge([
+            'scope_store_id' => $request->input('scope_store_id') ?: null,
+            'scope_tier_id' => $request->input('scope_tier_id') ?: null,
+            'scope_channel_group_id' => $request->input('scope_channel_group_id') ?: null,
+            'code' => $code,
+        ]);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'code' => 'nullable|string|max:255|unique:price_product_settings,code',
+            'code' => 'required|string|max:255|unique:price_product_settings,code',
             'description' => 'nullable|string',
             'type' => 'required|integer|in:1,2',
             'discount_type' => 'required|integer|in:1,2',
@@ -245,6 +371,10 @@ class PriceProductSettingController extends Controller
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'scope' => 'required|integer|in:1,2,3',
+            'scope_store_type' => 'nullable|integer|in:0,1,2,3',
+            'scope_store_id' => 'nullable|uuid|exists:store,id',
+            'scope_tier_id' => 'nullable|uuid|exists:store_tier,id',
+            'scope_channel_group_id' => 'nullable|uuid|exists:store_channel_group,id',
             'variant_ids' => 'nullable|array',
             'variant_ids.*' => 'uuid|exists:product_variants,id',
             'variant_prices' => 'nullable|array',
@@ -258,26 +388,56 @@ class PriceProductSettingController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_featured'] = $request->boolean('is_featured');
 
+        $scopeStoreType = (int) $request->input('scope_store_type', 0);
+        $scopeStoreId = null;
+
+        if ($scopeStoreType === 1) {
+            $scopeStoreId = $request->input('scope_tier_id');
+        } elseif ($scopeStoreType === 2) {
+            $scopeStoreId = $request->input('scope_store_id');
+        } elseif ($scopeStoreType === 3) {
+            $scopeStoreId = $request->input('scope_channel_group_id');
+        }
+
+        $validated['scope_store_type'] = $scopeStoreType;
+        $validated['scope_store_id'] = $scopeStoreId;
+
         $variantIds = $request->input('variant_ids', []);
 
-        $setting = PriceProductSetting::create($validated);
+        try {
+            DB::beginTransaction();
 
-        if (!empty($variantIds)) {
-            $pivotData = [];
-            $variantPrices = $request->input('variant_prices', []);
-            foreach ($variantIds as $variantId) {
-                $pivotData[$variantId] = [
-                    'discount_type' => $validated['discount_type'],
-                    'discount_value' => $variantPrices[$variantId] ?? $validated['discount_value'],
-                ];
+            unset($validated['volume_tiers']);
+            $setting = PriceProductSetting::create($validated);
+
+            if (!empty($variantIds)) {
+                $pivotData = [];
+                $variantPrices = $request->input('variant_prices', []);
+                // Fetch product_id for each variant to prevent Not-Null constraint errors
+                $variants = Variant::whereIn('id', $variantIds)->get(['id', 'product_id'])->keyBy('id');
+
+                foreach ($variantIds as $variantId) {
+                    $variant = $variants->get($variantId);
+                    $productId = $variant ? $variant->product_id : null;
+
+                    $pivotData[$variantId] = [
+                        'product_id' => $productId,
+                        'discount_type' => $validated['discount_type'],
+                        'discount_value' => $variantPrices[$variantId] ?? $validated['discount_value'],
+                    ];
+                }
+                $setting->variants()->attach($pivotData);
             }
-            $setting->variants()->attach($pivotData);
-        }
 
-        if ($validated['type'] == 2 && $request->has('volume_tiers')) {
-            $this->saveVolumeTiers($setting, $request->input('volume_tiers'));
-        }
+            if ($validated['type'] == 2 && $request->has('volume_tiers')) {
+                $this->saveVolumeTiers($setting, $request->input('volume_tiers'));
+            }
 
-        return redirect()->route('price-settings.index')->with('success', 'Price setting created successfully');
+            DB::commit();
+            return redirect()->route('price-settings.index')->with('success', 'Price setting created successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'Gagal membuat price setting: ' . $e->getMessage());
+        }
     }
 }

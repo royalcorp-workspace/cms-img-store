@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product\Category;
+use App\Models\Product\Product;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -10,6 +11,33 @@ class CategoryController extends Controller
     public function index()
     {
         return view('pages.categories.index');
+    }
+
+    public function show($slug)
+    {
+        $category = Category::where('slug', $slug)
+            ->where('status', true)
+            ->where('deleted', false)
+            ->with(['children' => function ($q) {
+                $q->where('status', true)->orderBy('sort_order')->orderBy('name');
+            }])
+            ->firstOrFail();
+
+        $childIds = $category->children->pluck('id')->push($category->id);
+
+        $products = Product::whereIn('category_id', $childIds)
+            ->where('status', true)
+            ->where('deleted', false)
+            ->with(['brand', 'variants', 'images', 'priceProductSettings', 'storePricings', 'category'])
+            ->orderBy('category_id')
+            ->orderBy('name')
+            ->get();
+
+        $grouped = $products->groupBy(function ($product) {
+            return $product->category->name ?? 'Uncategorized';
+        });
+
+        return view('pages.categories.show', compact('category', 'products', 'grouped'));
     }
 
     public function store(Request $request)

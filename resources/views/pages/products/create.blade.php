@@ -20,358 +20,358 @@
         return $html;
     }
 @endphp
-<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-    <div>
-        <h1 class="font-headline-lg text-headline-lg text-on-surface">{{ $product ? 'Edit Product' : 'Create Product' }}</h1>
-        <nav class="flex items-center gap-2 text-body-md text-on-surface-variant mt-1">
-            <a href="{{ route('dashboard') }}" class="text-primary hover:underline">Dashboard</a>
-            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-            <a href="{{ route('products.index') }}" class="text-primary hover:underline">Products</a>
-            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-            <span>{{ $product ? 'Edit' : 'Create' }}</span>
-        </nav>
-    </div>
-    <a href="{{ route('products.index') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-outline-variant text-secondary rounded-lg font-label-md text-label-md hover:bg-surface-container transition-all">
-        <span class="material-symbols-outlined text-[18px]">arrow_back</span> Back
-    </a>
-</div>
-
-<div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
-    <div class="p-6">
-        <div class="flex border-b border-outline-variant mb-6">
-            <button onclick="switchTab('details')" id="tab-details" class="tab-btn px-4 py-2 text-on-surface border-b-2 border-primary text-label-md font-label-md font-medium">Details</button>
-            <button onclick="switchTab('media')" id="tab-media" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md">Media</button>
-            <button onclick="switchTab('variations')" id="tab-variations" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md">Variations</button>
-            <button onclick="switchTab('colors')" id="tab-colors" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md">Colors</button>
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="font-headline-lg text-headline-lg text-on-surface">{{ $product ? 'Edit Product' : 'Create Product' }}</h1>
+            <nav class="flex items-center gap-2 text-body-md text-on-surface-variant mt-1">
+                <a href="{{ route('dashboard') }}" class="text-primary hover:underline">Dashboard</a>
+                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                <a href="{{ route('products.index') }}" class="text-primary hover:underline">Products</a>
+                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                <span>{{ $product ? 'Edit' : 'Create' }}</span>
+            </nav>
         </div>
+        <a href="{{ route('products.index') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-outline-variant text-secondary rounded-lg font-label-md text-label-md hover:bg-surface-container transition-all">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Back
+        </a>
+    </div>
 
-        <form id="productForm" method="POST" action="{{ $product->id ? route('products.update', $product->id) : route('products.store') }}">
-            @csrf
-            @if($product) @method('PUT') @endif
-            <input type="hidden" name="variants" id="variantsInput" value="">
-            <input type="hidden" name="colors" id="colorsInput" value="">
-
-            <div id="panel-details" class="tab-panel">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Product Name <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Nama produk yang akan ditampilkan di katalog</span></span></label>
-                        <input type="text" name="name" value="{{ $product->name ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter product name" required>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Category <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Kategori untuk mengelompokkan produk</span></span></label>
-                        <select name="category_id" id="categorySelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                            <option value="">Select Category</option>
-                            {!! buildCategoryOptions(\App\Models\Product\Category::all()) !!}
-                        </select>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">SKU <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Kode unik untuk identifikasi produk</span></span></label>
-                        <input type="text" name="sku" value="{{ $product->sku ?? $product->id ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter SKU">
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Price (Rp) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Harga jual produk dalam Rupiah</span></span></label>
-                        <input type="number" name="price" step="0.01" value="{{ $product->price ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter price">
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Stock Quantity <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Jumlah stok tersedia untuk dijual</span></span></label>
-                        <input type="number" name="stock" value="{{ $product->stock ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter stock">
-                    </div>
-                    <div class="md:col-span-2 space-y-2">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Segments</label>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                            @for($i = 1; $i <= 10; $i++)
-                            <div class="space-y-1">
-                                <label class="block text-label-xs text-on-surface-variant">Segment {{ $i }}</label>
-                                <input type="text" name="segments[{{ $i }}]" value="{{ old('segments.' . $i, $product->segments[$i] ?? '') }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm" placeholder="Segment {{ $i }}">
-                            </div>
-                            @endfor
-                        </div>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Status <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Atur apakah produk aktif atau tidak</span></span></label>
-                        <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                            <option value="1" {{ old('status', $product->status ?? 1) == 1 ? 'selected' : '' }}>Active</option>
-                            <option value="0" {{ old('status', $product->status ?? 1) == 0 ? 'selected' : '' }}>Inactive</option>
-                        </select>
-                    </div>
-                    <div class="md:col-span-2 space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Description <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Deskripsi lengkap produk untuk customer</span></span></label>
-                        <textarea name="description" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" rows="4" placeholder="Enter product description">{{ $product->description ?? '' }}</textarea>
-                    </div>
-                </div>
+    <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
+        <div class="p-6">
+            <div class="flex border-b border-outline-variant mb-6">
+                <button onclick="switchTab('details')" id="tab-details" class="tab-btn px-4 py-2 text-on-surface border-b-2 border-primary text-label-md font-label-md font-medium">Details</button>
+                <button onclick="switchTab('media')" id="tab-media" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md">Media</button>
+                <button onclick="switchTab('variations')" id="tab-variations" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md">Variations</button>
+                <button onclick="switchTab('colors')" id="tab-colors" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md">Colors</button>
             </div>
 
-            <div id="panel-media" class="tab-panel hidden">
-                <div class="space-y-4">
-                    <div class="border-2 border-dashed border-outline-variant rounded-lg p-6 text-center">
-                        <input type="file" id="mediaInput" accept="image/*" multiple class="hidden" onchange="handleMediaUpload(this)">
-                        <label for="mediaInput" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">
-                            <span class="material-symbols-outlined text-[18px]">upload</span> Upload Images
-                        </label>
-                        <p class="text-body-sm text-on-surface-variant mt-2">Select multiple images to upload (max 2MB each)</p>
-                    </div>
-                    <div id="mediaPreview" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        @foreach($images as $img)
-                        <div class="relative group border border-outline-variant rounded-lg overflow-hidden">
-                            <img src="{{ $img->url }}" alt="{{ $img->alt_text ?? '' }}" class="w-full h-32 object-cover">
-                            <button type="button" onclick="deleteMedia('{{ $img->id }}')" class="absolute top-1 right-1 bg-danger text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span class="material-symbols-outlined text-[16px]">close</span>
-                            </button>
-                        </div>
-                        @endforeach
-                        <div id="localPreviewContainer"></div>
-                    </div>
-                </div>
-            </div>
+            <form id="productForm" method="POST" action="{{ $product->id ? route('products.update', $product->id) : route('products.store') }}">
+                @csrf
+                @if($product) @method('PUT') @endif
+                <input type="hidden" name="variants" id="variantsInput" value="">
+                <input type="hidden" name="colors" id="colorsInput" value="">
 
-            <div id="panel-variations" class="tab-panel hidden">
-                <div class="space-y-4">
+                <div id="panel-details" class="tab-panel">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">SKU</label>
-                            <input type="text" id="vSku" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="SKU">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Product Name <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Nama produk yang akan ditampilkan di katalog</span></span></label>
+                            <input type="text" name="name" value="{{ $product->name ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter product name" required>
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Variant Name</label>
-                            <input type="text" id="vName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red / Large">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Width</label>
-                            <input type="number" step="0.01" id="vWidth" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Length</label>
-                            <input type="number" step="0.01" id="vLength" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Height</label>
-                            <input type="number" step="0.01" id="vHeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Weight</label>
-                            <input type="number" step="0.01" id="vWeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="kg">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Price (Rp)</label>
-                            <input type="number" step="0.01" id="vPrice" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0.00">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Stock Qty</label>
-                            <input type="number" id="vStock" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Min Order Qty</label>
-                            <input type="number" id="vMinOrder" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="1">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                            <select id="vStatus" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Category <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Kategori untuk mengelompokkan produk</span></span></label>
+                            <select name="category_id" id="categorySelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                                <option value="">Select Category</option>
+                                {!! buildCategoryOptions(\App\Models\Product\Category::all()) !!}
                             </select>
                         </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <button type="button" onclick="addVariant()" id="addVariantBtn" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Add Variation</button>
-                        <button type="button" onclick="updateLocalVariant()" id="updateVariantBtn" class="px-4 py-2 bg-secondary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm hidden">Update Variation</button>
-                        <button type="button" onclick="cancelEditVariant()" id="cancelVariantBtn" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors hidden">Cancel</button>
-                    </div>
-                    <div id="variantsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @foreach($variants as $v)
-                        <div class="border border-outline-variant rounded-lg p-4">
-                            <div class="flex items-start justify-between mb-3">
-                                <div>
-                                    <p class="font-body-md text-body-md text-on-surface font-semibold">{{ $v->variant_name ?? ($v->sku ?? 'Variant') }}</p>
-                                    <p class="text-label-sm text-on-surface-variant">SKU: {{ $v->sku ?? '-' }}</p>
-                                </div>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm {{ ($v->status ?? 1) ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger' }}">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span> {{ ($v->status ?? 1) ? 'Active' : 'Inactive' }}
-                                </span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-3 text-body-sm">
-                                <div>
-                                    <p class="text-on-surface-variant">Price</p>
-                                    <p class="font-medium text-on-surface">Rp{{ number_format($v->price ?? 0, 2, ',', '.') }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-on-surface-variant">Stock</p>
-                                    <p class="font-medium text-on-surface">{{ $v->stock_qty ?? 0 }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-on-surface-variant">Dimensions</p>
-                                    <p class="font-medium text-on-surface">{{ $v->width ?? 0 }}x{{ $v->length ?? 0 }}x{{ $v->height ?? 0 }} cm</p>
-                                </div>
-                                <div>
-                                    <p class="text-on-surface-variant">Weight</p>
-                                    <p class="font-medium text-on-surface">{{ $v->weight ?? 0 }} kg</p>
-                                </div>
-                            </div>
-                            <div class="flex justify-end mt-3 pt-3 border-t border-outline-variant/20">
-                                <button type="button" onclick="editVariant('{{ $v->id }}', {{ json_encode(['sku' => $v->sku, 'variant_name' => $v->variant_name, 'width' => $v->width, 'length' => $v->length, 'height' => $v->height, 'weight' => $v->weight, 'price' => $v->price, 'stock_qty' => $v->stock_qty, 'min_order_qty' => $v->min_order_qty, 'status' => $v->status]) }})" class="text-primary hover:opacity-80 text-label-sm flex items-center gap-1 mr-3">
-                                    <span class="material-symbols-outlined text-[16px]">edit</span> Edit
-                                </button>
-                                <button type="button" onclick="deleteVariant('{{ $v->id }}')" class="text-danger hover:opacity-80 text-label-sm flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[16px]">delete</span> Delete
-                                </button>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-
-            <div id="panel-colors" class="tab-panel hidden">
-                <div class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Color Name</label>
-                            <input type="text" id="cName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red, Blue, Black">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">SKU <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Kode unik untuk identifikasi produk</span></span></label>
+                            <input type="text" name="sku" value="{{ $product->sku ?? $product->id ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter SKU">
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Color Code (Hex)</label>
-                            <div class="flex items-center gap-2">
-                                <input type="color" id="cColorPicker" value="#FF0000" class="w-10 h-10 rounded border border-outline-variant cursor-pointer" onchange="document.getElementById('cCode').value = this.value">
-                                <input type="text" id="cCode" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="#FF0000" value="#FF0000">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Price (Rp) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Harga jual produk dalam Rupiah</span></span></label>
+                            <input type="number" name="price" step="0.01" value="{{ $product->price ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter price">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Stock Quantity <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Jumlah stok tersedia untuk dijual</span></span></label>
+                            <input type="number" name="stock" value="{{ $product->stock ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter stock">
+                        </div>
+                        <div class="md:col-span-2 space-y-2">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Segments</label>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                @for($i = 1; $i <= 10; $i++)
+                                <div class="space-y-1">
+                                    <label class="block text-label-xs text-on-surface-variant">Segment {{ $i }}</label>
+                                    <input type="text" name="segments[{{ $i }}]" value="{{ old('segments.' . $i, $product->segments[$i] ?? '') }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm" placeholder="Segment {{ $i }}">
+                                </div>
+                                @endfor
                             </div>
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                            <select id="cStatus" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Status <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Atur apakah produk aktif atau tidak</span></span></label>
+                            <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                                <option value="1" {{ old('status', $product->status ?? 1) == 1 ? 'selected' : '' }}>Active</option>
+                                <option value="0" {{ old('status', $product->status ?? 1) == 0 ? 'selected' : '' }}>Inactive</option>
                             </select>
                         </div>
-                    </div>
-                    <button type="button" onclick="addColor()" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Add Color</button>
-                    <div id="colorsList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-2 space-y-1.5">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Description <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Deskripsi lengkap produk untuk customer</span></span></label>
+                            <textarea name="description" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" rows="4" placeholder="Enter product description">{{ $product->description ?? '' }}</textarea>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="variantModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
-                <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-                    <div class="p-6 border-b border-outline-variant flex items-center justify-between">
-                        <h3 id="variantModalTitle" class="font-headline-md text-headline-md text-on-surface">Add New Variation</h3>
-                        <button type="button" onclick="closeVariantModal()" class="text-on-surface-variant hover:text-on-surface">
-                            <span class="material-symbols-outlined text-[20px]">close</span>
-                        </button>
+                <div id="panel-media" class="tab-panel hidden">
+                    <div class="space-y-4">
+                        <div class="border-2 border-dashed border-outline-variant rounded-lg p-6 text-center">
+                            <input type="file" id="mediaInput" accept="image/*" multiple class="hidden" onchange="handleMediaUpload(this)">
+                            <label for="mediaInput" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">
+                                <span class="material-symbols-outlined text-[18px]">upload</span> Upload Images
+                            </label>
+                            <p class="text-body-sm text-on-surface-variant mt-2">Select multiple images to upload (max 2MB each)</p>
+                        </div>
+                        <div id="mediaPreview" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            @foreach($images as $img)
+                            <div class="relative group border border-outline-variant rounded-lg overflow-hidden">
+                                <img src="{{ $img->url }}" alt="{{ $img->alt_text ?? '' }}" class="w-full h-32 object-cover">
+                                <button type="button" onclick="deleteMedia('{{ $img->id }}')" class="absolute top-1 right-1 bg-danger text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span class="material-symbols-outlined text-[16px]">close</span>
+                                </button>
+                            </div>
+                            @endforeach
+                            <div id="localPreviewContainer"></div>
+                        </div>
                     </div>
-                    <div class="p-6">
+                </div>
+
+                <div id="panel-variations" class="tab-panel hidden">
+                    <div class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">SKU</label>
-                                <input type="text" id="mvSku" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="SKU">
+                                <input type="text" id="vSku" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="SKU">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Variant Name</label>
-                                <input type="text" id="mvName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red / Large">
+                                <input type="text" id="vName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red / Large">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Width</label>
-                                <input type="number" step="0.01" id="mvWidth" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
+                                <input type="number" step="0.01" id="vWidth" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Length</label>
-                                <input type="number" step="0.01" id="mvLength" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
+                                <input type="number" step="0.01" id="vLength" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Height</label>
-                                <input type="number" step="0.01" id="mvHeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
+                                <input type="number" step="0.01" id="vHeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Weight</label>
-                                <input type="number" step="0.01" id="mvWeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="kg">
+                                <input type="number" step="0.01" id="vWeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="kg">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Price (Rp)</label>
-                                <input type="number" step="0.01" id="mvPrice" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0.00">
+                                <input type="number" step="0.01" id="vPrice" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0.00">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Stock Qty</label>
-                                <input type="number" id="mvStock" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0">
+                                <input type="number" id="vStock" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Min Order Qty</label>
-                                <input type="number" id="mvMinOrder" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="1">
+                                <input type="number" id="vMinOrder" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="1">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                                <select id="mvStatus" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                                <select id="vStatus" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
                                     <option value="1">Active</option>
                                     <option value="0">Inactive</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-outline-variant">
-                            <button type="button" onclick="closeVariantModal()" class="px-5 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</button>
-                            <button type="button" onclick="saveVariantFromModal()" class="px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Save Variation</button>
+                        <div class="flex items-center gap-3">
+                            <button type="button" onclick="addVariant()" id="addVariantBtn" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Add Variation</button>
+                            <button type="button" onclick="updateLocalVariant()" id="updateVariantBtn" class="px-4 py-2 bg-secondary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm hidden">Update Variation</button>
+                            <button type="button" onclick="cancelEditVariant()" id="cancelVariantBtn" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors hidden">Cancel</button>
+                        </div>
+                        <div id="variantsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @foreach($variants as $v)
+                                <div class="border border-outline-variant rounded-lg p-4">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <div>
+                                            <p class="font-body-md text-body-md text-on-surface font-semibold">{{ $v->variant_name ?? ($v->sku ?? 'Variant') }}</p>
+                                            <p class="text-label-sm text-on-surface-variant">SKU: {{ $v->sku ?? '-' }}</p>
+                                        </div>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm {{ ($v->status ?? 1) ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger' }}">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span> {{ ($v->status ?? 1) ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3 text-body-sm">
+                                        <div>
+                                            <p class="text-on-surface-variant">Price</p>
+                                            <p class="font-medium text-on-surface">Rp{{ number_format($v->price ?? 0, 2, ',', '.') }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-on-surface-variant">Stock</p>
+                                            <p class="font-medium text-on-surface">{{ $v->stock_qty ?? 0 }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-on-surface-variant">Dimensions</p>
+                                            <p class="font-medium text-on-surface">{{ $v->width ?? 0 }}x{{ $v->length ?? 0 }}x{{ $v->height ?? 0 }} cm</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-on-surface-variant">Weight</p>
+                                            <p class="font-medium text-on-surface">{{ $v->weight ?? 0 }} kg</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end mt-3 pt-3 border-t border-outline-variant/20">
+                                        <button type="button" onclick="editVariant('{{ $v->id }}', {{ json_encode(['sku' => $v->sku, 'variant_name' => $v->variant_name, 'width' => $v->width, 'length' => $v->length, 'height' => $v->height, 'weight' => $v->weight, 'price' => $v->price, 'stock_qty' => $v->stock_qty, 'min_order_qty' => $v->min_order_qty, 'status' => $v->status]) }})" class="text-primary hover:opacity-80 text-label-sm flex items-center gap-1 mr-3">
+                                            <span class="material-symbols-outlined text-[16px]">edit</span> Edit
+                                        </button>
+                                        <button type="button" onclick="deleteVariant('{{ $v->id }}')" class="text-danger hover:opacity-80 text-label-sm flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[16px]">delete</span> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="warningModal" class="fixed inset-0 bg-black/50 z-[60] hidden items-center justify-center">
-                <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
-                    <div class="p-6">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
-                                <span class="material-symbols-outlined text-warning text-[24px]">warning</span>
-                            </div>
-                            <h3 class="font-headline-md text-headline-md text-on-surface">Validation Warning</h3>
-                        </div>
-                        <p class="text-body-md text-on-surface-variant mb-6" id="warningMessage"></p>
-                        <div class="flex justify-end">
-                            <button type="button" onclick="closeWarningModal()" class="px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">OK</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="colorModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
-                <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
-                    <div class="p-6 border-b border-outline-variant flex items-center justify-between">
-                        <h3 id="colorModalTitle" class="font-headline-md text-headline-md text-on-surface">Add New Color</h3>
-                        <button type="button" onclick="closeColorModal()" class="text-on-surface-variant hover:text-on-surface">
-                            <span class="material-symbols-outlined text-[20px]">close</span>
-                        </button>
-                    </div>
-                    <div class="p-6">
-                        <div class="grid grid-cols-1 gap-4">
+                <div id="panel-colors" class="tab-panel hidden">
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Color Name</label>
-                                <input type="text" id="mcName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red, Blue, Black">
+                                <input type="text" id="cName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red, Blue, Black">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Color Code (Hex)</label>
                                 <div class="flex items-center gap-2">
-                                    <input type="color" id="mcColorPicker" value="#FF0000" class="w-10 h-10 rounded border border-outline-variant cursor-pointer" onchange="document.getElementById('mcCode').value = this.value">
-                                    <input type="text" id="mcCode" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="#FF0000" value="#FF0000">
+                                    <input type="color" id="cColorPicker" value="#FF0000" class="w-10 h-10 rounded border border-outline-variant cursor-pointer" onchange="document.getElementById('cCode').value = this.value">
+                                    <input type="text" id="cCode" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="#FF0000" value="#FF0000">
                                 </div>
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                                <select id="mcStatus" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                                <select id="cStatus" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
                                     <option value="1">Active</option>
                                     <option value="0">Inactive</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-outline-variant">
-                            <button type="button" onclick="closeColorModal()" class="px-5 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</button>
-                            <button type="button" onclick="saveColorFromModal()" class="px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Save Color</button>
+                        <button type="button" onclick="addColor()" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Add Color</button>
+                        <div id="colorsList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <hr class="my-6 border-outline-variant">
-            <div class="flex justify-end gap-3">
-                <a href="{{ route('products.index') }}" class="px-5 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Discard</a>
-                <button type="submit" class="px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">{{ $product ? 'Update Product' : 'Create Product' }}</button>
-            </div>
-        </form>
+                <div id="variantModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+                    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+                        <div class="p-6 border-b border-outline-variant flex items-center justify-between">
+                            <h3 id="variantModalTitle" class="font-headline-md text-headline-md text-on-surface">Add New Variation</h3>
+                            <button type="button" onclick="closeVariantModal()" class="text-on-surface-variant hover:text-on-surface">
+                                <span class="material-symbols-outlined text-[20px]">close</span>
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">SKU</label>
+                                    <input type="text" id="mvSku" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="SKU">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Variant Name</label>
+                                    <input type="text" id="mvName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red / Large">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Width</label>
+                                    <input type="number" step="0.01" id="mvWidth" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Length</label>
+                                    <input type="number" step="0.01" id="mvLength" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Height</label>
+                                    <input type="number" step="0.01" id="mvHeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Weight</label>
+                                    <input type="number" step="0.01" id="mvWeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="kg">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Price (Rp)</label>
+                                    <input type="number" step="0.01" id="mvPrice" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0.00">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Stock Qty</label>
+                                    <input type="number" id="mvStock" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Min Order Qty</label>
+                                    <input type="number" id="mvMinOrder" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="1">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
+                                    <select id="mvStatus" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                                        <option value="1">Active</option>
+                                        <option value="0">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-outline-variant">
+                                <button type="button" onclick="closeVariantModal()" class="px-5 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</button>
+                                <button type="button" onclick="saveVariantFromModal()" class="px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Save Variation</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="warningModal" class="fixed inset-0 bg-black/50 z-[60] hidden items-center justify-center">
+                    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+                        <div class="p-6">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
+                                    <span class="material-symbols-outlined text-warning text-[24px]">warning</span>
+                                </div>
+                                <h3 class="font-headline-md text-headline-md text-on-surface">Validation Warning</h3>
+                            </div>
+                            <p class="text-body-md text-on-surface-variant mb-6" id="warningMessage"></p>
+                            <div class="flex justify-end">
+                                <button type="button" onclick="closeWarningModal()" class="px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="colorModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+                    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+                        <div class="p-6 border-b border-outline-variant flex items-center justify-between">
+                            <h3 id="colorModalTitle" class="font-headline-md text-headline-md text-on-surface">Add New Color</h3>
+                            <button type="button" onclick="closeColorModal()" class="text-on-surface-variant hover:text-on-surface">
+                                <span class="material-symbols-outlined text-[20px]">close</span>
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 gap-4">
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Color Name</label>
+                                    <input type="text" id="mcName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red, Blue, Black">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Color Code (Hex)</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" id="mcColorPicker" value="#FF0000" class="w-10 h-10 rounded border border-outline-variant cursor-pointer" onchange="document.getElementById('mcCode').value = this.value">
+                                        <input type="text" id="mcCode" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="#FF0000" value="#FF0000">
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
+                                    <select id="mcStatus" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                                        <option value="1">Active</option>
+                                        <option value="0">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-outline-variant">
+                                <button type="button" onclick="closeColorModal()" class="px-5 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</button>
+                                <button type="button" onclick="saveColorFromModal()" class="px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Save Color</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-6 border-outline-variant">
+                <div class="flex justify-end gap-3">
+                    <a href="{{ route('products.index') }}" class="px-5 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Discard</a>
+                    <button type="submit" class="px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">{{ $product ? 'Update Product' : 'Create Product' }}</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 @endsection
 
 @push('scripts')

@@ -5,6 +5,7 @@ namespace App\Models\Order;
 use App\Models\Customer\Customer;
 use App\Models\Order\OrderItem;
 use App\Models\Payment;
+use App\Models\Promo\Voucher;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,12 @@ class Order extends Model
     public const STATUS_CANCELLED = 6;
     public const STATUS_RETURNED = 7;
 
+    public const PAYMENT_UNPAID = 0;
+    public const PAYMENT_PAID = 1;
+    public const PAYMENT_FAILED = 2;
+    public const PAYMENT_REFUNDED = 3;
+    public const PAYMENT_PARTIAL = 4;
+
     protected $fillable = [
         'customer_id',
         'status',
@@ -39,6 +46,8 @@ class Order extends Model
         'creator',
         'editor',
         'deleted',
+        'voucher_id',
+        'transaction_fee',
     ];
 
     protected function casts(): array
@@ -50,6 +59,7 @@ class Order extends Model
             'tax' => 'decimal:2',
             'discount' => 'decimal:2',
             'total' => 'decimal:2',
+            'transaction_fee' => 'decimal:2',
             'meta' => 'array',
             'deleted' => 'boolean',
             'created_at' => 'datetime',
@@ -79,6 +89,31 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'order_id', 'id');
+    }
+
+    public function pickingList(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Picking\PickingList::class, 'order_id');
+    }
+
+    public function packingSlip(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Packing\PackingSlip::class, 'order_id');
+    }
+
+    public function packingOut(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Packing\PackingOut::class, 'order_id');
+    }
+
+    public function delivery(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Packing\Delivery::class, 'order_id');
+    }
+
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(Voucher::class, 'voucher_id', 'id');
     }
 
     public static function statusLabels(): array
@@ -111,6 +146,34 @@ class Order extends Model
             self::STATUS_DELIVERED => 'bg-green-100 text-green-700',
             self::STATUS_CANCELLED => 'bg-red-100 text-red-700',
             self::STATUS_RETURNED => 'bg-orange-100 text-orange-700',
+            default => 'bg-gray-100 text-gray-600',
+        };
+    }
+
+    public static function paymentStatusLabels(): array
+    {
+        return [
+            self::PAYMENT_UNPAID => 'Unpaid',
+            self::PAYMENT_PAID => 'Paid',
+            self::PAYMENT_FAILED => 'Failed',
+            self::PAYMENT_REFUNDED => 'Refunded',
+            self::PAYMENT_PARTIAL => 'Partial',
+        ];
+    }
+
+    public function paymentStatusLabel(): string
+    {
+        return self::paymentStatusLabels()[$this->payment_status] ?? 'Unknown';
+    }
+
+    public function getPaymentStatusBadgeClassAttribute(): string
+    {
+        return match ($this->payment_status) {
+            self::PAYMENT_UNPAID => 'bg-gray-100 text-gray-600',
+            self::PAYMENT_PAID => 'bg-success/10 text-success',
+            self::PAYMENT_FAILED => 'bg-danger/10 text-danger',
+            self::PAYMENT_REFUNDED => 'bg-orange-100 text-orange-700',
+            self::PAYMENT_PARTIAL => 'bg-warning/10 text-warning',
             default => 'bg-gray-100 text-gray-600',
         };
     }

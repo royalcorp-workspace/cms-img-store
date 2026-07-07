@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Variant extends Model
 {
@@ -62,6 +63,11 @@ class Variant extends Model
     {
         return $this->belongsToMany(\App\Models\Promo\PriceProductSetting::class, 'price_product_setting_items', 'variant_id', 'price_product_setting_id')
             ->withPivot('discount_type', 'discount_value', 'product_id');
+    }
+
+    public function storePricings(): HasMany
+    {
+        return $this->hasMany(\App\Models\Promo\StorePricing::class, 'variant_id', 'id');
     }
 
     protected $appends = ['discounts', 'final_price'];
