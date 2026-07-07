@@ -44,7 +44,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Discount Type <span class="text-danger">*</span> <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Tipe diskon yang diberikan: persentase (%), nominal tetap (Rp), potongan ongkir (Rp), atau bonus produk (pcs).</span></span></label>
-                    <select name="type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                    <select name="type" id="typeSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
                         <option value="1" {{ old('type', $voucher->type) == 1 ? 'selected' : '' }}>Percentage (%)</option>
                         <option value="2" {{ old('type', $voucher->type) == 2 ? 'selected' : '' }}>Fixed Amount (Rp)</option>
                         <option value="3" {{ old('type', $voucher->type) == 3 ? 'selected' : '' }}>Shipping Discount (Rp)</option>
@@ -63,7 +63,7 @@
                     <label class="block text-label-sm font-medium text-on-surface-variant">Min Purchase (Rp) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Total belanja minimum agar voucher bisa digunakan. Isi 0 jika tidak ada minimum.</span></span></label>
                     <input type="number" name="min_purchase" step="0.01" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0" value="{{ old('min_purchase', $voucher->min_purchase) }}">
                 </div>
-                <div class="space-y-1.5">
+                <div class="space-y-1.5" id="maxDiscountContainer">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Max Discount (Rp) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Batas maksimum diskon yang diberikan (khusus tipe persentase). Isi 0 jika tidak ada batas.</span></span></label>
                     <input type="number" name="max_discount" step="0.01" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0" value="{{ old('max_discount', $voucher->max_discount) }}">
                 </div>
@@ -101,13 +101,12 @@
             </div>
 
             <div id="productSelect" class="space-y-1.5 mt-4 {{ old('scope', $voucher->scope) == 2 ? '' : 'hidden' }}">
-                <label class="block text-label-sm font-medium text-on-surface-variant">Products</label>
-                <select name="product_ids[]" multiple class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white h-32">
+                <label id="productSelectLabel" class="block text-label-sm font-medium text-on-surface-variant">Products</label>
+                <select name="product_ids[]" id="productsSelectInput" multiple class="select2 w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
                     @foreach(\App\Models\Product\Product::all() as $p)
                         <option value="{{ $p->id }}" {{ (old('product_ids', $voucher->products->pluck('id')->toArray()) && in_array($p->id, old('product_ids', $voucher->products->pluck('id')->toArray()))) ? 'selected' : '' }}>{{ $p->name }}</option>
                     @endforeach
                 </select>
-                <p class="text-label-sm text-on-surface-variant">Hold Ctrl/Cmd to select multiple</p>
             </div>
 
             <div id="categorySelect" class="space-y-1.5 mt-4 {{ old('scope', $voucher->scope) == 3 ? '' : 'hidden' }}">
@@ -146,5 +145,176 @@
         </form>
     </div>
 </div>
-@endsection
+@push('scripts')
+<style>
+    /* Light Mode Styles */
+    .select2-container--classic .select2-selection--multiple {
+        background-color: #fff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 0.5rem !important;
+        padding: 4px 8px !important;
+        min-height: 42px !important;
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 4px !important;
+    }
+    .select2-container--classic.select2-container--focus .select2-selection--multiple {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+    }
+    .select2-container--classic .select2-selection--multiple .select2-selection__choice {
+        background-color: #f3f4f6 !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 0.375rem !important;
+        color: #1f2937 !important;
+        padding: 2px 8px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin: 0 !important;
+    }
+    .select2-container--classic .select2-selection--multiple .select2-selection__choice__remove {
+        color: #ef4444 !important;
+        font-weight: bold !important;
+        margin-right: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        cursor: pointer !important;
+    }
+    .select2-container--classic .select2-selection--multiple .select2-selection__choice__remove:hover {
+        background: transparent !important;
+        color: #b91c1c !important;
+    }
+    .select2-container--classic .select2-selection--multiple .select2-search--inline .select2-search__field {
+        color: #1f2937 !important;
+        font-size: 14px !important;
+        margin: 0 !important;
+        height: auto !important;
+        background: transparent !important;
+    }
+    .select2-dropdown {
+        border: 1px solid #e5e7eb !important;
+        border-radius: 0.5rem !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+        overflow: hidden !important;
+        z-index: 9999 !important;
+    }
+    .select2-container--classic .select2-results__option {
+        padding: 8px 12px !important;
+        font-size: 14px !important;
+    }
+    .select2-container--classic .select2-results__option--highlighted[aria-selected] {
+        background-color: #3b82f6 !important;
+        color: #fff !important;
+    }
+    .select2-container--classic .select2-results__option[aria-selected=true] {
+        background-color: #eff6ff !important;
+        color: #1e40af !important;
+    }
+
+    /* Dark Mode Styles */
+    .dark .select2-container--classic .select2-selection--multiple {
+        background-color: #1e1e2d !important;
+        border: 1px solid #3f3f46 !important;
+    }
+    .dark .select2-container--classic.select2-container--focus .select2-selection--multiple {
+        border-color: #3b82f6 !important;
+    }
+    .dark .select2-container--classic .select2-selection--multiple .select2-selection__choice {
+        background-color: #27272a !important;
+        border-color: #3f3f46 !important;
+        color: #e4e4e7 !important;
+    }
+    .dark .select2-container--classic .select2-selection--multiple .select2-search--inline .select2-search__field {
+        color: #fff !important;
+    }
+    .dark .select2-dropdown {
+        background-color: #1e1e2d !important;
+        border-color: #3f3f46 !important;
+        color: #fff !important;
+    }
+    .dark .select2-container--classic .select2-results__option[aria-selected=true] {
+        background-color: #27272a !important;
+        color: #fff !important;
+    }
+    .dark .select2-container--classic .select2-results__option--highlighted[aria-selected] {
+        background-color: #3b82f6 !important;
+        color: #fff !important;
+    }
+</style>
+<script>
+function adjustFormFields() {
+    const type = document.getElementById('typeSelect').value;
+    const scopeSelect = document.getElementById('scopeSelect');
+    const scope = scopeSelect.value;
+
+    const productSelect = document.getElementById('productSelect');
+    const productSelectLabel = document.getElementById('productSelectLabel');
+    const categorySelect = document.getElementById('categorySelect');
+    const maxDiscountContainer = document.getElementById('maxDiscountContainer');
+    
+    // Get scope option for value 2
+    const optionScopeSpecificProduct = scopeSelect.querySelector('option[value="2"]');
+
+    if (type === '4') { // Bonus Product
+        // Disable and hide scope 2 (Produk Tertentu) to avoid pivot collision
+        if (optionScopeSpecificProduct) {
+            optionScopeSpecificProduct.disabled = true;
+            if (scope === '2') {
+                scopeSelect.value = '1';
+            }
+        }
+        
+        // Max discount is irrelevant for bonus products
+        if (maxDiscountContainer) maxDiscountContainer.classList.add('hidden');
+        
+        // Show Products select box as "Bonus Products"
+        if (productSelect) productSelect.classList.remove('hidden');
+        if (productSelectLabel) productSelectLabel.textContent = 'Bonus Products';
+        
+        // Show/hide category select based on scope (scope 3 is eligible categories)
+        if (categorySelect) {
+            categorySelect.classList.toggle('hidden', scopeSelect.value !== '3');
+        }
+    } else {
+        // Enable scope 2
+        if (optionScopeSpecificProduct) {
+            optionScopeSpecificProduct.disabled = false;
+        }
+        
+        // Show Max Discount for other types (especially percentage)
+        if (maxDiscountContainer) maxDiscountContainer.classList.remove('hidden');
+        
+        // Restore label
+        if (productSelectLabel) productSelectLabel.textContent = 'Products';
+        
+        // Normal scope visibility
+        if (productSelect) {
+            productSelect.classList.toggle('hidden', scope !== '2');
+        }
+        if (categorySelect) {
+            categorySelect.classList.toggle('hidden', scope !== '3');
+        }
+    }
+}
+
+document.getElementById('scopeSelect').addEventListener('change', adjustFormFields);
+document.getElementById('typeSelect').addEventListener('change', adjustFormFields);
+
+// Adjust fields on page load
+adjustFormFields();
+
+$(document).ready(function() {
+    $('#productsSelectInput').select2({
+        placeholder: "Select products...",
+        allowClear: true,
+        width: '100%',
+        theme: 'classic'
+    });
+});
+</script>
 @endpush
+@endsection

@@ -57,4 +57,14 @@ class OrderItem extends Model
     {
         return $this->belongsTo(Variant::class, 'product_variant_id', 'id');
     }
+
+    public function pickingListItem(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Picking\PickingListItem::class, 'order_item_id');
+    }
+
+    public function packingSlipItem(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Packing\PackingSlipItem::class, 'order_item_id');
+    }
 }

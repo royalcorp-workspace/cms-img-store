@@ -55,4 +55,9 @@ class Courier extends Model
     {
         return $this->hasMany(ShippingAddress::class, 'courier_id', 'id')->where('type', 1);
     }
+
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(\App\Models\Packing\Delivery::class, 'courier_id', 'id');
+    }
 }

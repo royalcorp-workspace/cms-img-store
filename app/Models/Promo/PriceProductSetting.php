@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class PriceProductSetting extends Model
 {
@@ -35,6 +36,8 @@ class PriceProductSetting extends Model
         'editor',
         'deleted',
         'volume_tiers',
+        'scope_store_type',
+        'scope_store_id',
     ];
 
     protected function casts(): array
@@ -42,6 +45,7 @@ class PriceProductSetting extends Model
         return [
             'type' => 'integer',
             'scope' => 'integer',
+            'scope_store_type' => 'integer',
             'discount_type' => 'integer',
             'discount_value' => 'decimal:2',
             'min_purchase' => 'decimal:2',
@@ -116,5 +120,40 @@ class PriceProductSetting extends Model
     public function typeLabel(): string
     {
         return $this->isVolumeDiscount() ? 'Diskon Volume' : 'Diskon Langsung';
+    }
+
+    public function scopeStoreTypeLabel(): string
+    {
+        return match((int) $this->scope_store_type) {
+            1 => 'Tier',
+            2 => 'Store',
+            3 => 'Channel Group',
+            default => 'Semua Store',
+        };
+    }
+
+    public function scopeForStore($query, string $storeId)
+    {
+        return $query->where(function ($q) use ($storeId) {
+            $q->where('scope_store_type', 0)
+              ->orWhere(function ($q2) use ($storeId) {
+                  $q2->where('scope_store_type', 2)->where('scope_store_id', $storeId);
+              })
+              ->orWhere(function ($q3) {
+                  $q3->where('scope_store_type', 1)
+                      ->whereIn('scope_store_id', function ($q4) {
+                          $q4->select('tier_id')->from('store')->whereNull('deleted');
+                      });
+              })
+              ->orWhere(function ($q3) use ($storeId) {
+                  $q3->where('scope_store_type', 3)
+                      ->whereIn('scope_store_id', function ($q4) use ($storeId) {
+                          $q4->select('store_channel_group_id')
+                              ->from('store_channels')
+                              ->where('store_id', $storeId)
+                              ->whereNull('deleted');
+                      });
+              });
+        });
     }
 }

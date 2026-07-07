@@ -46,6 +46,11 @@ class Category extends Model
         return $this->hasMany(Category::class, 'parent_id');
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'category_id');

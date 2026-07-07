@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet"/>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -238,6 +239,12 @@
     @stack('styles')
 </head>
 <body class="bg-surface-gray text-on-surface antialiased">
+    <div id="page-loader" class="fixed inset-0 z-[9999] bg-white/80 dark:bg-surface/80 backdrop-blur-sm flex items-center justify-center">
+        <div class="flex flex-col items-center gap-3">
+            <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-label-md text-on-surface-variant">Loading...</p>
+        </div>
+    </div>
     <!-- Sidebar -->
     @include('layouts.partials.sidebar')
 
@@ -254,6 +261,9 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const loader = document.getElementById('page-loader');
+            if (loader) loader.classList.add('hidden');
+
             const toggle = document.getElementById('darkModeToggle');
             const html = document.documentElement;
             const storageKey = 'admin-theme';
@@ -282,7 +292,113 @@
                 });
             }
         });
+
+        // Show page loader on navigating link clicks
+        document.addEventListener('click', function(e) {
+            const loader = document.getElementById('page-loader');
+            if (!loader) return;
+            const target = e.target.closest('a[href]:not([target="_blank"]):not([href^="#"]):not([href^="javascript"])');
+            if (target) {
+                loader.classList.remove('hidden');
+            }
+        });
+
+        // Show page loader on valid form submissions
+        document.addEventListener('submit', function(e) {
+            const loader = document.getElementById('page-loader');
+            if (loader) {
+                loader.classList.remove('hidden');
+            }
+        });
+
+        // Toast Notification System
+        function showToast(type, message, duration = 5000) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 p-4 rounded-xl shadow-lg border transition-all duration-500 transform translate-x-full opacity-0 pointer-events-auto bg-surface-container-lowest border-outline-variant/30`;
+            
+            let icon = 'info';
+            let iconColor = 'text-primary';
+            let borderTheme = 'border-l-4 border-l-primary';
+
+            if (type === 'success') {
+                icon = 'check_circle';
+                iconColor = 'text-success';
+                borderTheme = 'border-l-4 border-l-success';
+            } else if (type === 'error') {
+                icon = 'error';
+                iconColor = 'text-danger';
+                borderTheme = 'border-l-4 border-l-danger';
+            } else if (type === 'warning') {
+                icon = 'warning';
+                iconColor = 'text-warning';
+                borderTheme = 'border-l-4 border-l-warning';
+            }
+
+            toast.className += ` ${borderTheme}`;
+
+            toast.innerHTML = `
+                <span class="material-symbols-outlined ${iconColor} shrink-0">${icon}</span>
+                <div class="flex-1 min-w-0">
+                    <p class="font-body-md text-body-md text-on-surface font-semibold">${message}</p>
+                </div>
+                <button type="button" class="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container transition-colors shrink-0" onclick="this.closest('.transform').remove()">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+                toast.classList.add('translate-x-0', 'opacity-100');
+            }, 10);
+
+            // Auto remove
+            if (duration > 0) {
+                setTimeout(() => {
+                    toast.classList.remove('translate-x-0', 'opacity-100');
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 500);
+                }, duration);
+            }
+        }
     </script>
     @stack('scripts')
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Render Session Flashes & Validation Errors as Toasts -->
+    @if(session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('success', {!! json_encode(session('success')) !!});
+            });
+        </script>
+    @endif
+
+    @if(session('error'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('error', {!! json_encode(session('error')) !!});
+            });
+        </script>
+    @endif
+
+    @if($errors->any())
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                @foreach($errors->all() as $error)
+                    showToast('error', {!! json_encode($error) !!});
+                @endforeach
+            });
+        </script>
+    @endif
 </body>
 </html>

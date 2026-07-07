@@ -13,6 +13,7 @@ class VolumeTier extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'id',
         'price_product_setting_id',
         'min_purchase',
         'discount_type',

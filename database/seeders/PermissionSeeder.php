@@ -88,6 +88,78 @@ class PermissionSeeder extends Seeder
             ['name' => 'price-settings.edit', 'guard_name' => $guard, 'resource' => 'price-settings', 'action' => 'edit', 'group' => 'Promo', 'description' => 'Edit price setting'],
             ['name' => 'price-settings.delete', 'guard_name' => $guard, 'resource' => 'price-settings', 'action' => 'delete', 'group' => 'Promo', 'description' => 'Delete price setting'],
 
+            // Store Pricing (Promo)
+            ['name' => 'price-product-setting-store.view', 'guard_name' => $guard, 'resource' => 'price-product-setting-store', 'action' => 'view', 'group' => 'Promo', 'description' => 'View store pricing'],
+            ['name' => 'price-product-setting-store.create', 'guard_name' => $guard, 'resource' => 'price-product-setting-store', 'action' => 'create', 'group' => 'Promo', 'description' => 'Create store pricing'],
+            ['name' => 'price-product-setting-store.edit', 'guard_name' => $guard, 'resource' => 'price-product-setting-store', 'action' => 'edit', 'group' => 'Promo', 'description' => 'Edit store pricing'],
+            ['name' => 'price-product-setting-store.delete', 'guard_name' => $guard, 'resource' => 'price-product-setting-store', 'action' => 'delete', 'group' => 'Promo', 'description' => 'Delete store pricing'],
+
+            // Store Groups (Store Management)
+            ['name' => 'store-groups.view', 'guard_name' => $guard, 'resource' => 'store-groups', 'action' => 'view', 'group' => 'Store Management', 'description' => 'View store groups'],
+            ['name' => 'store-groups.create', 'guard_name' => $guard, 'resource' => 'store-groups', 'action' => 'create', 'group' => 'Store Management', 'description' => 'Create store group'],
+            ['name' => 'store-groups.edit', 'guard_name' => $guard, 'resource' => 'store-groups', 'action' => 'edit', 'group' => 'Store Management', 'description' => 'Edit store group'],
+            ['name' => 'store-groups.delete', 'guard_name' => $guard, 'resource' => 'store-groups', 'action' => 'delete', 'group' => 'Store Management', 'description' => 'Delete store group'],
+
+            // Store Tiers (Store Management)
+            ['name' => 'store-tiers.view', 'guard_name' => $guard, 'resource' => 'store-tiers', 'action' => 'view', 'group' => 'Store Management', 'description' => 'View store tiers'],
+            ['name' => 'store-tiers.create', 'guard_name' => $guard, 'resource' => 'store-tiers', 'action' => 'create', 'group' => 'Store Management', 'description' => 'Create store tier'],
+            ['name' => 'store-tiers.edit', 'guard_name' => $guard, 'resource' => 'store-tiers', 'action' => 'edit', 'group' => 'Store Management', 'description' => 'Edit store tier'],
+            ['name' => 'store-tiers.delete', 'guard_name' => $guard, 'resource' => 'store-tiers', 'action' => 'delete', 'group' => 'Store Management', 'description' => 'Delete store tier'],
+
+            // Stores (Store Management)
+            ['name' => 'stores.view', 'guard_name' => $guard, 'resource' => 'stores', 'action' => 'view', 'group' => 'Store Management', 'description' => 'View stores'],
+            ['name' => 'stores.create', 'guard_name' => $guard, 'resource' => 'stores', 'action' => 'create', 'group' => 'Store Management', 'description' => 'Create store'],
+            ['name' => 'stores.edit', 'guard_name' => $guard, 'resource' => 'stores', 'action' => 'edit', 'group' => 'Store Management', 'description' => 'Edit store'],
+            ['name' => 'stores.delete', 'guard_name' => $guard, 'resource' => 'stores', 'action' => 'delete', 'group' => 'Store Management', 'description' => 'Delete store'],
+
+            // Store Channel Groups (Store Management)
+            ['name' => 'store-channel-groups.view', 'guard_name' => $guard, 'resource' => 'store-channel-groups', 'action' => 'view', 'group' => 'Store Management', 'description' => 'View store channel groups'],
+            ['name' => 'store-channel-groups.create', 'guard_name' => $guard, 'resource' => 'store-channel-groups', 'action' => 'create', 'group' => 'Store Management', 'description' => 'Create store channel group'],
+            ['name' => 'store-channel-groups.edit', 'guard_name' => $guard, 'resource' => 'store-channel-groups', 'action' => 'edit', 'group' => 'Store Management', 'description' => 'Edit store channel group'],
+            ['name' => 'store-channel-groups.delete', 'guard_name' => $guard, 'resource' => 'store-channel-groups', 'action' => 'delete', 'group' => 'Store Management', 'description' => 'Delete store channel group'],
+
+            // Store Channels (Store Management)
+            ['name' => 'store-channels.view', 'guard_name' => $guard, 'resource' => 'store-channels', 'action' => 'view', 'group' => 'Store Management', 'description' => 'View store channels'],
+            ['name' => 'store-channels.create', 'guard_name' => $guard, 'resource' => 'store-channels', 'action' => 'create', 'group' => 'Store Management', 'description' => 'Create store channel'],
+            ['name' => 'store-channels.edit', 'guard_name' => $guard, 'resource' => 'store-channels', 'action' => 'edit', 'group' => 'Store Management', 'description' => 'Edit store channel'],
+            ['name' => 'store-channels.delete', 'guard_name' => $guard, 'resource' => 'store-channels', 'action' => 'delete', 'group' => 'Store Management', 'description' => 'Delete store channel'],
+
+            // Content Management
+            ['name' => 'content.faq.view', 'guard_name' => $guard, 'resource' => 'content.faq', 'action' => 'view', 'group' => 'Content', 'description' => 'View FAQ'],
+            ['name' => 'content.faq.create', 'guard_name' => $guard, 'resource' => 'content.faq', 'action' => 'create', 'group' => 'Content', 'description' => 'Create FAQ'],
+            ['name' => 'content.faq.edit', 'guard_name' => $guard, 'resource' => 'content.faq', 'action' => 'edit', 'group' => 'Content', 'description' => 'Edit FAQ'],
+            ['name' => 'content.faq.delete', 'guard_name' => $guard, 'resource' => 'content.faq', 'action' => 'delete', 'group' => 'Content', 'description' => 'Delete FAQ'],
+
+            ['name' => 'content.blog.view', 'guard_name' => $guard, 'resource' => 'content.blog', 'action' => 'view', 'group' => 'Content', 'description' => 'View blog'],
+            ['name' => 'content.blog.create', 'guard_name' => $guard, 'resource' => 'content.blog', 'action' => 'create', 'group' => 'Content', 'description' => 'Create blog post'],
+            ['name' => 'content.blog.edit', 'guard_name' => $guard, 'resource' => 'content.blog', 'action' => 'edit', 'group' => 'Content', 'description' => 'Edit blog post'],
+            ['name' => 'content.blog.delete', 'guard_name' => $guard, 'resource' => 'content.blog', 'action' => 'delete', 'group' => 'Content', 'description' => 'Delete blog post'],
+
+            ['name' => 'content.about.view', 'guard_name' => $guard, 'resource' => 'content.about', 'action' => 'view', 'group' => 'Content', 'description' => 'View About Us'],
+            ['name' => 'content.about.create', 'guard_name' => $guard, 'resource' => 'content.about', 'action' => 'create', 'group' => 'Content', 'description' => 'Create About Us'],
+            ['name' => 'content.about.edit', 'guard_name' => $guard, 'resource' => 'content.about', 'action' => 'edit', 'group' => 'Content', 'description' => 'Edit About Us'],
+            ['name' => 'content.about.delete', 'guard_name' => $guard, 'resource' => 'content.about', 'action' => 'delete', 'group' => 'Content', 'description' => 'Delete About Us'],
+
+            ['name' => 'content.how-to-return.view', 'guard_name' => $guard, 'resource' => 'content.how-to-return', 'action' => 'view', 'group' => 'Content', 'description' => 'View How To Return'],
+            ['name' => 'content.how-to-return.create', 'guard_name' => $guard, 'resource' => 'content.how-to-return', 'action' => 'create', 'group' => 'Content', 'description' => 'Create How To Return'],
+            ['name' => 'content.how-to-return.edit', 'guard_name' => $guard, 'resource' => 'content.how-to-return', 'action' => 'edit', 'group' => 'Content', 'description' => 'Edit How To Return'],
+            ['name' => 'content.how-to-return.delete', 'guard_name' => $guard, 'resource' => 'content.how-to-return', 'action' => 'delete', 'group' => 'Content', 'description' => 'Delete How To Return'],
+
+            ['name' => 'content.terms.view', 'guard_name' => $guard, 'resource' => 'content.terms', 'action' => 'view', 'group' => 'Content', 'description' => 'View Terms & Conditions'],
+            ['name' => 'content.terms.create', 'guard_name' => $guard, 'resource' => 'content.terms', 'action' => 'create', 'group' => 'Content', 'description' => 'Create Terms & Conditions'],
+            ['name' => 'content.terms.edit', 'guard_name' => $guard, 'resource' => 'content.terms', 'action' => 'edit', 'group' => 'Content', 'description' => 'Edit Terms & Conditions'],
+            ['name' => 'content.terms.delete', 'guard_name' => $guard, 'resource' => 'content.terms', 'action' => 'delete', 'group' => 'Content', 'description' => 'Delete Terms & Conditions'],
+
+            ['name' => 'content.privacy.view', 'guard_name' => $guard, 'resource' => 'content.privacy', 'action' => 'view', 'group' => 'Content', 'description' => 'View Privacy Policy'],
+            ['name' => 'content.privacy.create', 'guard_name' => $guard, 'resource' => 'content.privacy', 'action' => 'create', 'group' => 'Content', 'description' => 'Create Privacy Policy'],
+            ['name' => 'content.privacy.edit', 'guard_name' => $guard, 'resource' => 'content.privacy', 'action' => 'edit', 'group' => 'Content', 'description' => 'Edit Privacy Policy'],
+            ['name' => 'content.privacy.delete', 'guard_name' => $guard, 'resource' => 'content.privacy', 'action' => 'delete', 'group' => 'Content', 'description' => 'Delete Privacy Policy'],
+
+            ['name' => 'content.warranty.view', 'guard_name' => $guard, 'resource' => 'content.warranty', 'action' => 'view', 'group' => 'Content', 'description' => 'View Warranty Claims'],
+            ['name' => 'content.warranty.create', 'guard_name' => $guard, 'resource' => 'content.warranty', 'action' => 'create', 'group' => 'Content', 'description' => 'Create Warranty Claim'],
+            ['name' => 'content.warranty.edit', 'guard_name' => $guard, 'resource' => 'content.warranty', 'action' => 'edit', 'group' => 'Content', 'description' => 'Edit Warranty Claim'],
+            ['name' => 'content.warranty.delete', 'guard_name' => $guard, 'resource' => 'content.warranty', 'action' => 'delete', 'group' => 'Content', 'description' => 'Delete Warranty Claim'],
+
             // Profile
             ['name' => 'profile.view', 'guard_name' => $guard, 'resource' => 'profile', 'action' => 'view', 'group' => 'Profile', 'description' => 'View profile'],
             ['name' => 'profile.edit', 'guard_name' => $guard, 'resource' => 'profile', 'action' => 'edit', 'group' => 'Profile', 'description' => 'Edit profile'],

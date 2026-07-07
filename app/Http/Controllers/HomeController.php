@@ -38,6 +38,17 @@ class HomeController extends Controller
             ->limit(10)
             ->get();
 
-        return view('dashboard', compact('orders', 'stats', 'month'));
+        $daysInMonth = (int) now()->setDate($year, $monthNum, 1)->endOfMonth()->format('d');
+        $dailyStats = [];
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $dayStart = now()->setDate($year, $monthNum, $d)->startOfDay();
+            $dayEnd = $dayStart->copy()->endOfDay();
+            $dailyStats[] = [
+                'day' => $d,
+                'total' => Order::whereBetween('created_at', [$dayStart, $dayEnd])->count(),
+            ];
+        }
+
+        return view('dashboard', compact('orders', 'stats', 'month', 'dailyStats'));
     }
 }
