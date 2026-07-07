@@ -18,6 +18,30 @@ class WarehouseLocation extends Model
         return ['created_at' => 'datetime', 'updated_at' => 'datetime'];
     }
 
+    public function getTypeAttribute($value)
+    {
+        $map = [
+            1 => 'zone',
+            2 => 'area',
+            3 => 'rack',
+            4 => 'shelf',
+            5 => 'bin',
+        ];
+        return $map[$value] ?? 'zone';
+    }
+
+    public function setTypeAttribute($value)
+    {
+        $map = [
+            'zone' => 1,
+            'area' => 2,
+            'rack' => 3,
+            'shelf' => 4,
+            'bin' => 5,
+        ];
+        $this->attributes['type'] = $map[$value] ?? 1;
+    }
+
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class, 'warehouse_id');

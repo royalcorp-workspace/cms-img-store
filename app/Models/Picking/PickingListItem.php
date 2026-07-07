@@ -26,6 +26,28 @@ class PickingListItem extends Model
         ];
     }
 
+    public function getStatusAttribute($value)
+    {
+        $map = [
+            1 => 'pending',
+            2 => 'picked',
+            3 => 'partial',
+            4 => 'not_available',
+        ];
+        return $map[$value] ?? 'pending';
+    }
+
+    public function setStatusAttribute($value)
+    {
+        $map = [
+            'pending' => 1,
+            'picked' => 2,
+            'partial' => 3,
+            'not_available' => 4,
+        ];
+        $this->attributes['status'] = $map[$value] ?? 1;
+    }
+
     public function pickingList(): BelongsTo
     {
         return $this->belongsTo(PickingList::class, 'picking_list_id');

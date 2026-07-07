@@ -19,6 +19,30 @@ class Delivery extends Model
         return ['shipped_at' => 'timestamp', 'delivered_at' => 'timestamp'];
     }
 
+    public function getStatusAttribute($value)
+    {
+        $map = [
+            1 => 'pending',
+            2 => 'in_transit',
+            3 => 'delivered',
+            4 => 'failed',
+            5 => 'returned',
+        ];
+        return $map[$value] ?? 'pending';
+    }
+
+    public function setStatusAttribute($value)
+    {
+        $map = [
+            'pending' => 1,
+            'in_transit' => 2,
+            'delivered' => 3,
+            'failed' => 4,
+            'returned' => 5,
+        ];
+        $this->attributes['status'] = $map[$value] ?? 1;
+    }
+
     public function packingOut(): BelongsTo
     {
         return $this->belongsTo(PackingOut::class, 'packing_out_id');

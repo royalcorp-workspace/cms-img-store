@@ -21,6 +21,28 @@ class PackingOut extends Model
         return ['created_at' => 'datetime', 'updated_at' => 'datetime'];
     }
 
+    public function getStatusAttribute($value)
+    {
+        $map = [
+            1 => 'draft',
+            2 => 'ready',
+            3 => 'out',
+            4 => 'cancelled',
+        ];
+        return $map[$value] ?? 'draft';
+    }
+
+    public function setStatusAttribute($value)
+    {
+        $map = [
+            'draft' => 1,
+            'ready' => 2,
+            'out' => 3,
+            'cancelled' => 4,
+        ];
+        $this->attributes['status'] = $map[$value] ?? 1;
+    }
+
     public function packingSlip(): BelongsTo
     {
         return $this->belongsTo(PackingSlip::class, 'packing_slip_id');

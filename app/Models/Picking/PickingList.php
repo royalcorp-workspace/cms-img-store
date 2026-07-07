@@ -25,6 +25,30 @@ class PickingList extends Model
         ];
     }
 
+    public function getStatusAttribute($value)
+    {
+        $map = [
+            1 => 'draft',
+            2 => 'pending',
+            3 => 'picking',
+            4 => 'picked',
+            5 => 'cancelled',
+        ];
+        return $map[$value] ?? 'draft';
+    }
+
+    public function setStatusAttribute($value)
+    {
+        $map = [
+            'draft' => 1,
+            'pending' => 2,
+            'picking' => 3,
+            'picked' => 4,
+            'cancelled' => 5,
+        ];
+        $this->attributes['status'] = $map[$value] ?? 1;
+    }
+
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class, 'order_id');
