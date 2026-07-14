@@ -13,8 +13,11 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RoleHasPermissionsSeeder::class,
             MenuSeeder::class,
-            DashboardSeeder::class,
+            // DashboardSeeder::class,
             UserAdminSeeder::class,
+            PaymentMethodSeeder::class,
+            CourierSeeder::class,
+            MattressProductSeeder::class,
         ]);
     }
 }

@@ -3,6 +3,20 @@
 @section('title', 'Order Details')
 
 @section('content')
+    @if(session('success'))
+        <div class="flex items-center gap-3 p-4 mb-6 bg-green-50 border border-green-200 text-green-800 rounded-xl shadow-sm">
+            <span class="material-symbols-outlined text-green-600">check_circle</span>
+            <p class="font-body-md text-body-md font-medium">{{ session('success') }}</p>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="flex items-center gap-3 p-4 mb-6 bg-red-50 border border-red-200 text-red-800 rounded-xl shadow-sm">
+            <span class="material-symbols-outlined text-red-600">error</span>
+            <p class="font-body-md text-body-md font-medium">{{ session('error') }}</p>
+        </div>
+    @endif
+
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
             <h1 class="font-headline-lg text-headline-lg text-on-surface">Order Details</h1>
@@ -20,7 +34,8 @@
         </button>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-container-gap mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-container-gap mb-8">
+        <!-- Customer Info Card -->
         <div class="bg-white rounded-xl shadow-sm p-card-padding">
             <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 bg-primary-container/10 rounded-lg flex items-center justify-center text-primary">
@@ -42,6 +57,53 @@
                     <p class="font-body-md text-body-md text-on-surface-variant">Guest</p>
                 @endif
             </div>
+        </div>
+
+        <!-- Shipping Address Card -->
+        <div class="bg-white rounded-xl shadow-sm p-card-padding">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-primary-container/10 rounded-lg flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined">local_shipping</span>
+                </div>
+                <h3 class="font-headline-md text-headline-md text-on-surface">Shipping Address</h3>
+            </div>
+            @if(!empty($order->meta['shipping_address']))
+                @php
+                    $shipAddr = $order->meta['shipping_address'];
+                @endphp
+                <div class="space-y-2">
+                    <p class="font-headline-md text-headline-md text-on-surface font-semibold">{{ $shipAddr['recipient_name'] ?? 'N/A' }}</p>
+                    <p class="font-body-md text-body-md text-on-surface-variant">{{ $shipAddr['phone'] ?? 'N/A' }}</p>
+                    <div class="pt-2 border-t border-outline-variant/30">
+                        <p class="font-body-md text-body-md text-on-surface">{{ $shipAddr['address'] ?? 'N/A' }}</p>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                            {{ $shipAddr['sub_district'] ?? '' }}{{ !empty($shipAddr['city']) ? ', ' . $shipAddr['city'] : '' }}
+                        </p>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant">
+                            {{ $shipAddr['province'] ?? '' }} {{ $shipAddr['postal_code'] ?? '' }}
+                        </p>
+                    </div>
+                </div>
+            @elseif($order->customer && method_exists($order->customer, 'addresses') && $order->customer->addresses->isNotEmpty())
+                @php
+                    $primaryAddr = $order->customer->addresses->where('is_primary', true)->first() ?? $order->customer->addresses->first();
+                @endphp
+                <div class="space-y-2">
+                    <p class="font-headline-md text-headline-md text-on-surface font-semibold">{{ $primaryAddr->recipient_name }}</p>
+                    <p class="font-body-md text-body-md text-on-surface-variant">{{ $primaryAddr->phone }}</p>
+                    <div class="pt-2 border-t border-outline-variant/30">
+                        <p class="font-body-md text-body-md text-on-surface">{{ $primaryAddr->address }}</p>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                            {{ $primaryAddr->subDistrict->sub_district ?? '' }}{{ !empty($primaryAddr->subDistrict->city->name) ? ', ' . $primaryAddr->subDistrict->city->name : '' }}
+                        </p>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant">
+                            {{ $primaryAddr->subDistrict->city->province->name ?? '' }} {{ $primaryAddr->postal_code }}
+                        </p>
+                    </div>
+                </div>
+            @else
+                <p class="font-body-md text-body-md text-on-surface-variant italic">No shipping address recorded.</p>
+            @endif
         </div>
 
         <div class="bg-white rounded-xl shadow-sm p-card-padding">
@@ -189,6 +251,111 @@
             </div>
         </div>
     </div>
+
+    @if(str_contains(strtolower($order->payment_method), 'transfer_manual') || str_contains(strtolower($order->payment_method), 'manual'))
+        @php
+            $paymentProof = $order->meta['payment_proof'] ?? null;
+        @endphp
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-primary/20 bg-primary/5">
+            <h3 class="font-headline-md text-headline-md text-on-surface mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">gavel</span> Manual Payment Reconciliation
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <!-- Payment Proof Column -->
+                <div class="md:col-span-5 flex flex-col justify-center items-center bg-surface-container rounded-xl p-4 border border-outline-variant/30 min-h-[250px]">
+                    @if($paymentProof)
+                        <p class="font-label-sm text-label-sm text-secondary mb-2">BUKTI TRANSFER YANG DIUNGGAH</p>
+                        <a href="{{ env('FRONTEND_URL', 'http://127.0.0.1:81') }}/storage/{{ $paymentProof }}" target="_blank" class="group relative block overflow-hidden rounded-lg border border-outline-variant max-h-[300px]">
+                            <img src="{{ env('FRONTEND_URL', 'http://127.0.0.1:81') }}/storage/{{ $paymentProof }}" alt="Bukti Transfer" class="object-contain max-h-[300px] hover:scale-105 transition-all duration-300">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-label-md">
+                                <span class="material-symbols-outlined mr-1">zoom_in</span> Buka Ukuran Penuh
+                            </div>
+                        </a>
+                    @else
+                        <div class="text-center py-8">
+                            <span class="material-symbols-outlined text-outline-variant text-[48px] mb-2">no_photography</span>
+                            <p class="font-body-md text-body-md text-on-surface-variant font-medium">Belum ada bukti transfer yang diunggah oleh pelanggan.</p>
+                        </div>
+                    @endif
+                </div>
+                
+                <!-- Action / Verification Column -->
+                <div class="md:col-span-7 flex flex-col justify-between">
+                    <div>
+                        @if((int)$order->payment_status === \App\Models\Order\Order::PAYMENT_PAID)
+                            <div class="bg-green-50 border border-green-200 rounded-xl p-5 text-green-800 space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-[24px] text-green-600">verified</span>
+                                    <h4 class="font-headline-md text-headline-md font-bold text-green-950">Pembayaran Terverifikasi</h4>
+                                </div>
+                                <p class="font-body-md text-body-md text-green-700">
+                                    Pembayaran untuk order ini telah berhasil diverifikasi lunas (Paid) dan direkonsiliasi.
+                                </p>
+                                <div class="bg-white rounded-lg p-3 text-sm text-on-surface border border-green-100">
+                                    <div class="grid grid-cols-2 gap-2 mb-2 font-medium text-xs text-secondary border-b pb-1">
+                                        <div>VERIFIKATOR</div>
+                                        <div>TANGGAL VERIFIKASI</div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 mb-3 text-xs text-on-surface-variant font-mono">
+                                        <div>
+                                            @php
+                                                $reconciledBy = \DB::table('users')->find($order->meta['reconciled_by'] ?? null);
+                                            @endphp
+                                            {{ $reconciledBy->name ?? 'Admin System' }}
+                                        </div>
+                                        <div>{{ !empty($order->meta['reconciled_at']) ? Carbon\Carbon::parse($order->meta['reconciled_at'])->format('d M Y H:i') : '-' }}</div>
+                                    </div>
+                                    <div class="text-xs">
+                                        <div class="font-medium text-secondary mb-1">CATATAN REKONSILISASI</div>
+                                        <div class="italic text-on-surface-variant">"{{ $order->meta['reconciliation_notes'] ?? 'Tidak ada catatan.' }}"</div>
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <p class="font-body-md text-body-md text-on-surface-variant mb-4">
+                                Periksa bukti transfer di sebelah kiri. Jika nominal transfer dan nama rekening pengirim sudah sesuai dengan total tagihan order ini, silakan lakukan verifikasi pembayaran di bawah.
+                            </p>
+                            
+                            <form method="POST" action="{{ route('orders.verify-payment', $order->id) }}" class="space-y-4">
+                                @csrf
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="space-y-1.5">
+                                        <label class="block text-label-sm font-medium text-on-surface-variant">Update Status Pembayaran</label>
+                                        <select name="payment_status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                                            <option value="0" {{ $order->payment_status == 0 ? 'selected' : '' }}>Unpaid (Belum Bayar)</option>
+                                            <option value="1" {{ $order->payment_status == 1 ? 'selected' : '' }}>Paid (Lunas)</option>
+                                            <option value="2" {{ $order->payment_status == 2 ? 'selected' : '' }}>Failed (Gagal / Ditolak)</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-label-sm font-medium text-on-surface-variant">Update Status Order</label>
+                                        <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                                            <option value="1" {{ $order->status == 1 ? 'selected' : '' }}>Pending Approval</option>
+                                            <option value="2" {{ $order->status == 2 ? 'selected' : '' }}>Confirmed (Diterima)</option>
+                                            <option value="3" {{ $order->status == 3 ? 'selected' : '' }}>Processing (Diproses)</option>
+                                            <option value="6" {{ $order->status == 6 ? 'selected' : '' }}>Cancelled (Dibatalkan)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-1.5">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant">Catatan Rekonsiliasi (Internal)</label>
+                                    <textarea name="reconciliation_notes" rows="2" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g., Transfer Mandiri a/n Budi sesuai nominal. Pembayaran disetujui.">{{ $order->meta['reconciliation_notes'] ?? '' }}</textarea>
+                                </div>
+                                
+                                <div class="flex justify-end pt-2">
+                                    <button type="submit" class="px-6 py-2.5 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined">verified</span> Simpan Verifikasi & Update Status
+                                    </button>
+                                </div>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <section class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
         <div class="p-card-padding border-b border-outline-variant flex justify-between items-center">

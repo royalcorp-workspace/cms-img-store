@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use App\Models\Store\StoreChannelStock;
+
 class Store extends Model
 {
     protected $table = 'store';
@@ -66,5 +68,10 @@ class Store extends Model
     public function channels(): HasMany
     {
         return $this->hasMany(StoreChannel::class, 'store_id');
+    }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(StoreChannelStock::class, 'store_id');
     }
 }

@@ -14,7 +14,7 @@ class StoreGroupController extends ApiController
         $query = StoreGroup::query();
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'ilike', '%' . $request->search . '%');
         }
 
         $storeGroups = $query->paginate(15);

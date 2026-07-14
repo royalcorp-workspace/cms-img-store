@@ -13,7 +13,7 @@ class BlogPostController extends Controller
         $query = BlogPost::query();
 
         if ($search = $request->query('search')) {
-            $query->where('title', 'like', "%{$search}%");
+            $query->where('title', 'ilike', "%{$search}%");
         }
 
         $posts = $query->orderBy('sort_order')->orderByDesc('published_at')->paginate(15)->appends($request->query());
@@ -42,8 +42,8 @@ class BlogPostController extends Controller
             'meta_description' => 'nullable|string',
         ]);
 
-        $validated['creator'] = auth()->id();
-        $validated['editor'] = auth()->id();
+        $validated['creator'] = auth()->user()->name ?? 'admin';
+        $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['is_published'] = $request->boolean('is_published');
         $validated['is_featured'] = $request->boolean('is_featured');
 
@@ -77,7 +77,7 @@ class BlogPostController extends Controller
             'meta_description' => 'nullable|string',
         ]);
 
-        $validated['editor'] = auth()->id();
+        $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['is_published'] = $request->boolean('is_published');
         $validated['is_featured'] = $request->boolean('is_featured');
 

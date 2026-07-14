@@ -37,7 +37,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Type <span class="text-danger">*</span></label>
-                    <select name="type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
+                    <select name="type" id="typeSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
                         <option value="1" {{ old('type', '1') == '1' ? 'selected' : '' }}>Bank Transfer</option>
                         <option value="2" {{ old('type') == '2' ? 'selected' : '' }}>Virtual Account</option>
                         <option value="3" {{ old('type') == '3' ? 'selected' : '' }}>E-Wallet</option>
@@ -105,6 +105,45 @@
                     @error('maximum_amount')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
             </div>
+            
+            <div id="bankInfoFields" class="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 mt-4 hidden">
+                <div class="flex items-center justify-between border-b pb-3 mb-4">
+                    <h3 class="text-label-md font-bold text-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">account_balance</span> Manual Bank Transfer Details
+                    </h3>
+                    <button type="button" id="add-bank-btn" class="px-3 py-1.5 bg-primary text-white rounded-lg font-label-sm hover:opacity-90 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]">add</span> Add Bank
+                    </button>
+                </div>
+                
+                <div id="banks-container" class="space-y-4">
+                    @php
+                        $banks = old('banks', [['bank_name' => '', 'account_number' => '', 'account_holder' => '']]);
+                    @endphp
+                    
+                    @foreach($banks as $index => $bank)
+                        <div class="bank-row grid grid-cols-1 md:grid-cols-12 gap-4 items-end border-b md:border-0 pb-4 md:pb-0">
+                            <div class="md:col-span-3 space-y-1.5">
+                                <label class="block text-label-sm font-medium text-on-surface-variant">Bank Name</label>
+                                <input type="text" name="banks[{{ $index }}][bank_name]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., BCA, Mandiri" value="{{ $bank['bank_name'] ?? '' }}" required>
+                            </div>
+                            <div class="md:col-span-4 space-y-1.5">
+                                <label class="block text-label-sm font-medium text-on-surface-variant">Account Number</label>
+                                <input type="text" name="banks[{{ $index }}][account_number]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., 123-456-7890" value="{{ $bank['account_number'] ?? '' }}" required>
+                            </div>
+                            <div class="md:col-span-4 space-y-1.5">
+                                <label class="block text-label-sm font-medium text-on-surface-variant">Account Holder Name</label>
+                                <input type="text" name="banks[{{ $index }}][account_holder]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., PT POS Dealer Indonesia" value="{{ $bank['account_holder'] ?? '' }}" required>
+                            </div>
+                            <div class="md:col-span-1 text-right">
+                                <button type="button" class="remove-bank-btn p-2 bg-danger-container text-danger hover:bg-danger/10 rounded-lg flex items-center justify-center w-full md:w-auto" title="Remove Bank">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
         <div class="flex justify-end gap-4">
             <a href="{{ route('payment-methods.index') }}" class="px-8 py-3 border border-outline-variant text-primary font-bold rounded-lg hover:bg-surface-container transition-colors">Cancel</a>
@@ -121,6 +160,57 @@ document.addEventListener('DOMContentLoaded', function() {
     if (checkbox && chargeFields) {
         checkbox.addEventListener('change', function() {
             chargeFields.classList.toggle('hidden', !this.checked);
+        });
+    }
+
+    const typeSelect = document.getElementById('typeSelect');
+    const bankInfoFields = document.getElementById('bankInfoFields');
+    if (typeSelect && bankInfoFields) {
+        const toggleBankFields = () => {
+            bankInfoFields.classList.toggle('hidden', typeSelect.value !== '1');
+        };
+        typeSelect.addEventListener('change', toggleBankFields);
+        toggleBankFields(); // Run on load
+    }
+
+    const banksContainer = document.getElementById('banks-container');
+    const addBankBtn = document.getElementById('add-bank-btn');
+    if (addBankBtn && banksContainer) {
+        addBankBtn.addEventListener('click', function() {
+            const index = banksContainer.querySelectorAll('.bank-row').length;
+            const newRow = document.createElement('div');
+            newRow.className = 'bank-row grid grid-cols-1 md:grid-cols-12 gap-4 items-end border-b md:border-0 pb-4 md:pb-0 mt-4';
+            newRow.innerHTML = `
+                <div class="md:col-span-3 space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Bank Name</label>
+                    <input type="text" name="banks[${index}][bank_name]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., BCA, Mandiri" required>
+                </div>
+                <div class="md:col-span-4 space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Account Number</label>
+                    <input type="text" name="banks[${index}][account_number]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., 123-456-7890" required>
+                </div>
+                <div class="md:col-span-4 space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Account Holder Name</label>
+                    <input type="text" name="banks[${index}][account_holder]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., PT POS Dealer Indonesia" required>
+                </div>
+                <div class="md:col-span-1 text-right">
+                    <button type="button" class="remove-bank-btn p-2 bg-danger-container text-danger hover:bg-danger/10 rounded-lg flex items-center justify-center w-full md:w-auto" title="Remove Bank">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                </div>
+            `;
+            banksContainer.appendChild(newRow);
+        });
+
+        banksContainer.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-bank-btn')) {
+                const row = e.target.closest('.bank-row');
+                if (banksContainer.querySelectorAll('.bank-row').length > 1) {
+                    row.remove();
+                } else {
+                    alert('Minimal harus ada 1 detail bank.');
+                }
+            }
         });
     }
 });

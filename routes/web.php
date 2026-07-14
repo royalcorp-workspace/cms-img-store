@@ -34,6 +34,7 @@ use App\Http\Controllers\Packing\DeliveryController;
 use App\Http\Controllers\Packing\HandoverController;
 use App\Http\Controllers\CourierController;
 use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\ShippingAddressController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/category/{slug}', [CategoryController::class, 'show'])->name('categories.show');
@@ -50,6 +51,9 @@ Route::middleware(['auth:admin', 'admin'])->group(function () {
     Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
 
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/products/import', [ProductController::class, 'importForm'])->name('products.import.form');
+    Route::post('/products/import', [ProductController::class, 'importStore'])->name('products.import.store');
+    Route::get('/products/import/template', [ProductController::class, 'importTemplate'])->name('products.import.template');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
@@ -62,6 +66,7 @@ Route::middleware(['auth:admin', 'admin'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
 
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+    Route::get('/categories/flat', [CategoryController::class, 'flat'])->name('categories.flat');
     Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
     Route::get('/categories/{id}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
     Route::put('/categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
@@ -77,6 +82,8 @@ Route::middleware(['auth:admin', 'admin'])->group(function () {
 
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders/{id}/verify-payment', [OrderController::class, 'verifyPayment'])->name('orders.verify-payment');
+    Route::get('/reconciliation', [\App\Http\Controllers\ReconciliationController::class, 'index'])->name('reconciliation.index');
 
     Route::prefix('picking-list')->name('picking-list.')->group(function () {
         Route::get('/', [PickingListController::class, 'index'])->name('index');
@@ -180,12 +187,27 @@ Route::middleware(['auth:admin', 'admin'])->group(function () {
     Route::put('/store-channels/{id}', [StoreChannelController::class, 'update'])->name('store-channels.update');
     Route::delete('/store-channels/{id}', [StoreChannelController::class, 'destroy'])->name('store-channels.destroy');
 
+    Route::get('/store-channel-stocks', [StoreChannelStockController::class, 'index'])->name('store-channel-stocks.index');
+    Route::get('/store-channel-stocks/create', [StoreChannelStockController::class, 'create'])->name('store-channel-stocks.create');
+    Route::post('/store-channel-stocks', [StoreChannelStockController::class, 'store'])->name('store-channel-stocks.store');
+    Route::get('/store-channel-stocks/{id}/edit', [StoreChannelStockController::class, 'edit'])->name('store-channel-stocks.edit');
+    Route::put('/store-channel-stocks/{id}', [StoreChannelStockController::class, 'update'])->name('store-channel-stocks.update');
+    Route::delete('/store-channel-stocks/{id}', [StoreChannelStockController::class, 'destroy'])->name('store-channel-stocks.destroy');
+
     Route::get('/couriers', [CourierController::class, 'index'])->name('couriers.index');
     Route::get('/couriers/create', [CourierController::class, 'create'])->name('couriers.create');
     Route::post('/couriers', [CourierController::class, 'store'])->name('couriers.store');
     Route::get('/couriers/{id}/edit', [CourierController::class, 'edit'])->name('couriers.edit');
     Route::put('/couriers/{id}', [CourierController::class, 'update'])->name('couriers.update');
     Route::delete('/couriers/{id}', [CourierController::class, 'destroy'])->name('couriers.destroy');
+
+    Route::get('/shipping-addresses', [ShippingAddressController::class, 'index'])->name('shipping-addresses.index');
+    Route::get('/shipping-addresses/create', [ShippingAddressController::class, 'create'])->name('shipping-addresses.create');
+    Route::post('/shipping-addresses', [ShippingAddressController::class, 'store'])->name('shipping-addresses.store');
+    Route::post('/shipping-addresses/save-inline', [ShippingAddressController::class, 'saveInline'])->name('shipping-addresses.save-inline');
+    Route::get('/shipping-addresses/{id}/edit', [ShippingAddressController::class, 'edit'])->name('shipping-addresses.edit');
+    Route::put('/shipping-addresses/{id}', [ShippingAddressController::class, 'update'])->name('shipping-addresses.update');
+    Route::delete('/shipping-addresses/{id}', [ShippingAddressController::class, 'destroy'])->name('shipping-addresses.destroy');
 
     Route::get('/payment-methods', [PaymentMethodController::class, 'index'])->name('payment-methods.index');
     Route::get('/payment-methods/create', [PaymentMethodController::class, 'create'])->name('payment-methods.create');

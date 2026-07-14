@@ -17,8 +17,8 @@ class PickingListController extends Controller
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('id', 'like', "%{$search}%")
-                  ->orWhere('order_number', 'like', "%{$search}%");
+                $q->where('id', 'ilike', "%{$search}%")
+                  ->orWhere('order_number', 'ilike', "%{$search}%");
             });
         }
 

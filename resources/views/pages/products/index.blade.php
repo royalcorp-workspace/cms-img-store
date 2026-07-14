@@ -12,10 +12,16 @@
                 <span>Products</span>
             </nav>
         </div>
-        <a href="{{ route('products.create') }}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md text-label-md hover:opacity-90 transition-all shadow-sm">
-            <span class="material-symbols-outlined text-[18px]">add</span>
-            Create Product
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('products.import.form') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container-high text-on-surface hover:bg-surface-container-highest rounded-lg font-label-md text-label-md transition-all border border-outline-variant/30">
+                <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+                Bulk Import
+            </a>
+            <a href="{{ route('products.create') }}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md text-label-md hover:opacity-90 transition-all shadow-sm">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Create Product
+            </a>
+        </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden mb-8">

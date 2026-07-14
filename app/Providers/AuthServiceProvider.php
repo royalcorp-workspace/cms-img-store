@@ -30,7 +30,11 @@ class AuthServiceProvider extends ServiceProvider
             return;
         }
 
-        $permissions = DB::table('permissions')->where('is_active', true)->get();
+        $query = DB::table('permissions');
+        if (Schema::hasColumn('permissions', 'is_active')) {
+            $query->where('is_active', true);
+        }
+        $permissions = $query->get();
 
         foreach ($permissions as $permission) {
             Gate::define($permission->name, function ($user) use ($permission) {

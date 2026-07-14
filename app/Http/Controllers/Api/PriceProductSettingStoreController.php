@@ -16,13 +16,13 @@ class PriceProductSettingStoreController extends ApiController
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->whereHas('store', function ($sq) use ($request) {
-                    $sq->where('name', 'like', '%' . $request->search . '%')->orWhere('code', 'like', '%' . $request->search . '%');
+                    $sq->where('name', 'ilike', '%' . $request->search . '%')->orWhere('code', 'ilike', '%' . $request->search . '%');
                 })
                 ->orWhereHas('product', function ($pq) use ($request) {
-                    $pq->where('name', 'like', '%' . $request->search . '%');
+                    $pq->where('name', 'ilike', '%' . $request->search . '%');
                 })
                 ->orWhereHas('variant', function ($vq) use ($request) {
-                    $vq->where('variant_name', 'like', '%' . $request->search . '%');
+                    $vq->where('variant_name', 'ilike', '%' . $request->search . '%');
                 });
             });
         }

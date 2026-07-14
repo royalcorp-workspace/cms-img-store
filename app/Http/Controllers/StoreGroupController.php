@@ -13,8 +13,8 @@ class StoreGroupController extends Controller
         $query = StoreGroup::query();
 
         if ($search = $request->query('search')) {
-            $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+            $query->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('code', 'ilike', "%{$search}%");
         }
 
         $storeGroups = $query->orderBy('sort_order')->orderBy('name')->paginate(15)->appends($request->query());
@@ -36,8 +36,8 @@ class StoreGroupController extends Controller
             'status' => 'boolean',
         ]);
 
-        $validated['creator'] = auth()->id();
-        $validated['editor'] = auth()->id();
+        $validated['creator'] = auth()->user()->name ?? 'admin';
+        $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['status'] = $request->boolean('status', true);
 
         StoreGroup::create($validated);
@@ -63,7 +63,7 @@ class StoreGroupController extends Controller
             'status' => 'boolean',
         ]);
 
-        $validated['editor'] = auth()->id();
+        $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['status'] = $request->boolean('status', true);
 
         $storeGroup->update($validated);

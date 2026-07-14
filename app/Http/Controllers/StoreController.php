@@ -14,8 +14,8 @@ class StoreController extends Controller
         $query = Store::query()->with(['group', 'tier', 'owner']);
 
         if ($search = $request->query('search')) {
-            $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+            $query->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('code', 'ilike', "%{$search}%");
         }
 
         if ($request->filled('store_group_id')) {
@@ -65,8 +65,8 @@ class StoreController extends Controller
             'status' => 'boolean',
         ]);
 
-        $validated['creator'] = auth()->id();
-        $validated['editor'] = auth()->id();
+        $validated['creator'] = auth()->user()->name ?? 'admin';
+        $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['status'] = $request->boolean('status', true);
         $validated['credit_limit'] = $validated['credit_limit'] ?? 0;
         $validated['outstanding_balance'] = $validated['outstanding_balance'] ?? 0;
@@ -107,7 +107,7 @@ class StoreController extends Controller
             'status' => 'boolean',
         ]);
 
-        $validated['editor'] = auth()->id();
+        $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['status'] = $request->boolean('status', true);
         $validated['credit_limit'] = $validated['credit_limit'] ?? 0;
         $validated['outstanding_balance'] = $validated['outstanding_balance'] ?? 0;

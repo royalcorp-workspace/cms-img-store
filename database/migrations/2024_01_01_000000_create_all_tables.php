@@ -11,6 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Blueprint::macro('createdAtTz', function ($precision = 0) {
+            return $this->timestampTz('created_at', $precision)->nullable();
+        });
+
+        Blueprint::macro('updatedAtTz', function ($precision = 0) {
+            return $this->timestampTz('updated_at', $precision)->nullable();
+        });
+
         // ======================== USERS TABLE ========================
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary();
@@ -22,31 +30,53 @@ return new class extends Migration
             $table->dateTime('email_verified_at')->nullable();
             $table->boolean('is_active')->default(true);
             $table->string('remember_token', 100)->nullable();
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->string('google_id', 255)->nullable();
+            $table->text('firebase_token')->nullable();
+            $table->string('firebase_uid', 255)->nullable();
+            $table->string('auth_provider', 50)->nullable();
+            $table->string('photo_url', 255)->nullable();
+            $table->uuid('creator')->nullable();
+            $table->uuid('editor')->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
         });
 
         // ======================== PERMISSIONS TABLE ========================
         Schema::create('permissions', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('name')->unique();
+            $table->uuid('id')->primary();
+            $table->string('name');
             $table->string('guard_name')->default('web');
+            $table->string('resource')->nullable();
+            $table->string('action')->nullable();
+            $table->string('group')->nullable();
+            $table->string('description')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->createdAtTz();
             $table->updatedAtTz();
+
+            $table->unique(['name', 'guard_name']);
         });
 
         // ======================== ROLES TABLE ========================
         Schema::create('roles', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('name')->unique();
-            $table->bigInteger('parent_id')->nullable();
+            $table->uuid('id')->primary();
+            $table->string('name');
             $table->string('guard_name')->default('web');
+            $table->string('slug')->nullable();
+            $table->text('description')->nullable();
+            $table->integer('level')->default(0);
+            $table->boolean('is_system')->default(false);
+            $table->boolean('is_active')->default(true);
+            $table->uuid('parent_id')->nullable();
+            $table->softDeletes();
             $table->createdAtTz();
             $table->updatedAtTz();
             
+            $table->unique(['name', 'guard_name']);
+        });
+
+        Schema::table('roles', function (Blueprint $table) {
             $table->foreign('parent_id')->references('id')->on('roles')->onDelete('set null');
         });
 
@@ -59,15 +89,15 @@ return new class extends Migration
             $table->string('logo', 500)->nullable();
             $table->integer('sort_order')->default(0);
             $table->smallInteger('status')->default(1)->comment('Status brand (1=aktif, 0=nonaktif)');
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->uuid('creator')->nullable();
+            $table->uuid('editor')->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
         });
 
         // ======================== PRODUCT CATEGORIES TABLE ========================
-        Schema::create('product_categories', function (Blueprint $table) {
+        Schema::create('product_category', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('parent_id')->nullable();
             $table->string('name', 255);
@@ -78,41 +108,43 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->string('meta_title', 255)->nullable();
             $table->longText('meta_description')->nullable();
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->uuid('creator')->nullable();
+            $table->uuid('editor')->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
-            
-            $table->foreign('parent_id')->references('id')->on('product_categories')->onDelete('set null');
+        });
+
+        Schema::table('product_category', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('product_category')->onDelete('set null');
         });
 
         // ======================== PRODUCTS TABLE ========================
         Schema::create('products', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('brand_id')->nullable();
-            $table->uuid('category_id')->nullable();
+            $table->uuid('category_id');
+            $table->uuid('brand_id');
             $table->string('name', 255);
             $table->string('slug', 255)->unique();
+            $table->string('thumbnail', 500)->nullable();
+            $table->string('alt_text', 255)->nullable();
+            $table->string('short_description', 500)->nullable();
             $table->longText('description')->nullable();
-            $table->longText('specification')->nullable();
-            $table->decimal('price', 15, 2)->nullable();
-            $table->integer('stock_quantity')->default(0);
-            $table->string('sku', 100)->unique();
-            $table->string('featured_image', 500)->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_featured')->default(false);
+            $table->boolean('best_seller')->default(false);
+            $table->boolean('is_new')->default(false);
             $table->integer('sort_order')->default(0);
-            $table->string('meta_title', 255)->nullable();
-            $table->longText('meta_description')->nullable();
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->smallInteger('status')->default(1);
+            $table->uuid('creator')->nullable();
+            $table->uuid('editor')->nullable();
+            $table->boolean('deleted')->default(false);
+            $table->string('base_price', 255)->nullable();
+            $table->string('uom', 255)->nullable();
+            $table->json('segments')->nullable();
             $table->createdAtTz();
             $table->updatedAtTz();
             
-            $table->foreign('brand_id')->references('id')->on('brands')->onDelete('set null');
-            $table->foreign('category_id')->references('id')->on('product_categories')->onDelete('set null');
+            $table->foreign('brand_id')->references('id')->on('brands')->onDelete('restrict');
+            $table->foreign('category_id')->references('id')->on('product_category')->onDelete('restrict');
         });
 
         // ======================== PRODUCT TAGS TABLE ========================
@@ -120,9 +152,9 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('name', 100)->unique();
             $table->string('slug', 100)->unique();
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->uuid('creator')->nullable();
+            $table->uuid('editor')->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
         });
@@ -131,14 +163,14 @@ return new class extends Migration
         Schema::create('product_variants', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('product_id')->comment('ID Produk referensi');
-            $table->string('name', 255);
+            $table->string('variant_name', 255);
             $table->string('sku', 100)->nullable();
             $table->decimal('price', 15, 2)->nullable();
             $table->integer('stock_quantity')->default(0);
             $table->json('attributes')->nullable();
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->uuid('creator')->nullable();
+            $table->uuid('editor')->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
             
@@ -163,8 +195,12 @@ return new class extends Migration
             $table->string('code', 50);
             $table->string('name', 100);
             $table->smallInteger('type')->comment('Tipe lokasi (1=zone, 2=area, 3=rack, 4=shelf, 5=bin)');
-            $table->foreignUuid('parent_id')->nullable()->constrained('warehouse_locations');
+            $table->uuid('parent_id')->nullable();
             $table->timestamps();
+        });
+
+        Schema::table('warehouse_locations', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('warehouse_locations');
         });
 
         // ======================== ABOUT US TABLE ========================
@@ -185,9 +221,9 @@ return new class extends Migration
             $table->json('social_media')->nullable();
             $table->boolean('is_active')->default(true);
             $table->integer('sort_order')->default(0);
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->uuid('creator')->nullable();
+            $table->uuid('editor')->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
         });
@@ -213,9 +249,9 @@ return new class extends Migration
             $table->string('name', 100);
             $table->boolean('is_active')->default(true);
             $table->integer('sort_order')->default(0);
-            $table->string('created_by', 100)->nullable();
-            $table->string('updated_by', 100)->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->string('creator', 100)->nullable();
+            $table->string('editor', 100)->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
             $table->string('province_id', 255)->nullable();
@@ -233,9 +269,9 @@ return new class extends Migration
             $table->longText('address');
             $table->string('postal_code', 10)->nullable();
             $table->boolean('is_primary')->default(false);
-            $table->string('created_by', 100)->nullable();
-            $table->string('updated_by', 100)->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->string('creator', 100)->nullable();
+            $table->string('editor', 100)->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
             
@@ -294,6 +330,24 @@ return new class extends Migration
             $table->index(['is_active', 'deleted']);
         });
 
+        // ======================== SHIPPING ADDRESSES TABLE ========================
+        Schema::create('shipping_addresses', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('courier_id');
+            $table->uuid('sub_district_id')->nullable();
+            $table->integer('type')->default(1);
+            $table->integer('price')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->integer('sort_order')->default(0);
+            $table->string('creator', 36)->nullable();
+            $table->string('editor', 36)->nullable();
+            $table->boolean('deleted')->default(false);
+            $table->timestamps();
+
+            $table->foreign('courier_id')->references('id')->on('couriers')->onDelete('cascade');
+            $table->index(['is_active', 'deleted']);
+        });
+
         // ======================== CUSTOMERS TABLE ========================
         Schema::create('customers', function (Blueprint $table) {
             $table->uuid('id')->primary();
@@ -302,9 +356,9 @@ return new class extends Migration
             $table->string('email', 255)->nullable();
             $table->string('phone', 50)->nullable();
             $table->longText('meta')->nullable();
-            $table->string('created_by', 100)->nullable();
-            $table->string('updated_by', 100)->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->string('creator', 100)->nullable();
+            $table->string('editor', 100)->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
             
@@ -314,19 +368,25 @@ return new class extends Migration
         // ======================== VOUCHERS TABLE ========================
         Schema::create('vouchers', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('code', 100)->unique();
+            $table->string('code', 30)->unique();
+            $table->string('title', 200);
             $table->longText('description')->nullable();
-            $table->string('discount_type', 20)->comment('Tipe diskon (fixed, percentage)');
-            $table->decimal('discount_value', 15, 2);
+            $table->smallInteger('type')->default(2);
+            $table->decimal('value', 12, 2);
+            $table->decimal('min_purchase', 12, 2)->default(0.00);
+            $table->decimal('max_discount', 12, 2)->nullable();
             $table->integer('usage_limit')->nullable();
+            $table->integer('usage_limit_per_user')->nullable();
             $table->integer('used_count')->default(0);
-            $table->decimal('minimum_purchase', 15, 2)->nullable();
-            $table->dateTime('valid_from');
-            $table->dateTime('valid_until');
+            $table->timestamp('start_date')->nullable();
+            $table->timestamp('end_date')->nullable();
+            $table->boolean('valid_for_new_customer')->default(false);
             $table->boolean('is_active')->default(true);
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->string('creator', 100)->nullable();
+            $table->string('editor', 100)->nullable();
+            $table->boolean('deleted')->default(false);
+            $table->smallInteger('scope')->default(1);
+            $table->boolean('allow_stacking')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
         });
@@ -459,16 +519,16 @@ return new class extends Migration
 
         // ======================== DELIVERY ITEMS TABLE ========================
         Schema::create('delivery_items', function (Blueprint $table) {
-            $table->char('id', 36)->primary();
-            $table->char('delivery_id', 36);
-            $table->char('packing_slip_item_id', 36)->nullable();
-            $table->char('product_id', 36);
-            $table->char('product_variant_id', 36)->nullable();
+            $table->uuid('id')->primary();
+            $table->uuid('delivery_id');
+            $table->uuid('packing_slip_item_id')->nullable();
+            $table->uuid('product_id');
+            $table->uuid('product_variant_id')->nullable();
             $table->integer('quantity_delivered');
             $table->longText('notes')->nullable();
-            $table->char('created_by', 36)->nullable();
-            $table->char('updated_by', 36)->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->uuid('creator')->nullable();
+            $table->uuid('editor')->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
             
@@ -560,36 +620,39 @@ return new class extends Migration
         // ======================== MENUS TABLE ========================
         Schema::create('menus', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('name', 255)->unique();
-            $table->string('slug', 255)->unique();
+            $table->string('title', 255);
+            $table->string('icon', 255)->nullable();
+            $table->string('route_name', 255)->nullable();
+            $table->string('url', 255)->nullable();
+            $table->string('permission', 255)->nullable();
+            $table->uuid('parent_id')->nullable();
+            $table->integer('order')->default(0);
             $table->boolean('is_active')->default(true);
-            $table->integer('sort_order')->default(0);
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
             $table->createdAtTz();
             $table->updatedAtTz();
+        });
+
+        Schema::table('menus', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('menus')->onDelete('set null');
         });
 
         // ======================== MENU ITEMS TABLE ========================
         Schema::create('menu_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('menu_id');
-            $table->uuid('parent_id')->nullable();
-            $table->string('label', 255);
+            $table->string('title', 255);
             $table->string('icon', 255)->nullable();
-            $table->string('url', 500)->nullable();
-            $table->integer('sort_order')->default(0);
+            $table->string('route_name', 255)->nullable();
+            $table->string('url', 255)->nullable();
+            $table->string('permission', 255)->nullable();
+            $table->integer('order')->default(0);
             $table->boolean('is_active')->default(true);
-            $table->integer('level')->default(1);
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
             $table->createdAtTz();
             $table->updatedAtTz();
-            
+        });
+
+        Schema::table('menu_items', function (Blueprint $table) {
             $table->foreign('menu_id')->references('id')->on('menus')->onDelete('cascade');
-            $table->foreign('parent_id')->references('id')->on('menu_items')->onDelete('set null');
         });
 
         // ======================== MODEL HAS PERMISSIONS TABLE ========================
@@ -597,7 +660,7 @@ return new class extends Migration
             $table->bigIncrements('id');
             $table->string('model_type');
             $table->uuid('model_id');
-            $table->bigInteger('permission_id')->unsigned();
+            $table->uuid('permission_id');
             $table->createdAtTz();
             
             $table->foreign('permission_id')->references('id')->on('permissions')->onDelete('cascade');
@@ -609,7 +672,7 @@ return new class extends Migration
             $table->bigIncrements('id');
             $table->string('model_type');
             $table->uuid('model_id');
-            $table->bigInteger('role_id')->unsigned();
+            $table->uuid('role_id');
             $table->createdAtTz();
             
             $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
@@ -664,9 +727,9 @@ return new class extends Migration
             $table->uuid('product_id');
             $table->string('color_name', 100);
             $table->string('color_code', 20)->nullable();
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->uuid('creator')->nullable();
+            $table->uuid('editor')->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
             
@@ -736,8 +799,8 @@ return new class extends Migration
         // ======================== ROLE HAS PERMISSIONS TABLE ========================
         Schema::create('role_has_permissions', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('permission_id')->unsigned();
-            $table->bigInteger('role_id')->unsigned();
+            $table->uuid('permission_id');
+            $table->uuid('role_id');
             $table->createdAtTz();
             
             $table->foreign('permission_id')->references('id')->on('permissions')->onDelete('cascade');
@@ -748,7 +811,7 @@ return new class extends Migration
         // ======================== USER ADMIN TABLE ========================
         Schema::create('user_admin', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id');
+            $table->uuid('user_id')->nullable();
             $table->string('name', 255);
             $table->string('email', 255)->unique();
             $table->string('phone', 50)->nullable();
@@ -757,9 +820,9 @@ return new class extends Migration
             $table->dateTime('email_verified_at')->nullable();
             $table->rememberToken()->nullable();
             $table->boolean('is_active')->default(true);
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->softDeletesTz('deleted_at');
+            $table->uuid('creator')->nullable();
+            $table->uuid('editor')->nullable();
+            $table->boolean('deleted')->default(false);
             $table->createdAtTz();
             $table->updatedAtTz();
             
@@ -774,7 +837,7 @@ return new class extends Migration
             $table->createdAtTz();
             
             $table->foreign('voucher_id')->references('id')->on('vouchers')->onDelete('cascade');
-            $table->foreign('category_id')->references('id')->on('product_categories')->onDelete('cascade');
+            $table->foreign('category_id')->references('id')->on('product_category')->onDelete('cascade');
             $table->unique(['voucher_id', 'category_id']);
         });
 
@@ -830,6 +893,7 @@ return new class extends Migration
         Schema::dropIfExists('order_items');
         Schema::dropIfExists('orders');
         Schema::dropIfExists('customers');
+        Schema::dropIfExists('shipping_addresses');
         Schema::dropIfExists('couriers');
         Schema::dropIfExists('cache_locks');
         Schema::dropIfExists('cache');
@@ -843,7 +907,7 @@ return new class extends Migration
         Schema::dropIfExists('product_variants');
         Schema::dropIfExists('product_tags');
         Schema::dropIfExists('products');
-        Schema::dropIfExists('product_categories');
+        Schema::dropIfExists('product_category');
         Schema::dropIfExists('brands');
         Schema::dropIfExists('roles');
         Schema::dropIfExists('permissions');

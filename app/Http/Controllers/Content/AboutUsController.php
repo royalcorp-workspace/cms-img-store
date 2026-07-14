@@ -38,8 +38,8 @@ class AboutUsController extends Controller
             'sort_order' => 'nullable|integer|min:0',
         ]);
 
-        $validated['creator'] = auth()->id();
-        $validated['editor'] = auth()->id();
+        $validated['creator'] = auth()->user()->name ?? 'admin';
+        $validated['editor'] = auth()->user()->name ?? 'admin';
 
         AboutUs::create($validated);
 
@@ -73,7 +73,7 @@ class AboutUsController extends Controller
             'sort_order' => 'nullable|integer|min:0',
         ]);
 
-        $validated['editor'] = auth()->id();
+        $validated['editor'] = auth()->user()->name ?? 'admin';
 
         $about->update($validated);
 

@@ -14,7 +14,7 @@ class BlogPostController extends ApiController
         $query = BlogPost::query()->where('is_published', true)->orderBy('sort_order')->orderByDesc('published_at');
 
         if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
+            $query->where('title', 'ilike', '%' . $request->search . '%');
         }
 
         if ($request->filled('featured')) {

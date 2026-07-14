@@ -56,10 +56,18 @@
         </div>
     </div>
 
-    <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30 mb-8">
-        <h2 class="font-headline-lg text-headline-lg text-on-surface mb-4">Order Trends</h2>
-        <div class="relative h-72">
-            <canvas id="orderChart"></canvas>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-container-gap mb-8">
+        <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30">
+            <h2 class="font-headline-lg text-headline-lg text-on-surface mb-4">Order Trends</h2>
+            <div class="relative h-72">
+                <canvas id="orderChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30">
+            <h2 class="font-headline-lg text-headline-lg text-on-surface mb-4">Order Status</h2>
+            <div class="relative h-72">
+                <canvas id="orderPieChart"></canvas>
+            </div>
         </div>
     </div>
 @endsection
@@ -122,6 +130,63 @@
                     beginAtZero: true,
                     ticks: { stepSize: 1, color: '#998374', font: { family: 'Hanken Grotesk', size: 11 } },
                     grid: { color: 'rgba(128, 117, 110, 0.1)' }
+                }
+            }
+        }
+    });
+})();
+
+(function() {
+    const ctx = document.getElementById('orderPieChart');
+    if (!ctx) return;
+
+    const labels = @json(array_values($statusLabels));
+    const keys = @json(array_keys($statusLabels));
+    const statusCounts = @json($stats);
+    const counts = keys.map(k => statusCounts[k] ?? 0);
+    const colors = @json(array_values($statusColors));
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: counts,
+                backgroundColor: colors,
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#80756e',
+                        font: { family: 'Hanken Grotesk', size: 12 },
+                        padding: 14,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#1b1c1a',
+                    titleFont: { family: 'Hanken Grotesk', weight: '600' },
+                    bodyFont: { family: 'Hanken Grotesk' },
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const value = context.parsed;
+                            const pct = total ? ((value / total) * 100).toFixed(1) : 0;
+                            return context.label + ': ' + value + ' (' + pct + '%)';
+                        }
+                    }
                 }
             }
         }

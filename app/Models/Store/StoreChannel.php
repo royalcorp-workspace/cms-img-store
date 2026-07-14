@@ -4,6 +4,9 @@ namespace App\Models\Store;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+use App\Models\Store\StoreChannelStock;
 
 class StoreChannel extends Model
 {
@@ -44,5 +47,10 @@ class StoreChannel extends Model
     public function channelGroup(): BelongsTo
     {
         return $this->belongsTo(StoreChannelGroup::class, 'store_channel_group_id');
+    }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(StoreChannelStock::class, 'store_channel_id');
     }
 }
