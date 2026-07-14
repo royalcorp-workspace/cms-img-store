@@ -14,7 +14,7 @@ class PrivacyPolicyController extends ApiController
         $query = PrivacyPolicy::query()->where('is_published', true)->orderBy('sort_order');
 
         if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
+            $query->where('title', 'ilike', '%' . $request->search . '%');
         }
 
         $items = $query->get();

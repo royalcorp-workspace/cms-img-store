@@ -13,7 +13,7 @@ class FaqController extends Controller
         $query = Faq::query();
 
         if ($search = $request->query('search')) {
-            $query->where('question', 'like', "%{$search}%");
+            $query->where('question', 'ilike', "%{$search}%");
         }
 
         $faqs = $query->orderBy('sort_order')->orderByDesc('created_at')->paginate(15)->appends($request->query());
@@ -34,8 +34,8 @@ class FaqController extends Controller
             'is_published' => 'boolean',
         ]);
 
-        $validated['creator'] = auth()->id();
-        $validated['editor'] = auth()->id();
+        $validated['creator'] = auth()->user()->name ?? 'admin';
+        $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['is_published'] = $request->boolean('is_published');
 
         Faq::create($validated);
@@ -60,7 +60,7 @@ class FaqController extends Controller
             'is_published' => 'boolean',
         ]);
 
-        $validated['editor'] = auth()->id();
+        $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['is_published'] = $request->boolean('is_published');
 
         $faq->update($validated);

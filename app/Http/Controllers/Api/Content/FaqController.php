@@ -14,7 +14,7 @@ class FaqController extends ApiController
         $query = Faq::query()->where('is_published', true)->orderBy('sort_order');
 
         if ($request->filled('search')) {
-            $query->where('question', 'like', '%' . $request->search . '%');
+            $query->where('question', 'ilike', '%' . $request->search . '%');
         }
 
         $faqs = $query->get();

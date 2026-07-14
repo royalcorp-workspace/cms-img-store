@@ -113,7 +113,7 @@ const csrfToken = '{{ csrf_token() }}';
 
 $(document).ready(function () {
     $('#categoryTree').html('Loading...');
-    $.getJSON('/api/v1/categories/flat', function (res) {
+    $.getJSON('{{ route('categories.flat') }}', function (res) {
         const nodes = res.data || [];
         $('#categoryTree').empty();
         const map = {};
@@ -194,7 +194,7 @@ function createCategory(parentName, parentId) {
 }
 
 function editCategory(id) {
-    $.getJSON('/api/v1/categories/' + id, function (res) {
+    $.getJSON('{{ url('categories') }}/' + id + '/edit', function (res) {
         const cat = res.data;
         $('#categoryId').val(cat.id);
         $('#categoryName').val(cat.name);
@@ -211,7 +211,7 @@ function editCategory(id) {
 function deleteCategory(id) {
     if (!confirm('Delete this category? Subcategories will also be removed.')) return;
     $.ajax({
-        url: '/api/v1/categories/' + id,
+        url: '{{ url('categories') }}/' + id,
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': csrfToken },
         success: function () {
@@ -234,7 +234,7 @@ $('#categoryForm').on('submit', function (e) {
         sort_order: parseInt($('#categorySort').val(), 10),
         status: $('#categoryStatus').val() == '1' ? 1 : 0,
     };
-    const url = id ? '/api/v1/categories/' + id : '/api/v1/categories';
+    const url = id ? '{{ url('categories') }}/' + id : '{{ url('categories') }}';
     const method = id ? 'PUT' : 'POST';
 
     $.ajax({
@@ -263,7 +263,7 @@ function closeModal() {
 
 function populateParentSelect() {
     const currentId = $('#categoryId').val();
-    $.getJSON('/api/v1/categories/flat', function (res) {
+    $.getJSON('{{ route('categories.flat') }}', function (res) {
         const allNodes = res.data || [];
         const buildOptions = function (parentId, indent) {
             let html = '';

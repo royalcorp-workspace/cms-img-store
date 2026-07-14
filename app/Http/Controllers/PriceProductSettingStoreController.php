@@ -17,13 +17,13 @@ class PriceProductSettingStoreController extends Controller
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->whereHas('store', function ($sq) use ($search) {
-                    $sq->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
+                    $sq->where('name', 'ilike', "%{$search}%")->orWhere('code', 'ilike', "%{$search}%");
                 })
                 ->orWhereHas('product', function ($pq) use ($search) {
-                    $pq->where('name', 'like', "%{$search}%");
+                    $pq->where('name', 'ilike', "%{$search}%");
                 })
                 ->orWhereHas('variant', function ($vq) use ($search) {
-                    $vq->where('variant_name', 'like', "%{$search}%");
+                    $vq->where('variant_name', 'ilike', "%{$search}%");
                 });
             });
         }

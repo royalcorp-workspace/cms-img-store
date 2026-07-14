@@ -13,9 +13,9 @@ class OrderController extends Controller
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('id', 'like', "%{$search}%")
+                $q->where('id', 'ilike', "%{$search}%")
                   ->orWhereHas('customer', function ($cq) use ($search) {
-                      $cq->where('name', 'like', "%{$search}%");
+                      $cq->where('name', 'ilike', "%{$search}%");
                   });
             });
         }
@@ -81,5 +81,34 @@ class OrderController extends Controller
     {
         $order = Order::with(['customer', 'items.product', 'items.variant'])->findOrFail($id);
         return view('pages.orders.show', compact('order'));
+    }
+
+    public function verifyPayment(Request $request, string $id)
+    {
+        $order = Order::findOrFail($id);
+
+        if ((int)$order->payment_status === Order::PAYMENT_PAID) {
+            return redirect()->route('orders.show', $id)->with('error', 'Pembayaran order ini sudah lunas (Paid) dan tidak dapat direkonsiliasi kembali.');
+        }
+
+        $validated = $request->validate([
+            'payment_status' => 'required|integer|in:0,1,2,3,4',
+            'status' => 'required|integer|in:0,1,2,3,4,5,6,7',
+            'reconciliation_notes' => 'nullable|string|max:1000',
+        ]);
+
+        $meta = $order->meta ?? [];
+        $meta['reconciliation_notes'] = $validated['reconciliation_notes'];
+        $meta['reconciled_at'] = now()->toDateTimeString();
+        $meta['reconciled_by'] = auth()->user()->name ?? 'admin';
+
+        $order->update([
+            'payment_status' => $validated['payment_status'],
+            'status' => $validated['status'],
+            'meta' => $meta,
+            'editor' => auth()->user()->name ?? 'admin',
+        ]);
+
+        return redirect()->route('orders.show', $id)->with('success', 'Order payment reconciliation completed successfully');
     }
 }

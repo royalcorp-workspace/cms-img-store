@@ -20,8 +20,8 @@ class PriceProductSettingController extends Controller
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('code', 'like', "%{$search}%")
-                  ->orWhere('title', 'like', "%{$search}%");
+                $q->where('code', 'ilike', "%{$search}%")
+                  ->orWhere('title', 'ilike', "%{$search}%");
             });
         }
 
@@ -69,7 +69,7 @@ class PriceProductSettingController extends Controller
             ->orderBy('name');
 
         if (request()->has('search') && request('search') != '') {
-            $productsQuery->where('name', 'like', '%' . request('search') . '%');
+            $productsQuery->where('name', 'ilike', '%' . request('search') . '%');
         }
 
         if (request()->has('category') && request('category') != 'all') {
@@ -122,14 +122,14 @@ class PriceProductSettingController extends Controller
             ->orderBy('name');
 
         if (request()->has('search') && request('search') != '') {
-            $productsQuery->where('name', 'like', '%' . request('search') . '%');
+            $productsQuery->where('name', 'ilike', '%' . request('search') . '%');
         }
 
         if (request()->has('category') && request('category') != 'all') {
             $productsQuery->whereHas('category', function($q) {
                 $q->where('slug', request('category'))
                   ->orWhereIn('parent_id', function($q2) {
-                      $q2->select('id')->from('product_category')->where('slug', request('category'));
+                      $q2->select('id')->from("product_category")->where('slug', request('category'));
                   });
             });
         }
@@ -236,7 +236,6 @@ class PriceProductSettingController extends Controller
             if (!empty($variantIds)) {
                 $pivotData = [];
                 $variantPrices = $request->input('variant_prices', []);
-                // Fetch product_id for each variant to prevent Not-Null constraint errors
                 $variants = Variant::whereIn('id', $variantIds)->get(['id', 'product_id'])->keyBy('id');
 
                 foreach ($variantIds as $variantId) {
@@ -320,7 +319,7 @@ class PriceProductSettingController extends Controller
             $variant = Variant::findOrFail($variantData['id']);
             $variant->update([
                 'price' => $variantData['price'],
-                'editor' => Auth::id(),
+                'editor' => Auth::user()->name ?? 'admin',
             ]);
             $updatedProductIds[] = $variant->product_id;
         }
@@ -330,7 +329,7 @@ class PriceProductSettingController extends Controller
                 $product = Product::findOrFail($productId);
                 $product->update([
                     'base_price' => $productData['base_price'],
-                    'editor' => Auth::id(),
+                    'editor' => Auth::user()->name ?? 'admin',
                 ]);
             }
         }

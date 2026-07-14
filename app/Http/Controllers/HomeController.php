@@ -49,6 +49,28 @@ class HomeController extends Controller
             ];
         }
 
-        return view('dashboard', compact('orders', 'stats', 'month', 'dailyStats'));
+        $statusLabels = [
+            'draft' => 'Draft',
+            'pending' => 'Pending Approval',
+            'confirmed' => 'Confirmed',
+            'processing' => 'Processing',
+            'shipped' => 'Shipped',
+            'delivered' => 'Delivered',
+            'cancelled' => 'Cancelled',
+            'returned' => 'Returned',
+        ];
+
+        $statusColors = [
+            'draft' => '#9ca3af',
+            'pending' => '#f59e0b',
+            'confirmed' => '#3b82f6',
+            'processing' => '#6366f1',
+            'shipped' => '#a855f7',
+            'delivered' => '#22c55e',
+            'cancelled' => '#ef4444',
+            'returned' => '#f97316',
+        ];
+
+        return view('dashboard', compact('orders', 'stats', 'month', 'dailyStats', 'statusLabels', 'statusColors'));
     }
 }

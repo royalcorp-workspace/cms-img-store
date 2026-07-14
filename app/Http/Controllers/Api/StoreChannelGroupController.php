@@ -14,7 +14,7 @@ class StoreChannelGroupController extends ApiController
         $query = StoreChannelGroup::query();
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'ilike', '%' . $request->search . '%');
         }
 
         $channelGroups = $query->paginate(15);

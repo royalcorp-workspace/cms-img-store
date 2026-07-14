@@ -14,7 +14,7 @@ class StoreTierController extends ApiController
         $query = StoreTier::query();
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'ilike', '%' . $request->search . '%');
         }
 
         $tiers = $query->paginate(15);

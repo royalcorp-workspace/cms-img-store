@@ -16,7 +16,7 @@ class StoreController extends ApiController
         $query = Store::query()->with(['group', 'tier', 'owner']);
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'ilike', '%' . $request->search . '%');
         }
 
         if ($request->filled('store_group_id')) {

@@ -43,9 +43,9 @@
                     <!-- <span class="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">arrow_back</span> -->
                     
                 </a>
-                <span class="text-on-surface-variant font-body-md text-body-md">
+                <!-- <span class="text-on-surface-variant font-body-md text-body-md">
                     Baru di sini? <a href="#" class="text-brand-gold font-bold hover:underline">Buat akun</a>
-                </span>
+                </span> -->
             </header>
 
             <!-- Form -->

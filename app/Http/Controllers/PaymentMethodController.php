@@ -14,8 +14,8 @@ class PaymentMethodController extends Controller
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('code', 'like', "%{$search}%")
-                  ->orWhere('name', 'like', "%{$search}%");
+                $q->where('code', 'ilike', "%{$search}%")
+                  ->orWhere('name', 'ilike', "%{$search}%");
             });
         }
 
@@ -59,11 +59,15 @@ class PaymentMethodController extends Controller
             'minimum_amount' => 'nullable|numeric|min:0',
             'maximum_amount' => 'nullable|numeric|min:0',
             'sort_order' => 'nullable|integer|min:0',
+            'banks' => 'nullable|array',
+            'banks.*.bank_name' => 'nullable|string|max:100',
+            'banks.*.account_number' => 'nullable|string|max:100',
+            'banks.*.account_holder' => 'nullable|string|max:100',
         ]);
 
         $validated['id'] = (string) \Illuminate\Support\Str::uuid();
-        $validated['creator'] = auth()->id();
-        $validated['editor'] = auth()->id();
+        $validated['creator'] = auth()->user()->name ?? 'admin';
+        $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['status'] = 1;
         $validated['has_charge'] = $request->boolean('has_charge', false);
         $validated['deleted'] = false;
@@ -73,6 +77,22 @@ class PaymentMethodController extends Controller
             $validated['charge_type'] = null;
             $validated['charge_value'] = null;
             $validated['charge_bearer'] = null;
+        }
+
+        if ((int)$validated['type'] === 1 && !empty($request->input('banks'))) {
+            $banks = [];
+            foreach ($request->input('banks') as $bank) {
+                if (!empty($bank['bank_name']) && !empty($bank['account_number']) && !empty($bank['account_holder'])) {
+                    $banks[] = [
+                        'bank_name' => $bank['bank_name'],
+                        'account_number' => $bank['account_number'],
+                        'account_holder' => $bank['account_holder'],
+                    ];
+                }
+            }
+            $validated['bank_info'] = $banks;
+        } else {
+            $validated['bank_info'] = null;
         }
 
         PaymentMethod::create($validated);
@@ -104,9 +124,13 @@ class PaymentMethodController extends Controller
             'minimum_amount' => 'nullable|numeric|min:0',
             'maximum_amount' => 'nullable|numeric|min:0',
             'sort_order' => 'nullable|integer|min:0',
+            'banks' => 'nullable|array',
+            'banks.*.bank_name' => 'nullable|string|max:100',
+            'banks.*.account_number' => 'nullable|string|max:100',
+            'banks.*.account_holder' => 'nullable|string|max:100',
         ]);
 
-        $validated['editor'] = auth()->id();
+        $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['has_charge'] = $request->boolean('has_charge', false);
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
@@ -114,6 +138,22 @@ class PaymentMethodController extends Controller
             $validated['charge_type'] = null;
             $validated['charge_value'] = null;
             $validated['charge_bearer'] = null;
+        }
+
+        if ((int)$validated['type'] === 1 && !empty($request->input('banks'))) {
+            $banks = [];
+            foreach ($request->input('banks') as $bank) {
+                if (!empty($bank['bank_name']) && !empty($bank['account_number']) && !empty($bank['account_holder'])) {
+                    $banks[] = [
+                        'bank_name' => $bank['bank_name'],
+                        'account_number' => $bank['account_number'],
+                        'account_holder' => $bank['account_holder'],
+                    ];
+                }
+            }
+            $validated['bank_info'] = $banks;
+        } else {
+            $validated['bank_info'] = null;
         }
 
         $paymentMethod->update($validated);

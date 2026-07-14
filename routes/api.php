@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\StoreTierController;
 use App\Http\Controllers\Api\StoreChannelGroupController;
 use App\Http\Controllers\Api\StoreChannelController;
+use App\Http\Controllers\Api\StoreChannelStockController;
 use App\Http\Controllers\Api\Content\FaqController;
 use App\Http\Controllers\Api\Content\BlogPostController;
 use App\Http\Controllers\Api\Content\AboutUsController;
@@ -128,6 +129,12 @@ Route::prefix('v1')->group(function () {
         Route::get('store-channels/{id}', [StoreChannelController::class, 'show']);
         Route::put('store-channels/{id}', [StoreChannelController::class, 'update']);
         Route::delete('store-channels/{id}', [StoreChannelController::class, 'destroy']);
+
+        Route::get('store-channel-stocks', [StoreChannelStockController::class, 'index']);
+        Route::post('store-channel-stocks', [StoreChannelStockController::class, 'store']);
+        Route::get('store-channel-stocks/{id}', [StoreChannelStockController::class, 'show']);
+        Route::put('store-channel-stocks/{id}', [StoreChannelStockController::class, 'update']);
+        Route::delete('store-channel-stocks/{id}', [StoreChannelStockController::class, 'destroy']);
 
         Route::get('faqs', [FaqController::class, 'index']);
         Route::get('faqs/{id}', [FaqController::class, 'show']);

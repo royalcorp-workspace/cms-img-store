@@ -17,7 +17,7 @@ class ProductController extends ApiController
         $query = Product::query()->with(['images', 'variants.priceProductSettings', 'colors', 'priceProductSettings']);
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'ilike', '%' . $request->search . '%');
         }
 
         if ($request->filled('status')) {

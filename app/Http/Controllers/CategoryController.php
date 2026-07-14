@@ -13,6 +13,22 @@ class CategoryController extends Controller
         return view('pages.categories.index');
     }
 
+    public function flat()
+    {
+        $categories = Category::all()->map(fn($c) => [
+            'id' => $c->id,
+            'text' => $c->name,
+            'parent' => $c->parent_id ?: '#',
+        ])->values();
+
+        return response()->json([
+            'success' => true,
+            'status_code' => 200,
+            'message' => 'Success',
+            'data' => $categories,
+        ]);
+    }
+
     public function show($slug)
     {
         $category = Category::where('slug', $slug)
@@ -51,13 +67,23 @@ class CategoryController extends Controller
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
         $category = Category::create($validated);
-        return response()->json($category, 201);
+        return response()->json([
+            'success' => true,
+            'status_code' => 201,
+            'message' => 'Category created',
+            'data' => $category,
+        ], 201);
     }
 
     public function edit($id)
     {
         $category = Category::findOrFail($id);
-        return response()->json($category);
+        return response()->json([
+            'success' => true,
+            'status_code' => 200,
+            'message' => 'Success',
+            'data' => $category,
+        ]);
     }
 
     public function update(Request $request, $id)
@@ -72,13 +98,23 @@ class CategoryController extends Controller
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
         $category->update($validated);
-        return response()->json($category);
+        return response()->json([
+            'success' => true,
+            'status_code' => 200,
+            'message' => 'Category updated',
+            'data' => $category,
+        ]);
     }
 
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
         $category->delete();
-        return response()->json(null, 204);
+        return response()->json([
+            'success' => true,
+            'status_code' => 204,
+            'message' => 'Category deleted',
+            'data' => null,
+        ], 204);
     }
 }
