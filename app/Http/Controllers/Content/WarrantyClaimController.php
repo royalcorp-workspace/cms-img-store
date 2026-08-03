@@ -45,17 +45,8 @@ class WarrantyClaimController extends Controller
         $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['is_published'] = $request->boolean('is_published');
 
-        $stepsData = $validated['steps'] ?? null;
-        if (is_string($stepsData)) {
-            $stepsData = json_decode($stepsData, true) ?: null;
-        }
-        $validated['steps'] = $stepsData;
-
-        $docsData = $validated['required_documents'] ?? null;
-        if (is_string($docsData)) {
-            $docsData = json_decode($docsData, true) ?: null;
-        }
-        $validated['required_documents'] = $docsData;
+        $validated['steps'] = $this->toJson($validated['steps'] ?? null);
+        $validated['required_documents'] = $this->toJson($validated['required_documents'] ?? null);
 
         WarrantyClaim::create($validated);
 
@@ -89,17 +80,8 @@ class WarrantyClaimController extends Controller
         $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['is_published'] = $request->boolean('is_published');
 
-        $stepsData = $validated['steps'] ?? null;
-        if (is_string($stepsData)) {
-            $stepsData = json_decode($stepsData, true) ?: null;
-        }
-        $validated['steps'] = $stepsData;
-
-        $docsData = $validated['required_documents'] ?? null;
-        if (is_string($docsData)) {
-            $docsData = json_decode($docsData, true) ?: null;
-        }
-        $validated['required_documents'] = $docsData;
+        $validated['steps'] = $this->toJson($validated['steps'] ?? null);
+        $validated['required_documents'] = $this->toJson($validated['required_documents'] ?? null);
 
         $item->update($validated);
 

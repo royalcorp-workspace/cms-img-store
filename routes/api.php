@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\Content\HowToReturnController;
 use App\Http\Controllers\Api\Content\TermsAndConditionController;
 use App\Http\Controllers\Api\Content\PrivacyPolicyController;
 use App\Http\Controllers\Api\Content\WarrantyClaimController;
+use App\Http\Controllers\Api\BufferController;
 
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -66,6 +67,16 @@ Route::prefix('v1')->group(function () {
 
         Route::get('orders', [OrderController::class, 'index']);
         Route::get('orders/{order}', [OrderController::class, 'show']);
+
+        Route::get('buffers', [BufferController::class, 'index']);
+        Route::post('buffers', [BufferController::class, 'store']);
+        Route::get('buffers/{buffer}', [BufferController::class, 'show']);
+        Route::put('buffers/{buffer}', [BufferController::class, 'update']);
+        Route::delete('buffers/{buffer}', [BufferController::class, 'destroy']);
+        Route::post('buffers/{buffer}/items', [BufferController::class, 'addItem']);
+        Route::put('buffers/{buffer}/items/{item}', [BufferController::class, 'updateItem']);
+        Route::delete('buffers/{buffer}/items/{item}', [BufferController::class, 'destroyItem']);
+        Route::post('buffers/{buffer}/checkout', [BufferController::class, 'checkout']);
 
         Route::get('vouchers', [VoucherController::class, 'index']);
         Route::post('vouchers', [VoucherController::class, 'store']);

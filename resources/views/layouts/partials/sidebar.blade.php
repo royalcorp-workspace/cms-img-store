@@ -104,7 +104,8 @@
             @foreach($menuGroups as $menu)
                 @if(empty($menu['children']))
                     @php
-                        $isActive = request()->routeIs($menu['route_name'] . '*');
+                        $routePrefix = \Illuminate\Support\Str::beforeLast($menu['route_name'], '.');
+                        $isActive = request()->routeIs($routePrefix . '*');
                     @endphp
                     <a class="sidebar-link flex items-center justify-start px-4 py-3 text-sidebar-text hover:bg-sidebar-active/10 hover:text-sidebar-active transition-colors duration-200 gap-3 {{ $isActive ? 'bg-primary-container text-sidebar-active' : '' }}" href="{{ route($menu['route_name']) }}">
                         <span class="material-symbols-outlined shrink-0">{{ $menu['icon'] }}</span>
@@ -114,7 +115,8 @@
                     @php
                         $hasActiveChild = false;
                         foreach($menu['children'] as $child) {
-                            if(request()->routeIs($child['route_name'] . '*')) {
+                            $childPrefix = \Illuminate\Support\Str::beforeLast($child['route_name'], '.');
+                            if(request()->routeIs($childPrefix . '*')) {
                                 $hasActiveChild = true;
                                 break;
                             }
@@ -133,7 +135,8 @@
                                 <div class="py-1 pl-6 flex flex-col border-l border-white/10 ml-6 mt-1 mb-2 gap-1">
                                     @foreach($menu['children'] as $child)
                                         @php
-                                            $isChildActive = request()->routeIs($child['route_name'] . '*');
+                                            $childPrefix = \Illuminate\Support\Str::beforeLast($child['route_name'], '.');
+                                            $isChildActive = request()->routeIs($childPrefix . '*');
                                         @endphp
                                         <a class="sidebar-link flex items-center justify-start py-2 px-3 text-sidebar-text hover:bg-sidebar-active/10 hover:text-sidebar-active rounded transition-colors duration-200 gap-2 {{ $isChildActive ? 'bg-primary-container/50 text-sidebar-active' : '' }}" href="{{ route($child['route_name']) }}">
                                             <span class="material-symbols-outlined shrink-0 text-[18px]">{{ $child['icon'] }}</span>

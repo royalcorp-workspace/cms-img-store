@@ -11,9 +11,12 @@ use App\Models\Product\Category;
 use App\Models\Product\Color;
 use App\Models\Product\Variant;
 use App\Models\Product\Tag;
+use App\Traits\ControllerHelpers;
 
 class ImportProducts extends Command
 {
+    use ControllerHelpers;
+
     protected $signature = 'import:products';
     protected $description = 'Import products from storage/product_import.xlsx';
 
@@ -472,65 +475,5 @@ class ImportProducts extends Command
         }
 
         $product->tags()->sync($tagIds);
-    }
-
-    private function toDecimal($value): ?float
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        return (float) str_replace(['.', ','], ['', '.'], (string) $value);
-    }
-
-    private function toInteger($value): ?int
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        return (int) $value;
-    }
-
-    private function toBoolean($value): bool
-    {
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        if (is_numeric($value)) {
-            return (bool) ((int) $value);
-        }
-
-        $value = strtolower(trim((string) $value));
-
-        return in_array($value, ['1', 'true', 'yes', 'y', 'on'], true);
-    }
-
-    private function toJson($value): ?array
-    {
-        if (empty($value)) {
-            return null;
-        }
-
-        if (is_array($value)) {
-            return array_values(array_filter($value));
-        }
-
-        $value = trim((string) $value);
-
-        if ($value === '') {
-            return null;
-        }
-
-        $decoded = json_decode($value, true);
-
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            return array_values(array_filter($decoded));
-        }
-
-        $parts = array_values(array_filter(array_map('trim', explode(',', $value))));
-
-        return $parts ?: null;
     }
 }
