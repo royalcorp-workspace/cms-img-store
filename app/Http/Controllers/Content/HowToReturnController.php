@@ -43,11 +43,7 @@ class HowToReturnController extends Controller
         $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['is_published'] = $request->boolean('is_published');
 
-        $stepsData = $validated['steps'] ?? null;
-        if (is_string($stepsData)) {
-            $stepsData = json_decode($stepsData, true) ?: null;
-        }
-        $validated['steps'] = $stepsData;
+        $validated['steps'] = $this->toJson($validated['steps'] ?? null);
 
         HowToReturn::create($validated);
 
@@ -77,11 +73,7 @@ class HowToReturnController extends Controller
         $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['is_published'] = $request->boolean('is_published');
 
-        $stepsData = $validated['steps'] ?? null;
-        if (is_string($stepsData)) {
-            $stepsData = json_decode($stepsData, true) ?: null;
-        }
-        $validated['steps'] = $stepsData;
+        $validated['steps'] = $this->toJson($validated['steps'] ?? null);
 
         $item->update($validated);
 

@@ -116,14 +116,20 @@
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
             <div class="p-6 border-b border-outline-variant">
                 <h3 class="font-headline-md text-headline-md text-on-surface">Product Segments</h3>
+                <p class="text-body-sm text-on-surface-variant mt-1">{{ count(array_filter($product->segments, fn($v) => !empty($v))) }} segments defined</p>
             </div>
             <div class="p-6">
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                     @foreach($product->segments as $key => $value)
-                    <div class="border border-outline-variant/30 rounded-lg p-3">
-                        <p class="text-label-xs text-on-surface-variant uppercase tracking-wider mb-1">{{ $key }}</p>
-                        <p class="font-body-md text-body-md text-on-surface font-medium">{{ $value ?: '-' }}</p>
+                    @if(!empty($value))
+                    @php
+                        $segmentKey = is_numeric($key) ? 'Segment ' . $key : \Illuminate\Support\Str::of($key)->replace(['_', '-'], ' ')->title();
+                    @endphp
+                    <div class="border border-outline-variant/30 rounded-lg p-4">
+                        <p class="text-label-xs text-on-surface-variant uppercase tracking-wider mb-1">{{ $segmentKey }}</p>
+                        <p class="font-body-md text-body-md text-on-surface font-medium">{{ $value }}</p>
                     </div>
+                    @endif
                     @endforeach
                 </div>
             </div>
