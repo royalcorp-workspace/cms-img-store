@@ -5,7 +5,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>@yield('title', 'Dashboard') | IMG Admin</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet"/>
@@ -65,38 +65,51 @@
                         "on-tertiary-fixed": "var(--color-on-tertiary-fixed)"
                     },
                     "borderRadius": {
-                        "DEFAULT": "0.125rem",
-                        "lg": "0.25rem",
-                        "xl": "0.5rem",
-                        "full": "0.75rem"
+                        "DEFAULT": "0.5rem",
+                        "sm": "0.375rem",
+                        "md": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem",
+                        "3xl": "2rem",
+                        "full": "9999px"
+                    },
+                    "boxShadow": {
+                        "sm": "0 2px 8px -2px rgba(0, 0, 0, 0.02), 0 1px 3px -1px rgba(0, 0, 0, 0.02)",
+                        "DEFAULT": "0 4px 16px -4px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.02)",
+                        "md": "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.03)",
+                        "lg": "0 20px 40px -8px rgba(0, 0, 0, 0.07), 0 8px 16px -4px rgba(0, 0, 0, 0.03)",
+                        "xl": "0 25px 50px -12px rgba(0, 0, 0, 0.1), 0 12px 24px -6px rgba(0, 0, 0, 0.05)",
+                        "inner": "inset 0 2px 4px 0 rgba(0, 0, 0, 0.03)"
                     },
                     "spacing": {
                         "stack-sm": "8px",
                         "stack-md": "16px",
                         "container-gap": "24px",
                         "gutter": "24px",
-                        "card-padding": "20px",
-                        "sidebar-condensed": "70px",
-                        "sidebar-width": "260px"
+                        "card-padding": "24px",
+                        "sidebar-condensed": "72px",
+                        "sidebar-width": "270px"
                     },
                     "fontFamily": {
-                        "headline-md": ["Hanken Grotesk"],
-                        "headline-lg": ["Hanken Grotesk"],
-                        "label-sm": ["Hanken Grotesk"],
-                        "body-md": ["Hanken Grotesk"],
-                        "metric-display": ["Hanken Grotesk"],
-                        "label-md": ["Hanken Grotesk"],
-                        "headline-xl": ["Hanken Grotesk"],
-                        "body-lg": ["Hanken Grotesk"]
+                        "sans": ["Plus Jakarta Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "metric-display": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"]
                     },
                     "fontSize": {
                         "headline-md": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
                         "headline-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
                         "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600"}],
                         "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "metric-display": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "metric-display": ["24px", {"lineHeight": "30px", "fontWeight": "700"}],
                         "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
-                        "headline-xl": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "headline-xl": ["26px", {"lineHeight": "34px", "fontWeight": "700"}],
                         "body-lg": ["15px", {"lineHeight": "22px", "fontWeight": "400"}]
                     }
                 }
@@ -105,127 +118,286 @@
     </script>
     <style>
         :root {
-            --color-sidebar-bg: #1a1009;
-            --color-surface-gray: #f5f3ef;
+            --color-sidebar-bg: #110c08;
+            --color-surface-gray: #f7f6f3;
             --color-surface-tint: #6e5b4d;
             --color-outline: #80756e;
-            --color-tertiary-fixed: #fbf9f5;
-            --color-surface: #fbf9f5;
-            --color-primary: #100601;
-            --color-tertiary: #0f0703;
+            --color-tertiary-fixed: #fcfbfa;
+            --color-surface: #fcfbfa;
+            --color-primary: #1c0e07;
+            --color-tertiary: #160d07;
             --color-on-error: #ffffff;
             --color-inverse-primary: #dbc2b1;
-            --color-surface-variant: #e4e2de;
+            --color-surface-variant: #e6e4e1;
             --color-on-tertiary: #ffffff;
-            --color-surface-container-high: #eae8e4;
-            --color-sidebar-text: #998374;
-            --color-outline-variant: #d2c4bc;
+            --color-surface-container-high: #eeece8;
+            --color-sidebar-text: #9e8e82;
+            --color-outline-variant: #dccfca;
             --color-error-container: #ffdad6;
-            --color-surface-dim: #dbdad6;
-            --color-success: #22c55e;
-            --color-primary-container: #2b1d12;
+            --color-surface-dim: #dfdeda;
+            --color-success: #10b981;
+            --color-primary-container: #26190f;
             --color-danger: #ef4444;
             --color-secondary-fixed-dim: #e6c18c;
-            --color-surface-container-highest: #e4e2de;
+            --color-surface-container-highest: #e6e4e1;
             --color-on-secondary-container: #795c30;
-            --color-surface-container: #f5f3ef;
-            --color-warning: #ff9800;
-            --color-primary-fixed: #f8decc;
-            --color-background: #fbf9f5;
+            --color-surface-container: #f1efe9;
+            --color-warning: #f59e0b;
+            --color-primary-fixed: #f7ded0;
+            --color-background: #fcfbfa;
             --color-on-secondary: #ffffff;
-            --color-tertiary-container: #291e16;
+            --color-tertiary-container: #2b1f15;
             --color-surface-bright: #ffffff;
-            --color-on-primary-container: #998374;
+            --color-on-primary-container: #9e8e82;
             --color-error: #ba1a1a;
             --color-on-primary-fixed: #26190e;
             --color-on-secondary-fixed-variant: #6e5b4d;
-            --color-on-tertiary-container: #96847a;
-            --color-on-primary-fixed-variant: #554336;
-            --color-on-surface: #1b1c1a;
-            --color-secondary: #76592e;
-            --color-inverse-on-surface: #f2f0ed;
-            --color-secondary-container: #fed7a0;
-            --color-on-background: #1b1c1a;
+            --color-on-tertiary-container: #9a8a7f;
+            --color-on-primary-fixed-variant: #5c4a3d;
+            --color-on-surface: #1e1e1e;
+            --color-secondary: #7f6036;
+            --color-inverse-on-surface: #f6f4f1;
+            --color-secondary-container: #ffdfb3;
+            --color-on-background: #1e1e1e;
             --color-surface-container-lowest: #ffffff;
             --color-on-secondary-fixed: #291800;
             --color-sidebar-active: #ffffff;
-            --color-inverse-surface: #30312e;
+            --color-inverse-surface: #323330;
             --color-on-primary: #ffffff;
             --color-on-tertiary-fixed: #ffffff;
         }
         .dark {
-            --color-sidebar-bg: #121413;
-            --color-surface-gray: #1b1c1a;
+            --color-sidebar-bg: #0f100f;
+            --color-surface-gray: #151615;
             --color-surface-tint: #6e5b4d;
-            --color-outline: #80756e;
-            --color-tertiary-fixed: #291e16;
-            --color-surface: #1b1c1a;
-            --color-primary: #dbc2b1;
-            --color-tertiary: #96847a;
+            --color-outline: #8d837c;
+            --color-tertiary-fixed: #2c2118;
+            --color-surface: #151615;
+            --color-primary: #e2cbbe;
+            --color-tertiary: #a4938a;
             --color-on-error: #ffffff;
-            --color-inverse-primary: #f8decc;
-            --color-surface-variant: #30312e;
-            --color-on-tertiary: #26190e;
-            --color-surface-container-high: #262725;
-            --color-sidebar-text: #a8926e;
-            --color-outline-variant: #3d3228;
+            --color-inverse-primary: #f7ded0;
+            --color-surface-variant: #343532;
+            --color-on-tertiary: #2c2118;
+            --color-surface-container-high: #2a2b29;
+            --color-sidebar-text: #bcaaa4;
+            --color-outline-variant: #493e35;
             --color-error-container: #5c1a1a;
-            --color-surface-dim: #14100c;
-            --color-success: #22c55e;
-            --color-primary-container: #554336;
+            --color-surface-dim: #100d0a;
+            --color-success: #10b981;
+            --color-primary-container: #5c4a3d;
             --color-danger: #ef4444;
-            --color-secondary-fixed-dim: #3d3228;
-            --color-surface-container-highest: #30312e;
-            --color-on-secondary-container: #fed7a0;
-            --color-surface-container: #222120;
-            --color-warning: #ff9800;
-            --color-primary-fixed: #554336;
-            --color-background: #1b1c1a;
+            --color-secondary-fixed-dim: #493e35;
+            --color-surface-container-highest: #343532;
+            --color-on-secondary-container: #ffdfb3;
+            --color-surface-container: #20211f;
+            --color-warning: #f59e0b;
+            --color-primary-fixed: #5c4a3d;
+            --color-background: #151615;
             --color-on-secondary: #291800;
-            --color-tertiary-container: #3d3228;
-            --color-surface-bright: #1e1f1d;
-            --color-on-primary-container: #f8decc;
-            --color-error: #ba1a1a;
-            --color-on-primary-fixed: #f5f3ef;
-            --color-on-secondary-fixed-variant: #a8926e;
-            --color-on-tertiary-container: #e6c18c;
-            --color-on-primary-fixed-variant: #dbc2b1;
-            --color-on-surface: #f2f0ed;
-            --color-secondary: #e6c18c;
-            --color-inverse-on-surface: #1b1c1a;
-            --color-secondary-container: #3d3228;
-            --color-on-background: #f2f0ed;
-            --color-surface-container-lowest: #1b1c1a;
-            --color-on-secondary-fixed: #ffddb0;
-            --color-sidebar-active: #f8decc;
-            --color-inverse-surface: #f2f0ed;
-            --color-on-primary: #26190e;
-            --color-on-tertiary-fixed: #26190e;
+            --color-tertiary-container: #493e35;
+            --color-surface-bright: #242523;
+            --color-on-primary-container: #f7ded0;
+            --color-error: #ffb4ab;
+            --color-on-primary-fixed: #f7f6f3;
+            --color-on-secondary-fixed-variant: #bcaaa4;
+            --color-on-tertiary-container: #e7cfc4;
+            --color-on-primary-fixed-variant: #e2cbbe;
+            --color-on-surface: #f3f0ec;
+            --color-secondary: #e7cfc4;
+            --color-inverse-on-surface: #151615;
+            --color-secondary-container: #493e35;
+            --color-on-background: #f3f0ec;
+            --color-surface-container-lowest: #151615;
+            --color-on-secondary-fixed: #ffe0b2;
+            --color-sidebar-active: #f7ded0;
+            --color-inverse-surface: #f3f0ec;
+            --color-on-primary: #2c2118;
+            --color-on-tertiary-fixed: #2c2118;
         }
+
+        /* Smooth visual fixes */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--color-surface-gray);
+            color: var(--color-on-surface);
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        /* Inputs, Selects & Textareas Premium Reback UX */
+        input, select, textarea {
+            border-radius: 0.375rem !important;
+            border: 1px solid var(--color-outline-variant) !important;
+            padding: 0.5rem 0.75rem;
+            font-size: 13.5px !important;
+            line-height: 1.5 !important;
+            background-color: var(--color-surface-container-lowest) !important;
+            color: var(--color-on-surface) !important;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+            box-shadow: none !important;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none !important;
+            border-color: var(--color-primary) !important;
+            box-shadow: 0 0 0 2px rgba(128, 117, 110, 0.08) !important;
+        }
+
+        /* Dark Mode Inputs Fixes */
         .dark input,
         .dark select,
         .dark textarea {
             background-color: var(--color-surface-container) !important;
-            border-color: #fff !important;
-            color: #fff !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+        }
+        .dark input:focus, .dark select:focus, .dark textarea:focus {
+            border-color: var(--color-primary) !important;
+            box-shadow: 0 0 0 2px rgba(226, 203, 190, 0.1) !important;
+        }
+
+        /* Checkbox styling */
+        input[type="checkbox"] {
+            padding: 0 !important;
+            width: 1rem !important;
+            height: 1rem !important;
+            border-radius: 0.25rem !important;
+            cursor: pointer;
         }
         .dark input[type="checkbox"] {
-            background-color: var(--color-surface-container);
-            border-color: var(--color-outline);
+            background-color: var(--color-surface-container) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
         }
         .dark input[type="checkbox"]:checked {
-            background-color: var(--color-secondary);
-            border-color: var(--color-secondary);
+            background-color: var(--color-secondary) !important;
+            border-color: var(--color-secondary) !important;
         }
-        .dark input[type="checkbox"]:focus {
-            --tw-ring-color: var(--color-secondary);
+
+        /* Reback Card Design */
+        .bg-white {
+            background-color: var(--color-surface-container-lowest) !important;
+            border-radius: 0.75rem !important;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+            border: 1px solid rgba(128, 117, 110, 0.12) !important;
+            transition: all 0.25s ease-in-out;
         }
-        body { font-family: 'Hanken Grotesk', sans-serif; }
+        .bg-white:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        }
+
+        /* Reback Tables styling */
+        table thead tr {
+            background-color: var(--color-surface-gray) !important;
+            border-bottom: 1px solid rgba(128, 117, 110, 0.12) !important;
+        }
+        table th {
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            color: var(--color-on-surface-variant) !important;
+            padding: 0.75rem 1.5rem !important;
+        }
+        table td {
+            padding: 0.875rem 1.5rem !important;
+            font-size: 13.5px !important;
+            vertical-align: middle !important;
+            border-bottom: 1px solid rgba(128, 117, 110, 0.08) !important;
+        }
+        table tbody tr {
+            transition: background-color 0.15s ease-in-out;
+        }
+        table tbody tr:hover {
+            background-color: rgba(128, 117, 110, 0.02) !important;
+        }
+
+        /* Button Enhancements */
+        a[href].bg-primary, button.bg-primary {
+            background-color: var(--color-primary) !important;
+            color: var(--color-on-primary) !important;
+            font-weight: 500 !important;
+            font-size: 13.5px !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 0.375rem !important;
+            transition: all 0.2s ease-in-out !important;
+            box-shadow: none !important;
+            border: 1px solid transparent !important;
+        }
+        a[href].bg-primary:hover, button.bg-primary:hover {
+            opacity: 0.9 !important;
+            transform: none !important;
+        }
+
+        /* Sidebar UI Reback Polishing */
+        aside#sidebar {
+            background-color: var(--color-sidebar-bg) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+            box-shadow: none !important;
+        }
+        .sidebar-link {
+            margin: 2px 14px !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+            font-weight: 500 !important;
+            font-size: 13.5px !important;
+            color: var(--color-sidebar-text) !important;
+            transition: all 0.15s ease-in-out !important;
+            background-color: transparent !important;
+        }
+        .sidebar-link.bg-primary-container,
+        .sidebar-link.bg-primary-container\/50 {
+            background-color: rgba(255, 255, 255, 0.07) !important;
+            color: var(--color-sidebar-active) !important;
+            font-weight: 600 !important;
+        }
+        .sidebar-link:hover {
+            background-color: rgba(255, 255, 255, 0.04) !important;
+            color: var(--color-sidebar-active) !important;
+        }
+        .sidebar-group-header {
+            margin: 2px 14px !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+            font-size: 13.5px !important;
+            color: var(--color-sidebar-text) !important;
+            transition: all 0.15s ease-in-out !important;
+            background-color: transparent !important;
+        }
+        .sidebar-group-header.bg-white\/5 {
+            background-color: transparent !important;
+            color: var(--color-sidebar-active) !important;
+        }
+        .sidebar-group-header:hover {
+            background-color: rgba(255, 255, 255, 0.04) !important;
+            color: var(--color-sidebar-active) !important;
+        }
+
+        /* Material Symbols vertical alignment */
         .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-variation-settings: 'FILL' 0, 'wght' 450, 'GRAD' 0, 'opsz' 24;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
         }
+
+        /* Scrollbar styles */
         .sidebar-scroll::-webkit-scrollbar { width: 4px; }
         .sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--color-surface-gray);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-outline-variant);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-outline);
+        }
+
         .dropdown-item,
         .dropdown-header {
             color: var(--color-on-surface);
@@ -235,6 +407,7 @@
             background-color: var(--color-surface-container-high);
             color: var(--color-on-surface);
         }
+
     </style>
     @stack('styles')
 </head>
@@ -387,6 +560,30 @@
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 showToast('error', {!! json_encode(session('error')) !!});
+            });
+        </script>
+    @endif
+
+    @if(session('warning'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('warning', {!! json_encode(session('warning')) !!});
+            });
+        </script>
+    @endif
+
+    @if(session('info'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('info', {!! json_encode(session('info')) !!});
+            });
+        </script>
+    @endif
+
+    @if(session('status'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('info', {!! json_encode(session('status')) !!});
             });
         </script>
     @endif

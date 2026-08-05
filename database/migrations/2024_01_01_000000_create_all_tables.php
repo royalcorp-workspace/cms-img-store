@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('phone', 50)->nullable();
             $table->string('password', 255);
             $table->string('avatar', 500)->nullable();
+            $table->boolean('email_verified')->default(false);
             $table->dateTime('email_verified_at')->nullable();
             $table->boolean('is_active')->default(true);
             $table->string('remember_token', 100)->nullable();
@@ -155,6 +156,7 @@ return new class extends Migration
             $table->uuid('creator')->nullable();
             $table->uuid('editor')->nullable();
             $table->boolean('deleted')->default(false);
+            $table->smallinteger('sort_order')->default(0);
             $table->createdAtTz();
             $table->updatedAtTz();
         });
@@ -778,6 +780,7 @@ return new class extends Migration
             $table->string('creator', 36)->nullable();
             $table->string('editor', 36)->nullable();
             $table->boolean('deleted')->default(false);
+            $table->json('bank_info')->nullable();
             $table->timestamps();
             
             $table->index(['status', 'deleted']);
@@ -787,7 +790,10 @@ return new class extends Migration
         Schema::create('refresh_tokens', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
-            $table->string('token', 500)->unique();
+            $table->string('token', 500)->nullable();
+            $table->string('token_hash', 255)->unique();
+            $table->string('device_id', 255)->nullable();
+            $table->text('device_info')->nullable();
             $table->dateTime('expires_at');
             $table->boolean('revoked')->default(false);
             $table->createdAtTz();

@@ -27,7 +27,7 @@ class Variant extends Model
         'height',
         'weight',
         'price',
-        'stock_qty',
+        'stock_quantity',
         'min_order_qty',
         'sort_order',
         'status',
@@ -44,7 +44,7 @@ class Variant extends Model
             'height' => 'decimal:2',
             'weight' => 'decimal:2',
             'price' => 'decimal:2',
-            'stock_qty' => 'integer',
+            'stock_quantity' => 'integer',
             'min_order_qty' => 'integer',
             'sort_order' => 'integer',
             'status' => 'boolean',
@@ -52,6 +52,26 @@ class Variant extends Model
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
+    }
+
+    public function getStockQtyAttribute()
+    {
+        return $this->stock_quantity;
+    }
+
+    public function setStockQtyAttribute($value)
+    {
+        $this->attributes['stock_quantity'] = $value;
+    }
+
+    public function getSortOrderAttribute()
+    {
+        return 0;
+    }
+
+    public function setSortOrderAttribute($value)
+    {
+        // Ignored since column does not exist on product_variants
     }
 
     public function product(): BelongsTo

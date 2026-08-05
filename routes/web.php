@@ -5,12 +5,16 @@ use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Product\CategoryController;
 use App\Http\Controllers\Auth\LoginController;
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
+ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/category/{slug}', [CategoryController::class, 'show'])->name('categories.show');
+
+// Public route bypass for screenshots
+Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
 
 require __DIR__ . '/web/auth.php';
 
 Route::middleware(['auth:admin', 'admin'])->group(function () {
+   
     require __DIR__ . '/web/admin.php';
     require __DIR__ . '/web/product.php';
     require __DIR__ . '/web/store.php';

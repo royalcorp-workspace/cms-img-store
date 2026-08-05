@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class PaymentMethod extends Model
 {
+    use HasUuids;
+
     protected $table = 'payment_methods';
 
     protected $keyType = 'string';

@@ -61,8 +61,8 @@ class PriceProductSettingController extends Controller
         $productsQuery = \App\Models\Product\Product::where('deleted', false)
             ->select(['id', 'name', 'category_id', 'base_price'])
             ->with(['variants' => function ($q) {
-                $q->select(['id', 'product_id', 'variant_name', 'sku', 'price', 'stock_qty', 'sort_order'])
-                  ->orderBy('sort_order')->orderBy('variant_name');
+                $q->select(['id', 'product_id', 'variant_name', 'sku', 'price', 'stock_quantity'])
+                  ->orderBy('variant_name');
             }, 'category' => function ($q) {
                 $q->select(['id', 'name', 'slug']);
             }, 'images' => function ($q) {
@@ -93,9 +93,9 @@ class PriceProductSettingController extends Controller
         }
 
         $categories = \App\Models\Product\Category::where('parent_id', null)
-            ->where('status', true)
+            ->where('is_active', true)
             ->with(['children' => function ($q) {
-                $q->where('status', true)->orderBy('sort_order')->orderBy('name');
+                $q->where('is_active', true)->orderBy('sort_order')->orderBy('name');
             }])
             ->orderBy('sort_order')->orderBy('name')
             ->get();
@@ -114,8 +114,8 @@ class PriceProductSettingController extends Controller
         $productsQuery = \App\Models\Product\Product::where('deleted', false)
             ->select(['id', 'name', 'category_id', 'base_price'])
             ->with(['variants' => function ($q) {
-                $q->select(['id', 'product_id', 'variant_name', 'sku', 'price', 'stock_qty', 'sort_order'])
-                  ->orderBy('sort_order')->orderBy('variant_name');
+                $q->select(['id', 'product_id', 'variant_name', 'sku', 'price', 'stock_quantity'])
+                  ->orderBy('variant_name');
             }, 'category' => function ($q) {
                 $q->select(['id', 'name', 'slug']);
             }, 'images' => function ($q) {
@@ -149,9 +149,9 @@ class PriceProductSettingController extends Controller
         }
 
         $categories = \App\Models\Product\Category::where('parent_id', null)
-            ->where('status', true)
+            ->where('is_active', true)
             ->with(['children' => function ($q) {
-                $q->where('status', true)->orderBy('sort_order')->orderBy('name');
+                $q->where('is_active', true)->orderBy('sort_order')->orderBy('name');
             }])
             ->orderBy('sort_order')->orderBy('name')
             ->get();
@@ -287,9 +287,9 @@ class PriceProductSettingController extends Controller
     public function bulk()
     {
         $categories = \App\Models\Product\Category::where('parent_id', null)
-            ->where('status', true)
+            ->where('is_active', true)
             ->with(['children' => function ($q) {
-                $q->where('status', true)->orderBy('sort_order')->orderBy('name');
+                $q->where('is_active', true)->orderBy('sort_order')->orderBy('name');
             }])
             ->orderBy('sort_order')->orderBy('name')
             ->get();
@@ -297,7 +297,7 @@ class PriceProductSettingController extends Controller
         $products = Product::query()
             ->where('deleted', false)
             ->with(['variants' => function ($q) {
-                $q->orderBy('sort_order')->orderBy('variant_name');
+                $q->orderBy('variant_name');
             }, 'category'])
             ->orderBy('name')
             ->get();

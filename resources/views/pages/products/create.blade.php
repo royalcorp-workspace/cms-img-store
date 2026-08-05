@@ -135,13 +135,13 @@
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Variant Name</label>
                                 <input type="text" id="vName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red / Large">
                             </div>
-                            <div class="space-y-1.5">
+                            <div class="space-y-1.5 hidden">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Width</label>
-                                <input type="number" step="0.01" id="vWidth" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
+                                <input type="number" step="0.01" id="vWidth" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm" value="0">
                             </div>
-                            <div class="space-y-1.5">
+                            <div class="space-y-1.5 hidden">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Length</label>
-                                <input type="number" step="0.01" id="vLength" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
+                                <input type="number" step="0.01" id="vLength" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm" value="0">
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Height</label>
@@ -198,8 +198,8 @@
                                             <p class="font-medium text-on-surface">{{ $v->stock_qty ?? 0 }}</p>
                                         </div>
                                         <div>
-                                            <p class="text-on-surface-variant">Dimensions</p>
-                                            <p class="font-medium text-on-surface">{{ $v->width ?? 0 }}x{{ $v->length ?? 0 }}x{{ $v->height ?? 0 }} cm</p>
+                                            <p class="text-on-surface-variant">Height</p>
+                                            <p class="font-medium text-on-surface">{{ $v->height ?? 0 }} cm</p>
                                         </div>
                                         <div>
                                             <p class="text-on-surface-variant">Weight</p>
@@ -266,13 +266,13 @@
                                     <label class="block text-label-sm font-medium text-on-surface-variant">Variant Name</label>
                                     <input type="text" id="mvName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red / Large">
                                 </div>
-                                <div class="space-y-1.5">
+                                <div class="space-y-1.5 hidden">
                                     <label class="block text-label-sm font-medium text-on-surface-variant">Width</label>
-                                    <input type="number" step="0.01" id="mvWidth" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
+                                    <input type="number" step="0.01" id="mvWidth" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm" value="0">
                                 </div>
-                                <div class="space-y-1.5">
+                                <div class="space-y-1.5 hidden">
                                     <label class="block text-label-sm font-medium text-on-surface-variant">Length</label>
-                                    <input type="number" step="0.01" id="mvLength" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
+                                    <input type="number" step="0.01" id="mvLength" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm" value="0">
                                 </div>
                                 <div class="space-y-1.5">
                                     <label class="block text-label-sm font-medium text-on-surface-variant">Height</label>
@@ -519,8 +519,8 @@ function renderVariants() {
                     <p class="font-medium text-on-surface">${v.stock_qty || 0}</p>
                 </div>
                 <div>
-                    <p class="text-on-surface-variant">Dimensions</p>
-                    <p class="font-medium text-on-surface">${v.width || 0}x${v.length || 0}x${v.height || 0} cm</p>
+                    <p class="text-on-surface-variant">Height</p>
+                    <p class="font-medium text-on-surface">${v.height || 0} cm</p>
                 </div>
                 <div>
                     <p class="text-on-surface-variant">Weight</p>
