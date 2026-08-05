@@ -19,6 +19,7 @@ class SubDistrict extends Model
 
     protected $fillable = [
         'province_id',
+        'province',
         'city_id',
         'district',
         'sub_district',

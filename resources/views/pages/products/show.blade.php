@@ -150,7 +150,7 @@
                             <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">SKU</th>
                             <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Price</th>
                             <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Stock</th>
-                            <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Dimensions</th>
+                            <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Height</th>
                             <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Weight</th>
                             <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Status</th>
                         </tr>
@@ -162,7 +162,7 @@
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $variant->sku ?? '-' }}</td>
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-medium">Rp{{ number_format($variant->price ?? 0, 2, ',', '.') }}</td>
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $variant->stock_qty ?? 0 }}</td>
-                            <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $variant->width ?? 0 }}x{{ $variant->length ?? 0 }}x{{ $variant->height ?? 0 }} cm</td>
+                            <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $variant->height ?? 0 }} cm</td>
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $variant->weight ?? 0 }} kg</td>
                             <td class="px-gutter py-4 text-center">
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-label-sm font-label-sm {{ ($variant->status ?? 1) ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger' }}">

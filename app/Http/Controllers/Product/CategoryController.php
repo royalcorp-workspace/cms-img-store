@@ -34,10 +34,10 @@ class CategoryController extends Controller
     public function show($slug)
     {
         $category = Category::where('slug', $slug)
-            ->where('status', true)
+            ->where('is_active', true)
             ->where('deleted', false)
             ->with(['children' => function ($q) {
-                $q->where('status', true)->orderBy('sort_order')->orderBy('name');
+                $q->where('is_active', true)->orderBy('sort_order')->orderBy('name');
             }])
             ->firstOrFail();
 

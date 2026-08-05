@@ -227,6 +227,7 @@
     </form>
 @endsection
 
+@push('scripts')
 <script>
 // Persistent selected variants state
 const selectedVariants = {};

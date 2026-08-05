@@ -19,7 +19,7 @@ class Category extends Model
         'slug',
         'description',
         'sort_order',
-        'status',
+        'is_active',
         'creator',
         'editor',
         'deleted',
@@ -29,11 +29,21 @@ class Category extends Model
     {
         return [
             'sort_order' => 'integer',
-            'status' => 'boolean',
+            'is_active' => 'boolean',
             'deleted' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
+    }
+
+    public function getStatusAttribute()
+    {
+        return $this->is_active;
+    }
+
+    public function setStatusAttribute($value)
+    {
+        $this->attributes['is_active'] = $value;
     }
 
     public function parent(): BelongsTo

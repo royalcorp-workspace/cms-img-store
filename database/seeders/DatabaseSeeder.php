@@ -15,9 +15,11 @@ class DatabaseSeeder extends Seeder
             MenuSeeder::class,
             // DashboardSeeder::class,
             UserAdminSeeder::class,
+            LocationSeeder::class,
             PaymentMethodSeeder::class,
             CourierSeeder::class,
             MattressProductSeeder::class,
+            ContentSeeder::class,
         ]);
     }
 }

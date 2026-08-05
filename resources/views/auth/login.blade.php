@@ -86,10 +86,10 @@
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <input class="w-5 h-5 rounded border-outline-variant text-brand-gold focus:ring-brand-gold transition-colors" id="remember" name="remember" type="checkbox"/>
+                            <!-- <input class="w-5 h-5 rounded border-outline-variant text-brand-gold focus:ring-brand-gold transition-colors" id="remember" name="remember" type="checkbox"/>
                             <label class="font-body-md text-body-md text-on-surface-variant cursor-pointer select-none" for="remember">
                                 Ingat saya selama 30 hari
-                            </label>
+                            </label> -->
                         </div>
 
                         <button class="w-full bg-brand-gold text-brand-brown py-3.5 rounded-lg font-bold flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all group" type="submit">
