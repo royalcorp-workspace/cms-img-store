@@ -61,7 +61,7 @@ class PriceProductSettingStoreController extends Controller
     {
         $products = Product::where('deleted', false)
             ->with(['variants' => function ($q) {
-                $q->orderBy('sort_order')->orderBy('variant_name');
+                $q->orderBy('variant_name');
             }])
             ->orderBy('name')
             ->get();
@@ -97,7 +97,7 @@ class PriceProductSettingStoreController extends Controller
         $pricing = StorePricing::findOrFail($id);
         $products = Product::where('deleted', false)
             ->with(['variants' => function ($q) {
-                $q->orderBy('sort_order')->orderBy('variant_name');
+                $q->orderBy('variant_name');
             }])
             ->orderBy('name')
             ->get();
