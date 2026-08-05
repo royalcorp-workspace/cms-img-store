@@ -5,7 +5,9 @@ use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Product\CategoryController;
 use App\Http\Controllers\Auth\LoginController;
 
- Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/', function () {
+    return redirect()->route('login');
+});
 Route::get('/category/{slug}', [CategoryController::class, 'show'])->name('categories.show');
 
 // Public route bypass for screenshots
