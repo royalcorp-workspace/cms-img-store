@@ -31,6 +31,13 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        if (is_string($request->variants)) {
+            $request->merge(['variants' => json_decode($request->variants, true)]);
+        }
+        if (is_string($request->colors)) {
+            $request->merge(['colors' => json_decode($request->colors, true)]);
+        }
+        
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:products,slug',
@@ -45,7 +52,7 @@ class ProductController extends Controller
             'is_new' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
-            'category_id' => 'nullable|string|exists:categories,id',
+            'category_id' => 'nullable|string|exists:product_category,id',
             'brand_id' => 'nullable|string|exists:brands,id',
             'colors' => 'nullable|array',
             'colors.*.color_name' => 'nullable|string|max:255',
@@ -75,6 +82,11 @@ class ProductController extends Controller
 
         if (isset($validated['variants']) && is_array($validated['variants'])) {
             foreach ($validated['variants'] as $variantData) {
+                // Map stock_qty from frontend to stock_quantity for database
+                if (array_key_exists('stock_qty', $variantData)) {
+                    $variantData['stock_quantity'] = $variantData['stock_qty'];
+                    unset($variantData['stock_qty']);
+                }
                 \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
             }
         }
@@ -96,6 +108,13 @@ class ProductController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (is_string($request->variants)) {
+            $request->merge(['variants' => json_decode($request->variants, true)]);
+        }
+        if (is_string($request->colors)) {
+            $request->merge(['colors' => json_decode($request->colors, true)]);
+        }
+        
         $product = Product::findOrFail($id);
 
         $validated = $request->validate([
@@ -112,7 +131,7 @@ class ProductController extends Controller
             'is_new' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
-            'category_id' => 'nullable|string|exists:categories,id',
+            'category_id' => 'nullable|string|exists:product_category,id',
             'brand_id' => 'nullable|string|exists:brands,id',
             'colors' => 'nullable|array',
             'colors.*.id' => 'nullable|string|exists:product_colors,id',
@@ -162,6 +181,12 @@ class ProductController extends Controller
         if (isset($validated['variants']) && is_array($validated['variants'])) {
             $submittedIds = [];
             foreach ($validated['variants'] as $variantData) {
+                // Map stock_qty from frontend to stock_quantity for database
+                if (array_key_exists('stock_qty', $variantData)) {
+                    $variantData['stock_quantity'] = $variantData['stock_qty'];
+                    unset($variantData['stock_qty']);
+                }
+                
                 if (isset($variantData['id'])) {
                     $submittedIds[] = $variantData['id'];
                     $variant = \App\Models\Product\Variant::find($variantData['id']);

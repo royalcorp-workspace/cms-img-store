@@ -19,6 +19,8 @@
         @endif
     </div>
 
+    @include('layouts.partials.content-submenu')
+
     @if($about)
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -109,7 +111,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-12 text-center">
             <span class="material-symbols-outlined text-[48px] text-on-surface-variant mb-4">info</span>
             <p class="text-body-md text-on-surface-variant mb-4">No About Us content yet.</p>
-            <a href="{{ route('content.about.create') }}" class="inline-flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">
+            <a href="{{ route('content.about.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
                 <span class="material-symbols-outlined text-[18px]">add</span> Create About Us
             </a>
         </div>

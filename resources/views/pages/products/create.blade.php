@@ -9,13 +9,13 @@
     $variants = $product->variants ?? collect([]);
     $colors = $product->colors ?? collect([]);
 
-    function buildCategoryOptions($categories, $parentId = null, $prefix = '')
+    function buildCategoryOptions($categories, $parentId = null, $prefix = '', $selectedId = null)
     {
         $html = '';
         foreach ($categories->where('parent_id', $parentId) as $cat) {
-            $selected = (old('category_id', $product->category_id ?? '') == $cat->id) ? 'selected' : '';
+            $selected = ($selectedId == $cat->id) ? 'selected' : '';
             $html .= '<option value="' . $cat->id . '" ' . $selected . '>' . $prefix . e($cat->name) . '</option>';
-            $html .= buildCategoryOptions($categories, $cat->id, $prefix . '&nbsp;&nbsp;&nbsp;&nbsp;');
+            $html .= buildCategoryOptions($categories, $cat->id, $prefix . '&nbsp;&nbsp;&nbsp;&nbsp;', $selectedId);
         }
         return $html;
     }
@@ -36,6 +36,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.product-submenu')
+
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
         <div class="p-6">
             <div class="flex border-b border-outline-variant mb-6">
@@ -54,6 +56,10 @@
                 <div id="panel-details" class="tab-panel">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-1.5">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Kode Produk <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Kode identitas unik produk (Otomatis dibuat oleh sistem)</span></span></label>
+                            <input type="text" value="{{ $product->code ?? 'Auto Generated' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg bg-surface-container-low text-on-surface-variant cursor-not-allowed font-mono text-sm" disabled>
+                        </div>
+                        <div class="space-y-1.5">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Product Name <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Nama produk yang akan ditampilkan di katalog</span></span></label>
                             <input type="text" name="name" value="{{ $product->name ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter product name" required>
                         </div>
@@ -61,20 +67,23 @@
                             <label class="block text-label-sm font-medium text-on-surface-variant">Category <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Kategori untuk mengelompokkan produk</span></span></label>
                             <select name="category_id" id="categorySelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
                                 <option value="">Select Category</option>
-                                {!! buildCategoryOptions(\App\Models\Product\Category::all()) !!}
+                                {!! buildCategoryOptions(\App\Models\Product\Category::all(), null, '', old('category_id', $product->category_id ?? '')) !!}
                             </select>
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">SKU <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Kode unik untuk identifikasi produk</span></span></label>
-                            <input type="text" name="sku" value="{{ $product->sku ?? $product->id ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter SKU">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Brand <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Merek produk</span></span></label>
+                            <select name="brand_id" id="brandSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                                <option value="">Select Brand</option>
+                                @foreach(\App\Models\Product\Brand::all() as $brand)
+                                    <option value="{{ $brand->id }}" {{ old('brand_id', $product->brand_id ?? '') == $brand->id ? 'selected' : '' }}>
+                                        {{ $brand->name }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Price (Rp) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Harga jual produk dalam Rupiah</span></span></label>
-                            <input type="number" name="price" step="0.01" value="{{ $product->price ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter price">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Stock Quantity <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Jumlah stok tersedia untuk dijual</span></span></label>
-                            <input type="number" name="stock" value="{{ $product->stock ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter stock">
+                        <div class="space-y-1.5 md:col-span-2">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Price (Rp) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Harga dasar produk dalam Rupiah</span></span></label>
+                            <input type="number" name="base_price" step="0.01" value="{{ $product->base_price ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter base price">
                         </div>
                         <div class="md:col-span-2 space-y-2">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Segments</label>
@@ -87,12 +96,50 @@
                                 @endfor
                             </div>
                         </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Status <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Atur apakah produk aktif atau tidak</span></span></label>
-                            <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                                <option value="1" {{ old('status', $product->status ?? 1) == 1 ? 'selected' : '' }}>Active</option>
-                                <option value="0" {{ old('status', $product->status ?? 1) == 0 ? 'selected' : '' }}>Inactive</option>
-                            </select>
+                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="block text-label-sm font-medium text-on-surface-variant">Status Aktif <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Atur apakah produk aktif atau tidak</span></span></label>
+                                <div class="flex items-center gap-4 pt-2">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="status" value="1" {{ old('status', $product->status ?? 1) == 1 ? 'checked' : '' }} class="w-4 h-4 text-primary focus:ring-primary/30 border-outline-variant">
+                                        <span class="text-body-sm text-on-surface font-medium">Yes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="status" value="0" {{ old('status', $product->status ?? 1) == 0 ? 'checked' : '' }} class="w-4 h-4 text-primary focus:ring-primary/30 border-outline-variant">
+                                        <span class="text-body-sm text-on-surface font-medium">No</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="block text-label-sm font-medium text-on-surface-variant">Produk Baru <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Tandai jika ini adalah produk keluaran terbaru</span></span></label>
+                                <div class="flex items-center gap-4 pt-2">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="is_new" value="1" {{ old('is_new', $product->is_new ?? 0) == 1 ? 'checked' : '' }} class="w-4 h-4 text-primary focus:ring-primary/30 border-outline-variant">
+                                        <span class="text-body-sm text-on-surface font-medium">Yes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="is_new" value="0" {{ old('is_new', $product->is_new ?? 0) == 0 ? 'checked' : '' }} class="w-4 h-4 text-primary focus:ring-primary/30 border-outline-variant">
+                                        <span class="text-body-sm text-on-surface font-medium">No</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="block text-label-sm font-medium text-on-surface-variant">Best Seller <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Tandai jika ini adalah produk terlaris</span></span></label>
+                                <div class="flex items-center gap-4 pt-2">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="best_seller" value="1" {{ old('best_seller', $product->best_seller ?? 0) == 1 ? 'checked' : '' }} class="w-4 h-4 text-primary focus:ring-primary/30 border-outline-variant">
+                                        <span class="text-body-sm text-on-surface font-medium">Yes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="best_seller" value="0" {{ old('best_seller', $product->best_seller ?? 0) == 0 ? 'checked' : '' }} class="w-4 h-4 text-primary focus:ring-primary/30 border-outline-variant">
+                                        <span class="text-body-sm text-on-surface font-medium">No</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-2 space-y-1.5">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Short Description <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Ringkasan atau deskripsi singkat produk</span></span></label>
+                            <textarea name="short_description" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" rows="2" placeholder="Enter short description">{{ $product->short_description ?? '' }}</textarea>
                         </div>
                         <div class="md:col-span-2 space-y-1.5">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Description <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Deskripsi lengkap produk untuk customer</span></span></label>
@@ -934,6 +981,11 @@ renderColors();
 $(document).ready(function() {
     $('#categorySelect').select2({
         placeholder: 'Select Category',
+        allowClear: true,
+        width: '100%'
+    });
+    $('#brandSelect').select2({
+        placeholder: 'Select Brand',
         allowClear: true,
         width: '100%'
     });

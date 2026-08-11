@@ -12,10 +12,12 @@
             <span>Blog</span>
         </nav>
     </div>
-    <a href="{{ route('content.blog.create') }}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">
+    <a href="{{ route('content.blog.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
         <span class="material-symbols-outlined text-[18px]">add</span> Create Post
     </a>
 </div>
+
+    @include('layouts.partials.content-submenu')
 
 <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
     <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between">
@@ -50,7 +52,7 @@
                     </td>
                     <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $post->published_at?->format('M j, Y') ?? '-' }}</td>
                     <td class="px-gutter py-4">
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 justify-center">
                             <a href="{{ route('content.blog.edit', $post->id) }}" class="text-on-surface-variant hover:text-primary" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
                             <form action="{{ route('content.blog.destroy', $post->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this post?')">
                                 @csrf

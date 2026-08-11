@@ -16,6 +16,8 @@
         </div>
     </div>
 
+    @include('layouts.partials.shipping-payment-submenu')
+
     <!-- Location Selector -->
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6 mb-6">
         <div class="flex items-center gap-2 mb-4">

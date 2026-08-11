@@ -21,6 +21,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.pick-pack-submenu')
+
     @if ($errors->any())
         <div class="bg-danger-100 border border-danger-200 text-danger-700 px-4 py-3 rounded-lg mb-6">
             <ul class="list-disc list-inside">

@@ -18,6 +18,7 @@ class Customer extends Model
         'name',
         'email',
         'phone',
+        'customer_type',
         'meta',
         'creator',
         'editor',
@@ -50,7 +51,7 @@ class Customer extends Model
 
     public function addresses(): HasMany
     {
-        return $this->hasMany(Address::class, 'user_id', 'user_id');
+        return $this->hasMany(Address::class, 'customer_id', 'id');
     }
 
     public function orders(): HasMany

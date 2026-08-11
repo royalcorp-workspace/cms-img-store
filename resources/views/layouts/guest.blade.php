@@ -3,6 +3,8 @@
 <head>
     <meta charset="utf-8" />
     <title>@yield('title', 'Authentication') | IMG Admin</title>
+    <link rel="icon" type="image/png" href="{{ asset('admin/assets/images/logo.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('admin/assets/images/logo.png') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Admin Authentication" />
 

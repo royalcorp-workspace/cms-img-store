@@ -16,6 +16,8 @@
         </div>
     </div>
 
+    @include('layouts.partials.pick-pack-submenu')
+
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden mb-8">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">

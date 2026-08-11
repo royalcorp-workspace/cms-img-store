@@ -20,6 +20,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.product-submenu')
+
     <!-- Alert Messages -->
     @if(session('error'))
         <div class="mb-6 p-4 bg-danger/10 border border-danger/20 text-danger rounded-xl flex items-start gap-3">

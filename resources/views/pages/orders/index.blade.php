@@ -15,44 +15,8 @@
     
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-5">
-            <p class="text-label-sm text-on-surface-variant mb-1">Total Orders</p>
-            <h3 class="font-metric-display text-metric-display text-on-surface">{{ number_format($stats['total']) }}</h3>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-5">
-            <p class="text-label-sm text-on-surface-variant mb-1">Draft</p>
-            <h3 class="font-metric-display text-metric-display text-gray-500">{{ number_format($stats[0]) }}</h3>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-5">
-            <p class="text-label-sm text-on-surface-variant mb-1">Pending Approval</p>
-            <h3 class="font-metric-display text-metric-display text-warning">{{ number_format($stats[1]) }}</h3>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-5">
-            <p class="text-label-sm text-on-surface-variant mb-1">Confirmed</p>
-            <h3 class="font-metric-display text-metric-display text-blue-500">{{ number_format($stats[2]) }}</h3>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-5">
-            <p class="text-label-sm text-on-surface-variant mb-1">Processing</p>
-            <h3 class="font-metric-display text-metric-display text-indigo-500">{{ number_format($stats[3]) }}</h3>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-5">
-            <p class="text-label-sm text-on-surface-variant mb-1">Shipped</p>
-            <h3 class="font-metric-display text-metric-display text-purple-500">{{ number_format($stats[4]) }}</h3>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-5">
-            <p class="text-label-sm text-on-surface-variant mb-1">Delivered</p>
-            <h3 class="font-metric-display text-metric-display text-success">{{ number_format($stats[5]) }}</h3>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-5">
-            <p class="text-label-sm text-on-surface-variant mb-1">Cancelled</p>
-            <h3 class="font-metric-display text-metric-display text-danger">{{ number_format($stats[6]) }}</h3>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-5">
-            <p class="text-label-sm text-on-surface-variant mb-1">Returned</p>
-            <h3 class="font-metric-display text-metric-display text-orange-500">{{ number_format($stats[7]) }}</h3>
-        </div>
-    </div>
+    @include('layouts.partials.sales-submenu')
+
 
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
         <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between">
@@ -135,7 +99,7 @@
                             </td>
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-medium">Rp{{ number_format($order->total, 2, ',', '.') }}</td>
                             <td class="px-gutter py-4">
-                                <div class="flex gap-2">
+                                <div class="flex gap-2 justify-center">
                                     <a href="{{ route('orders.show', $order->id) }}" class="text-on-surface-variant hover:text-primary" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
                                 </div>
                             </td>

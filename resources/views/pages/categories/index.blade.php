@@ -12,7 +12,7 @@
                 <span>Categories</span>
             </nav>
         </div>
-        <div class="relative group">
+        <div class="flex items-center gap-3 relative group">
             <button type="button" class="flex items-center gap-2 px-3 py-1.5 text-on-surface-variant hover:text-on-surface rounded-lg transition-colors">
                 <span class="material-symbols-outlined text-[18px]">info</span>
                 <span class="text-label-md font-label-md">Tutorial</span>
@@ -26,17 +26,69 @@
                     <li>Use the modal form to edit category details</li>
                 </ul>
             </div>
+            
+            <button onclick="createCategory()" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Add Category
+            </button>
         </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
-        <div class="p-4 border-b border-outline-variant flex items-center gap-2">
-            <button onclick="createCategory()" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Add Category</button>
-            <button onclick="refreshTree()" class="px-4 py-2 border border-outline-variant text-on-surface rounded-lg font-label-md hover:bg-surface-container transition-colors">Refresh</button>
+    @include('layouts.partials.product-submenu')
+
+    <div class="bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+        <div class="p-4 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-end gap-4">
+            <form action="{{ route('categories.index') }}" method="GET" class="flex items-center gap-2">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search categories..." class="px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none w-full md:w-64">
+                <button type="submit" class="px-4 py-2 border border-outline-variant text-on-surface rounded-lg font-label-md hover:bg-surface-container transition-colors">Search</button>
+            </form>
         </div>
-        <div class="p-4">
-            <div id="categoryTree">Loading categories...</div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-body-sm text-on-surface">
+                <thead class="bg-surface-container-lowest text-on-surface-variant font-label-md border-b border-outline-variant">
+                    <tr>
+                        <th class="px-4 py-3 font-medium">Name</th>
+                        <th class="px-4 py-3 font-medium">Slug</th>
+                        <th class="px-4 py-3 font-medium">Parent</th>
+                        <th class="px-4 py-3 font-medium">Sort</th>
+                        <th class="px-4 py-3 font-medium">Status</th>
+                        <th class="px-4 py-3 font-medium text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant/50">
+                    @forelse($categories as $category)
+                    <tr class="hover:bg-surface-container-lowest/50 transition-colors">
+                        <td class="px-4 py-3 font-medium">{{ $category->name }}</td>
+                        <td class="px-4 py-3 text-on-surface-variant">{{ $category->slug }}</td>
+                        <td class="px-4 py-3">{{ $category->parent ? $category->parent->name : '-' }}</td>
+                        <td class="px-4 py-3">{{ $category->sort_order }}</td>
+                        <td class="px-4 py-3">
+                            @if($category->status)
+                                <span class="px-2 py-1 bg-success/10 text-success text-[11px] font-bold uppercase rounded-full tracking-wider">Active</span>
+                            @else
+                                <span class="px-2 py-1 bg-outline-variant/20 text-on-surface-variant text-[11px] font-bold uppercase rounded-full tracking-wider">Inactive</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <div class="flex gap-2 justify-center">
+                                <button onclick="editCategory('{{ $category->id }}')" class="text-on-surface-variant hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+                                <button onclick="deleteCategory('{{ $category->id }}')" class="text-on-surface-variant hover:text-danger transition-colors" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-on-surface-variant">No categories found.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
+        @if($categories->hasPages())
+        <div class="p-4 border-t border-outline-variant">
+            {{ $categories->links() }}
+        </div>
+        @endif
     </div>
 
     <div id="categoryModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
@@ -77,111 +129,30 @@
                         <option value="0">Inactive</option>
                     </select>
                 </div>
+                <div class="grid grid-cols-2 gap-4 border-t border-outline-variant pt-4 mt-2">
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Banner Desktop (Web)</label>
+                        <input type="file" id="categoryBannerWeb" name="banner_web" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Banner Mobile</label>
+                        <input type="file" id="categoryBannerMobile" name="banner_mobile" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
+                    </div>
+                </div>
             </form>
             <div class="p-6 border-t border-outline-variant flex justify-end gap-3">
                 <button type="button" onclick="closeModal()" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</button>
-                <button type="submit" form="categoryForm" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Save</button>
+                <button type="submit" form="categoryForm" class="px-4 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">Save</button>
             </div>
         </div>
     </div>
 @endsection
 
-@push('styles')
-<link href="https://cdn.jsdelivr.net/npm/jstree@3.3.16/dist/themes/default/style.min.css" rel="stylesheet" />
-<style>
-.jstree-default .jstree-anchor:hover {
-    background: var(--color-surface-container-high) !important;
-    color: var(--color-on-surface) !important;
-}
-.jstree-default .jstree-clicked,
-.jstree-default .jstree-clicked:hover {
-    background: var(--color-secondary-container) !important;
-    color: var(--color-on-secondary-container) !important;
-    box-shadow: none !important;
-}
-.jstree-default .jstree-search,
-.jstree-default .jstree-search .jstree-icon {
-    color: var(--color-on-surface) !important;
-}
-</style>
-@endpush
-
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/jstree@3.3.16/dist/jstree.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token() }}';
 
-$(document).ready(function () {
-    $('#categoryTree').html('Loading...');
-    $.getJSON('{{ route('categories.flat') }}', function (res) {
-        const nodes = res.data || [];
-        $('#categoryTree').empty();
-        const map = {};
-        const roots = [];
-        nodes.forEach(function(n) {
-            map[n.id] = { id: n.id, text: n.text, state: { opened: true, selected: false } };
-        });
-        nodes.forEach(function(n) {
-            if (!n.parent || n.parent === '#' || !map[n.parent]) {
-                roots.push(map[n.id]);
-            } else {
-                map[n.parent].children = map[n.parent].children || [];
-                map[n.parent].children.push(map[n.id]);
-            }
-        });
-        Object.keys(map).forEach(function(id) {
-            var nd = map[id];
-            if (nd.children && nd.children.length > 0) {
-                nd.icon = 'jstree-folder';
-                nd.state.opened = true;
-            } else {
-                nd.icon = 'jstree-file';
-            }
-        });
-        tree = $('#categoryTree');
-        tree.jstree({
-            core: {
-                data: roots,
-                check_callback: true,
-                multiple: false,
-                themes: { stripes: true }
-            },
-            plugins: ['types', 'state', 'contextmenu'],
-            types: {
-                'default': { icon: 'jstree-folder' },
-                'file': { icon: 'jstree-file' }
-            },
-            state: { key: 'category-tree-state' },
-            contextmenu: {
-                items: function (node) {
-                    return {
-                        'create': {
-                            'label': 'Create Child',
-                            'action': function () { createCategory(node.text, node.id); },
-                            'separator_before': true
-                        },
-                        'rename': {
-                            'label': 'Rename',
-                            'action': function () { editCategory(node.id); }
-                        },
-                        'delete': {
-                            'label': 'Delete',
-                            'action': function () { deleteCategory(node.id); }
-                        }
-                    };
-                }
-            }
-        });
-    }).fail(function() {
-        $('#categoryTree').html('<p class="text-danger">Failed to load categories. Please make sure the product_category table exists and has data.</p>');
-    });
-});
-
-function refreshTree() {
-    if (tree && tree.length) tree.jstree(true).refresh();
-}
-
-function createCategory(parentName, parentId) {
+function createCategory(parentName = null, parentId = null) {
     $('#categoryId').val('');
     $('#categoryName').val(parentName ? '' : 'New Category');
     $('#categorySlug').val('');
@@ -215,7 +186,7 @@ function deleteCategory(id) {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': csrfToken },
         success: function () {
-            if (tree && tree.length) tree.jstree(true).refresh();
+            window.location.reload();
         },
         error: function () {
             alert('Failed to delete category');
@@ -226,28 +197,32 @@ function deleteCategory(id) {
 $('#categoryForm').on('submit', function (e) {
     e.preventDefault();
     const id = $('#categoryId').val();
-    const payload = {
-        name: $('#categoryName').val(),
-        slug: $('#categorySlug').val(),
-        description: $('#categoryDesc').val(),
-        parent_id: $('#categoryParent').val() || null,
-        sort_order: parseInt($('#categorySort').val(), 10),
-        status: $('#categoryStatus').val() == '1' ? 1 : 0,
-    };
+    
+    // Use FormData to support file uploads
+    const formData = new FormData(this);
+    if (!formData.get('parent_id')) {
+        formData.delete('parent_id');
+    }
+    
+    // For PUT request with file upload, Laravel requires POST with _method=PUT
     const url = id ? '{{ url('categories') }}/' + id : '{{ url('categories') }}';
-    const method = id ? 'PUT' : 'POST';
-
+    if (id) {
+        formData.append('_method', 'PUT');
+    }
+    
     $.ajax({
         url: url,
-        method: method,
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
-        data: JSON.stringify(payload),
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken },
+        data: formData,
+        processData: false,
+        contentType: false,
         success: function () {
             closeModal();
-            if (tree && tree.length) tree.jstree(true).refresh();
+            window.location.reload();
         },
-        error: function () {
-            alert('Failed to save category');
+        error: function (xhr) {
+            alert(xhr.responseJSON?.message || 'Error saving category');
         }
     });
 });

@@ -21,10 +21,39 @@ class Product extends Model
     {
         parent::boot();
         static::addGlobalScope('not-deleted', fn($q) => $q->where('products.deleted', false));
+        
+        static::creating(function ($product) {
+            if (empty($product->slug)) {
+                $product->slug = \Illuminate\Support\Str::slug($product->name);
+            }
+            if (empty($product->code)) {
+                $datePrefix = 'PRD' . date('dmy');
+                $lastProduct = static::withoutGlobalScope('not-deleted')
+                    ->where('code', 'like', $datePrefix . '%')
+                    ->orderBy('code', 'desc')
+                    ->first();
+                    
+                if ($lastProduct && preg_match('/(\d{5})$/', $lastProduct->code, $matches)) {
+                    $lastNumber = (int) $matches[1];
+                    $newNumber = $lastNumber + 1;
+                } else {
+                    $newNumber = 1;
+                }
+                
+                $product->code = $datePrefix . str_pad((string)$newNumber, 5, '0', STR_PAD_LEFT);
+            }
+        });
+
+        static::updating(function ($product) {
+            if (empty($product->slug)) {
+                $product->slug = \Illuminate\Support\Str::slug($product->name);
+            }
+        });
     }
 
     protected $fillable = [
         'id',
+        'code',
         'category_id',
         'brand_id',
         'name',

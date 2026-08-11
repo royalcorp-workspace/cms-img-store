@@ -19,6 +19,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.promotions-submenu')
+
     <form id="priceSettingForm" method="POST" action="{{ route('price-settings.update', $setting->id) }}">
         @csrf
         @method('PUT')

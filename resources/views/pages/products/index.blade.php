@@ -17,12 +17,14 @@
                 <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
                 Bulk Import
             </a>
-            <a href="{{ route('products.create') }}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md font-label-md text-label-md hover:opacity-90 transition-all shadow-sm">
+            <a href="{{ route('products.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
                 <span class="material-symbols-outlined text-[18px]">add</span>
                 Create Product
             </a>
         </div>
     </div>
+
+    @include('layouts.partials.product-submenu')
 
     <div class="bg-white rounded-lg shadow-sm border border-outline-variant/30 overflow-hidden mb-8">
         <div class="overflow-x-auto">
@@ -30,11 +32,12 @@
                 <thead>
                     <tr>
                         <th class="px-6 py-4">Product</th>
+                        <th class="px-6 py-4">Kode</th>
                         <th class="px-6 py-4">Category</th>
                         <th class="px-6 py-4">Price</th>
                         <th class="px-6 py-4">Stock</th>
                         <th class="px-6 py-4">Status</th>
-                        <th class="px-6 py-4">Actions</th>
+                        <th class="px-6 py-4 text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-outline-variant/20">
@@ -47,10 +50,10 @@
                                     </div>
                                     <div>
                                         <a href="{{ route('products.show', $product->id) }}" class="font-headline-md text-[14px] font-semibold text-on-surface hover:text-primary transition-colors">{{ $product->name }}</a>
-                                        <p class="text-label-sm text-on-surface-variant font-medium mt-0.5">SKU: {{ $product->sku ?? $product->id }}</p>
                                     </div>
                                 </div>
                             </td>
+                            <td class="px-6 py-4 text-body-md text-on-surface font-mono text-sm">{{ $product->code ?? '-' }}</td>
                             <td class="px-6 py-4 text-body-md text-secondary font-medium">{{ $product->category->name ?? '-' }}</td>
                             <td class="px-6 py-4 font-headline-md text-[14px] font-bold text-on-surface">Rp{{ number_format($product->price ?? 0, 2) }}</td>
                             <td class="px-6 py-4">
@@ -73,10 +76,10 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-on-surface-variant">
-                                <div class="flex items-center gap-1.5">
-                                    <a href="{{ route('products.show', $product->id) }}" class="w-8 h-8 rounded-md bg-surface-container/50 hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
-                                    <a href="{{ route('products.edit', $product->id) }}" class="w-8 h-8 rounded-md bg-surface-container/50 hover:bg-secondary/10 hover:text-secondary transition-colors flex items-center justify-center" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
-                                    <button class="w-8 h-8 rounded-md bg-surface-container/50 hover:bg-danger/10 hover:text-danger transition-colors flex items-center justify-center" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                                <div class="flex items-center gap-1.5 justify-center">
+                                    <a href="{{ route('products.show', $product->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
+                                    <a href="{{ route('products.edit', $product->id) }}" class="text-on-surface-variant hover:text-secondary transition-colors" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
+                                    <button class="text-on-surface-variant hover:text-danger transition-colors" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
                                 </div>
                             </td>
                         </tr>

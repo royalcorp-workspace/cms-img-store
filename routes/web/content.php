@@ -9,6 +9,9 @@ use App\Http\Controllers\Content\TermsAndConditionController;
 use App\Http\Controllers\Content\PrivacyPolicyController;
 use App\Http\Controllers\Content\WarrantyClaimController;
 
+use App\Http\Controllers\Content\BannerController;
+use App\Http\Controllers\Content\HomepageSectionController;
+
 Route::prefix('content')->name('content.')->group(function () {
     Route::get('/faq', [FaqController::class, 'index'])->name('faq.index');
     Route::get('/faq/create', [FaqController::class, 'create'])->name('faq.create');
@@ -58,4 +61,16 @@ Route::prefix('content')->name('content.')->group(function () {
     Route::get('/warranty/{id}/edit', [WarrantyClaimController::class, 'edit'])->name('warranty.edit');
     Route::put('/warranty/{id}', [WarrantyClaimController::class, 'update'])->name('warranty.update');
     Route::delete('/warranty/{id}', [WarrantyClaimController::class, 'destroy'])->name('warranty.destroy');
+
+    Route::patch('/homepage/{id}/update-order', [\App\Http\Controllers\Content\HomepageSectionController::class, 'updateOrder'])->name('homepage.update-order');
+    Route::resource('homepage', \App\Http\Controllers\Content\HomepageSectionController::class)->except(['show']);
+
+    // Banners Routes
+    Route::get('/banners', [BannerController::class, 'index'])->name('banners.index');
+    Route::get('/banners/create', [BannerController::class, 'create'])->name('banners.create');
+    Route::post('/banners', [BannerController::class, 'store'])->name('banners.store');
+    Route::get('/banners/{id}/edit', [BannerController::class, 'edit'])->name('banners.edit');
+    Route::put('/banners/{id}', [BannerController::class, 'update'])->name('banners.update');
+    Route::delete('/banners/{id}', [BannerController::class, 'destroy'])->name('banners.destroy');
 });
+

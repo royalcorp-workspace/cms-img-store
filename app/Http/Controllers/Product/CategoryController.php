@@ -10,9 +10,18 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return view('pages.categories.index');
+        $query = Category::with('parent')->where('deleted', false);
+        
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where('name', 'like', "%{$search}%");
+        }
+        
+        $categories = $query->orderBy('name')->paginate(50);
+        $allCategories = Category::where('deleted', false)->orderBy('name')->get(); // for the parent dropdown
+        return view('pages.categories.index', compact('categories', 'allCategories'));
     }
 
     public function flat()
@@ -64,10 +73,20 @@ class CategoryController extends Controller
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:product_category,slug',
             'description' => 'nullable|string',
+            'banner_web' => 'nullable|image|max:2048',
+            'banner_mobile' => 'nullable|image|max:2048',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
+        
+        if ($request->hasFile('banner_web')) {
+            $validated['banner_web'] = $request->file('banner_web')->store('categories', 'public');
+        }
+        if ($request->hasFile('banner_mobile')) {
+            $validated['banner_mobile'] = $request->file('banner_mobile')->store('categories', 'public');
+        }
+        
         $category = Category::create($validated);
         return response()->json([
             'success' => true,
@@ -95,10 +114,26 @@ class CategoryController extends Controller
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:product_category,slug,' . $id,
             'description' => 'nullable|string',
+            'banner_web' => 'nullable|image|max:2048',
+            'banner_mobile' => 'nullable|image|max:2048',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
+
+        if ($request->hasFile('banner_web')) {
+            if ($category->banner_web) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($category->banner_web);
+            }
+            $validated['banner_web'] = $request->file('banner_web')->store('categories', 'public');
+        }
+        if ($request->hasFile('banner_mobile')) {
+            if ($category->banner_mobile) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($category->banner_mobile);
+            }
+            $validated['banner_mobile'] = $request->file('banner_mobile')->store('categories', 'public');
+        }
+
         $category->update($validated);
         return response()->json([
             'success' => true,

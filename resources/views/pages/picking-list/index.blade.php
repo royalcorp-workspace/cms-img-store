@@ -16,6 +16,8 @@
         </div>
     </div>
 
+    @include('layouts.partials.pick-pack-submenu')
+
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden mb-8">
         <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between">
             <form method="GET" class="flex items-center gap-2">

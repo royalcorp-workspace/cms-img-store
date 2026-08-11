@@ -38,6 +38,8 @@ class PriceProductSetting extends Model
         'volume_tiers',
         'scope_store_type',
         'scope_store_id',
+        'event_id',
+        'bundling_id',
     ];
 
     protected function casts(): array
@@ -105,6 +107,12 @@ class PriceProductSetting extends Model
     {
         return $this->belongsToMany(\App\Models\Product\Variant::class, 'price_product_setting_items', 'price_product_setting_id', 'variant_id')
             ->withPivot('discount_type', 'discount_value', 'product_id');
+    }
+
+    public function bundlings(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Product\ProductBundling::class, 'price_product_setting_items', 'price_product_setting_id', 'bundling_id')
+            ->withPivot('discount_type', 'discount_value');
     }
 
     public function volumeTiers(): HasMany

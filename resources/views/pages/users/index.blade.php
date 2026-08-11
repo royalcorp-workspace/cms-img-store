@@ -34,6 +34,8 @@
         </div>
     </div>
 
+    @include('layouts.partials.system-submenu')
+
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -46,7 +48,7 @@
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Email</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Role</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Status</th>
-                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Action</th>
+                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-outline-variant/20">
@@ -69,7 +71,7 @@
                         </td>
                         <td class="px-gutter py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-success/10 text-success rounded-full text-label-sm font-label-sm">Active</span></td>
                         <td class="px-gutter py-4">
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 justify-center">
                                 <button class="text-on-surface-variant hover:text-on-surface transition-colors" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></button>
                                 <button class="text-danger hover:opacity-70 transition-opacity" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
                             </div>

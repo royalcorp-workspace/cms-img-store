@@ -12,10 +12,12 @@
             <span>How To Return</span>
         </nav>
     </div>
-    <a href="{{ route('content.how-to-return.create') }}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">
+    <a href="{{ route('content.how-to-return.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
         <span class="material-symbols-outlined text-[18px]">add</span> Create Guide
     </a>
 </div>
+
+    @include('layouts.partials.content-submenu')
 
 <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
     <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between">
@@ -46,7 +48,7 @@
                         </span>
                     </td>
                     <td class="px-gutter py-4">
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 justify-center">
                             <a href="{{ route('content.how-to-return.edit', $item->id) }}" class="text-on-surface-variant hover:text-primary" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
                             <form action="{{ route('content.how-to-return.destroy', $item->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this guide?')">
                                 @csrf

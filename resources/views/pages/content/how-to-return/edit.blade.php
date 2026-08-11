@@ -19,6 +19,8 @@
     </a>
 </div>
 
+    @include('layouts.partials.content-submenu')
+
 <form method="POST" action="{{ route('content.how-to-return.update', $item->id) }}" id="howToReturnForm" class="space-y-6">
     @csrf
     @method('PUT')

@@ -36,7 +36,8 @@ class CustomerController extends Controller
 
     public function create()
     {
-        return view('pages.customers.create');
+        $subDistricts = \App\Models\Location\SubDistrict::with('city')->orderBy('sub_district')->get();
+        return view('pages.customers.create', compact('subDistricts'));
     }
 
     public function store(Request $request)
@@ -46,9 +47,40 @@ class CustomerController extends Controller
             'email' => 'required|email|unique:customers,email',
             'phone' => 'nullable|string|max:50',
             'user_id' => 'nullable|exists:users,id',
+            'customer_type' => 'nullable|integer',
+            'label' => 'nullable|string|max:50',
+            'sub_district_id' => 'nullable|exists:sub_districts,id',
+            'address' => 'nullable|string',
+            'postal_code' => 'nullable|string|max:10',
+            'is_primary' => 'nullable|boolean',
         ]);
 
-        Customer::create($validated);
+        $customer = Customer::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'user_id' => $validated['user_id'] ?? null,
+            'customer_type' => $validated['customer_type'] ?? 1,
+        ]);
+
+        // Create initial address if provided
+        if ($request->filled('sub_district_id') || $request->filled('address')) {
+            $subDistrict = \App\Models\Location\SubDistrict::find($request->sub_district_id);
+            \App\Models\Customer\Address::create([
+                'id' => \Illuminate\Support\Str::uuid(),
+                'customer_id' => $customer->id,
+                'user_id' => $customer->user_id,
+                'sub_district_id' => $request->sub_district_id,
+                'city_id' => $subDistrict ? $subDistrict->city_id : null,
+                'label' => $request->label ?? 'Utama',
+                'recipient_name' => $customer->name,
+                'phone' => $customer->phone ?? '-',
+                'address' => $request->address ?? '-',
+                'postal_code' => $request->postal_code,
+                'is_primary' => $request->has('is_primary') ? true : false,
+            ]);
+        }
+
         return redirect()->route('customers.index')->with('success', 'Customer created successfully');
     }
 
@@ -61,7 +93,10 @@ class CustomerController extends Controller
     public function edit($id)
     {
         $customer = Customer::findOrFail($id);
-        return view('pages.customers.edit', compact('customer'));
+        $addresses = $customer->addresses()->with(['city', 'subDistrict'])->get();
+        $subDistricts = \App\Models\Location\SubDistrict::with('city')->orderBy('sub_district')->get();
+        
+        return view('pages.customers.edit', compact('customer', 'addresses', 'subDistricts'));
     }
 
     public function update(Request $request, $id)
@@ -73,9 +108,17 @@ class CustomerController extends Controller
             'email' => 'required|email|unique:customers,email,' . $id,
             'phone' => 'nullable|string|max:50',
             'user_id' => 'nullable|exists:users,id',
+            'customer_type' => 'nullable|integer',
         ]);
 
-        $customer->update($validated);
+        $customer->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'user_id' => $validated['user_id'] ?? null,
+            'customer_type' => $validated['customer_type'] ?? 1,
+        ]);
+
         return redirect()->route('customers.index')->with('success', 'Customer updated successfully');
     }
 
