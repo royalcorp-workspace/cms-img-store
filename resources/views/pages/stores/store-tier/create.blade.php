@@ -19,6 +19,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.store-submenu')
+
     <form method="POST" action="{{ route('store-tiers.store') }}" class="space-y-6">
         @csrf
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6">

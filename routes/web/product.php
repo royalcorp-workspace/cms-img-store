@@ -42,3 +42,27 @@ Route::get('/price-settings/create', [PriceProductSettingController::class, 'cre
 Route::get('/price-settings/{id}/edit', [PriceProductSettingController::class, 'edit'])->name('price-settings.edit');
 Route::put('/price-settings/{id}', [PriceProductSettingController::class, 'update'])->name('price-settings.update');
 Route::post('/price-settings', [PriceProductSettingController::class, 'store'])->name('price-settings.store');
+
+use App\Http\Controllers\Product\BrandController;
+Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
+Route::get('/brands/create', [BrandController::class, 'create'])->name('brands.create');
+Route::post('/brands', [BrandController::class, 'store'])->name('brands.store');
+Route::get('/brands/{id}/edit', [BrandController::class, 'edit'])->name('brands.edit');
+Route::put('/brands/{id}', [BrandController::class, 'update'])->name('brands.update');
+Route::delete('/brands/{id}', [BrandController::class, 'destroy'])->name('brands.destroy');
+
+use App\Http\Controllers\Product\ProductBundlingController;
+Route::get('/bundlings', [ProductBundlingController::class, 'index'])->name('bundlings.index');
+Route::get('/bundlings/create', [ProductBundlingController::class, 'create'])->name('bundlings.create');
+Route::post('/bundlings', [ProductBundlingController::class, 'store'])->name('bundlings.store');
+Route::get('/bundlings/{id}/edit', [ProductBundlingController::class, 'edit'])->name('bundlings.edit');
+Route::put('/bundlings/{id}', [ProductBundlingController::class, 'update'])->name('bundlings.update');
+Route::delete('/bundlings/{id}', [ProductBundlingController::class, 'destroy'])->name('bundlings.destroy');
+
+use App\Http\Controllers\Product\EventController;
+Route::get('/events', [EventController::class, 'index'])->name('events.index');
+Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
+Route::post('/events', [EventController::class, 'store'])->name('events.store');
+Route::get('/events/{id}/edit', [EventController::class, 'edit'])->name('events.edit');
+Route::put('/events/{id}', [EventController::class, 'update'])->name('events.update');
+Route::delete('/events/{id}', [EventController::class, 'destroy'])->name('events.destroy');

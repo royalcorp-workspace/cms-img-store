@@ -13,52 +13,8 @@
     </a>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-container-gap mb-container-gap">
-    <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30 flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-            <div class="p-3 bg-primary-fixed rounded-lg">
-                <span class="material-symbols-outlined text-primary">confirmation_number</span>
-            </div>
-        </div>
-        <div class="mt-4">
-            <p class="text-label-md font-label-md text-secondary uppercase tracking-wider">Active Vouchers</p>
-            <h4 class="text-metric-display font-metric-display text-on-surface">{{ number_format($stats['active']) }}</h4>
-        </div>
-    </div>
-    <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30 flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-            <div class="p-3 bg-tertiary-fixed rounded-lg">
-                <span class="material-symbols-outlined text-tertiary">shopping_bag</span>
-            </div>
-        </div>
-        <div class="mt-4">
-            <p class="text-label-md font-label-md text-secondary uppercase tracking-wider">Total Redemptions</p>
-            <h4 class="text-metric-display font-metric-display text-on-surface">{{ number_format($stats['total_redemptions']) }}</h4>
-        </div>
-    </div>
-    <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30 flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-            <div class="p-3 bg-surface-container-highest rounded-lg">
-                <span class="material-symbols-outlined text-primary">timer</span>
-            </div>
-        </div>
-        <div class="mt-4">
-            <p class="text-label-md font-label-md text-secondary uppercase tracking-wider">Expiring (7 Days)</p>
-            <h4 class="text-metric-display font-metric-display text-on-surface">{{ number_format($stats['expiring_soon']) }}</h4>
-        </div>
-    </div>
-    <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30 flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-            <div class="p-3 bg-secondary-fixed rounded-lg">
-                <span class="material-symbols-outlined text-secondary">payments</span>
-            </div>
-        </div>
-        <div class="mt-4">
-            <p class="text-label-md font-label-md text-secondary uppercase tracking-wider">Total Vouchers</p>
-            <h4 class="text-metric-display font-metric-display text-on-surface">{{ number_format($stats['total']) }}</h4>
-        </div>
-    </div>
-</div>
+    @include('layouts.partials.promotions-submenu')
+
 
 <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
     <div class="px-6 py-4 border-b border-outline-variant/50 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -85,7 +41,7 @@
                     <th class="px-6 py-4 text-label-sm font-label-sm text-secondary uppercase tracking-widest">Usage / Limit</th>
                     <th class="px-6 py-4 text-label-sm font-label-sm text-secondary uppercase tracking-widest">Expiry Date</th>
                     <th class="px-6 py-4 text-label-sm font-label-sm text-secondary uppercase tracking-widest text-center">Status</th>
-                    <th class="px-6 py-4 text-label-sm font-label-sm text-secondary uppercase tracking-widest text-right">Actions</th>
+                    <th class="px-6 py-4 text-label-sm font-label-sm text-secondary uppercase tracking-widest text-center">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-outline-variant/20">
@@ -161,7 +117,7 @@
                         </div>
                     </td>
                     <td class="px-6 py-5 text-right">
-                        <div class="flex justify-end gap-2">
+                        <div class="flex gap-2 justify-center">
                             <a href="{{ route('vouchers.edit', $voucher->id) }}" class="p-2 text-secondary hover:text-primary transition-colors" title="Edit">
                                 <span class="material-symbols-outlined">edit</span>
                             </a>

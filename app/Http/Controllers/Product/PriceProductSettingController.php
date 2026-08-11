@@ -75,19 +75,24 @@ class PriceProductSettingController extends Controller
         }
 
         if (request()->has('category') && request('category') != 'all') {
-            $productsQuery->whereHas('category', function($q) {
-                $q->where('slug', request('category'))
-                  ->orWhereIn('parent_id', function($q2) {
-                      $q2->select('id')->from('product_category')->where('slug', request('category'));
-                  });
-            });
+            if (request('category') === 'bundling') {
+                $productsQuery->whereRaw('1=0');
+            } else {
+                $productsQuery->whereHas('category', function($q) {
+                    $q->where('slug', request('category'))
+                      ->orWhereIn('parent_id', function($q2) {
+                          $q2->select('id')->from('product_category')->where('slug', request('category'));
+                      });
+                });
+            }
         }
 
         $products = $productsQuery->paginate(12);
 
         if (request()->ajax()) {
+            $bundlings = \App\Models\Product\ProductBundling::where('is_active', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'price']);
             return response()->json([
-                'html' => view('pages.promo.partials.product-cards', compact('products'))->render(),
+                'html' => view('pages.promo.partials.product-cards', compact('products', 'bundlings'))->render(),
                 'hasMore' => $products->hasMorePages()
             ]);
         }
@@ -103,8 +108,9 @@ class PriceProductSettingController extends Controller
         $stores = Store::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
         $tiers = StoreTier::where('status', true)->where('deleted', false)->orderBy('level')->get(['id', 'name', 'code', 'level']);
         $channelGroups = StoreChannelGroup::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
+        $bundlings = \App\Models\Product\ProductBundling::where('is_active', true)->where('deleted', false)->orderBy('name')->get(['id', 'name']);
 
-        return view('pages.promo.price-product-setting-create', compact('products', 'categories', 'stores', 'tiers', 'channelGroups'));
+        return view('pages.promo.price-product-setting-create', compact('products', 'categories', 'stores', 'tiers', 'channelGroups', 'bundlings'));
     }
 
     public function edit($id)
@@ -128,22 +134,29 @@ class PriceProductSettingController extends Controller
         }
 
         if (request()->has('category') && request('category') != 'all') {
-            $productsQuery->whereHas('category', function($q) {
-                $q->where('slug', request('category'))
-                  ->orWhereIn('parent_id', function($q2) {
-                      $q2->select('id')->from("product_category")->where('slug', request('category'));
-                  });
-            });
+            if (request('category') === 'bundling') {
+                $productsQuery->whereRaw('1=0');
+            } else {
+                $productsQuery->whereHas('category', function($q) {
+                    $q->where('slug', request('category'))
+                      ->orWhereIn('parent_id', function($q2) {
+                          $q2->select('id')->from("product_category")->where('slug', request('category'));
+                      });
+                });
+            }
         }
 
         $products = $productsQuery->paginate(12);
 
         $selectedVariantIds = $setting->variants()->pluck('product_variants.id')->toArray();
         $variantPricesFromPivot = $setting->variants()->pluck('discount_value', 'product_variants.id')->toArray();
+        $selectedBundlingIds = $setting->bundlings()->pluck('products_bundling.id')->toArray();
+        $bundlingPricesFromPivot = $setting->bundlings()->pluck('discount_value', 'products_bundling.id')->toArray();
 
         if (request()->ajax()) {
+            $bundlings = \App\Models\Product\ProductBundling::where('is_active', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'price']);
             return response()->json([
-                'html' => view('pages.promo.partials.product-cards', compact('products', 'selectedVariantIds', 'variantPricesFromPivot'))->render(),
+                'html' => view('pages.promo.partials.product-cards', compact('products', 'selectedVariantIds', 'variantPricesFromPivot', 'bundlings', 'selectedBundlingIds', 'bundlingPricesFromPivot'))->render(),
                 'hasMore' => $products->hasMorePages()
             ]);
         }
@@ -159,10 +172,11 @@ class PriceProductSettingController extends Controller
         $stores = Store::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
         $tiers = StoreTier::where('status', true)->where('deleted', false)->orderBy('level')->get(['id', 'name', 'code', 'level']);
         $channelGroups = StoreChannelGroup::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
+        $bundlings = \App\Models\Product\ProductBundling::where('is_active', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'price']);
 
         $volumeTiers = $setting->volumeTiers()->orderBy('sort_order')->get();
 
-        return view('pages.promo.price-product-setting-edit', compact('setting', 'products', 'categories', 'volumeTiers', 'selectedVariantIds', 'variantPricesFromPivot', 'stores', 'tiers', 'channelGroups'));
+        return view('pages.promo.price-product-setting-edit', compact('setting', 'products', 'categories', 'volumeTiers', 'selectedVariantIds', 'variantPricesFromPivot', 'stores', 'tiers', 'channelGroups', 'bundlings', 'selectedBundlingIds', 'bundlingPricesFromPivot'));
     }
 
     public function update(Request $request, $id)
@@ -195,11 +209,12 @@ class PriceProductSettingController extends Controller
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
-            'scope' => 'required|integer|in:1,2,3',
+            'scope' => 'required|integer|in:1,2,3,4',
             'scope_store_type' => 'nullable|integer|in:0,1,2,3',
             'scope_store_id' => 'nullable|uuid|exists:store,id',
             'scope_tier_id' => 'nullable|uuid|exists:store_tier,id',
             'scope_channel_group_id' => 'nullable|uuid|exists:store_channel_group,id',
+            'bundling_id' => 'nullable|uuid|exists:products_bundling,id',
             'variant_ids' => 'nullable|array',
             'variant_ids.*' => 'uuid|exists:product_variants,id',
             'variant_prices' => 'nullable|array',
@@ -253,6 +268,22 @@ class PriceProductSettingController extends Controller
                 $setting->variants()->sync($pivotData);
             } else {
                 $setting->variants()->detach();
+            }
+
+            // Save bundling items
+            $bundlingIds = $request->input('bundling_ids', []);
+            if (!empty($bundlingIds)) {
+                $bundlingPivotData = [];
+                $bundlingPrices = $request->input('bundling_prices', []);
+                foreach ($bundlingIds as $bId) {
+                    $bundlingPivotData[$bId] = [
+                        'discount_type' => $validated['discount_type'],
+                        'discount_value' => $bundlingPrices[$bId] ?? $validated['discount_value'],
+                    ];
+                }
+                $setting->bundlings()->sync($bundlingPivotData);
+            } else {
+                $setting->bundlings()->detach();
             }
 
             if ($validated['type'] == 2 && $request->has('volume_tiers')) {
@@ -371,11 +402,12 @@ class PriceProductSettingController extends Controller
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
-            'scope' => 'required|integer|in:1,2,3',
+            'scope' => 'required|integer|in:1,2,3,4',
             'scope_store_type' => 'nullable|integer|in:0,1,2,3',
             'scope_store_id' => 'nullable|uuid|exists:store,id',
             'scope_tier_id' => 'nullable|uuid|exists:store_tier,id',
             'scope_channel_group_id' => 'nullable|uuid|exists:store_channel_group,id',
+            'bundling_id' => 'nullable|uuid|exists:products_bundling,id',
             'variant_ids' => 'nullable|array',
             'variant_ids.*' => 'uuid|exists:product_variants,id',
             'variant_prices' => 'nullable|array',
@@ -428,6 +460,20 @@ class PriceProductSettingController extends Controller
                     ];
                 }
                 $setting->variants()->attach($pivotData);
+            }
+
+            // Save bundling items
+            $bundlingIds = $request->input('bundling_ids', []);
+            if (!empty($bundlingIds)) {
+                $bundlingPivotData = [];
+                $bundlingPrices = $request->input('bundling_prices', []);
+                foreach ($bundlingIds as $bId) {
+                    $bundlingPivotData[$bId] = [
+                        'discount_type' => $validated['discount_type'],
+                        'discount_value' => $bundlingPrices[$bId] ?? $validated['discount_value'],
+                    ];
+                }
+                $setting->bundlings()->attach($bundlingPivotData);
             }
 
             if ($validated['type'] == 2 && $request->has('volume_tiers')) {

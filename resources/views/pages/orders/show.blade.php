@@ -8,6 +8,8 @@
             <span class="material-symbols-outlined text-green-600">check_circle</span>
             <p class="font-body-md text-body-md font-medium">{{ session('success') }}</p>
         </div>
+
+    @include('layouts.partials.sales-submenu')
     @endif
 
     @if(session('error'))

@@ -1,6 +1,9 @@
 <aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar-width bg-sidebar-bg flex flex-col py-6 z-50 transition-all duration-300">
     <div class="px-6 mb-6 flex items-center justify-between">
-        <span class="font-headline-xl text-headline-xl font-bold text-sidebar-active tracking-tight">IMG</span>
+        <div class="flex items-center gap-2">
+            <img alt="IMG Logo" class="h-8 w-auto object-contain sidebar-logo" src="{{ asset('admin/assets/images/logo.png') }}">
+            <span class="font-headline-xl text-headline-xl font-bold text-sidebar-active tracking-tight">IMG</span>
+        </div>
     </div>
     <nav class="flex-1 min-h-0 overflow-y-auto sidebar-scroll">
         @php
@@ -20,82 +23,50 @@
             [
                 'title' => 'Products',
                 'icon' => 'inventory_2',
-                'children' => [
-                    ['icon' => 'inventory_2', 'title' => 'Products', 'route_name' => 'products.index'],
-                    ['icon' => 'category', 'title' => 'Category', 'route_name' => 'categories.index'],
-                    ['icon' => 'warehouse', 'title' => 'Inventory', 'route_name' => 'inventory.index'],
-                ]
+                'route_name' => 'products.index',
+                'children' => []
             ],
             [
                 'title' => 'Sales',
                 'icon' => 'shopping_cart',
-                'children' => [
-                    ['icon' => 'shopping_cart', 'title' => 'Orders', 'route_name' => 'orders.index'],
-                    ['icon' => 'account_balance', 'title' => 'Payment Reconciliation', 'route_name' => 'reconciliation.index'],
-                ]
+                'route_name' => 'orders.index',
+                'children' => []
             ],
             [
                 'title' => 'Promotions',
                 'icon' => 'local_offer',
-                'children' => [
-                    ['icon' => 'local_offer', 'title' => 'Vouchers', 'route_name' => 'vouchers.index'],
-                    ['icon' => 'local_offer', 'title' => 'Price Settings', 'route_name' => 'price-settings.index'],
-                    ['icon' => 'storefront', 'title' => 'Store Pricing', 'route_name' => 'price-product-setting-store.index'],
-                ]
+                'route_name' => 'vouchers.index',
+                'children' => []
             ],
             [
                 'title' => 'Pick & Pack',
                 'icon' => 'package',
-                'children' => [
-                    ['icon' => 'inventory', 'title' => 'Picking List', 'route_name' => 'picking-list.index'],
-                    ['icon' => 'package', 'title' => 'Packing Slip', 'route_name' => 'packing-slip.index'],
-                    ['icon' => 'output_circle', 'title' => 'Packing Out', 'route_name' => 'packing-out.index'],
-                    ['icon' => 'handshake', 'title' => 'Handover', 'route_name' => 'handover.index'],
-                    ['icon' => 'local_shipping', 'title' => 'Delivery', 'route_name' => 'delivery.index'],
-                ]
+                'route_name' => 'picking-list.index',
+                'children' => []
             ],
             [
                 'title' => 'Store Management',
                 'icon' => 'store',
-                'children' => [
-                    ['icon' => 'account_tree', 'title' => 'Store Groups', 'route_name' => 'store-groups.index'],
-                    ['icon' => 'layers', 'title' => 'Store Tiers', 'route_name' => 'store-tiers.index'],
-                    ['icon' => 'store', 'title' => 'Stores', 'route_name' => 'stores.index'],
-                    ['icon' => 'devices', 'title' => 'Channel Groups', 'route_name' => 'store-channel-groups.index'],
-                    ['icon' => 'terminal', 'title' => 'Channels', 'route_name' => 'store-channels.index'],
-                ]
+                'route_name' => 'store-groups.index',
+                'children' => []
             ],
             [
                 'title' => 'Shipping & Payment',
                 'icon' => 'payments',
-                'children' => [
-                    ['icon' => 'local_shipping', 'title' => 'Couriers', 'route_name' => 'couriers.index'],
-                    ['icon' => 'pin_drop', 'title' => 'Shipping Address Rates', 'route_name' => 'shipping-addresses.index'],
-                    ['icon' => 'account_balance_wallet', 'title' => 'Payment Methods', 'route_name' => 'payment-methods.index'],
-                ]
+                'route_name' => 'couriers.index',
+                'children' => []
             ],
             [
                 'title' => 'Content',
                 'icon' => 'article',
-                'children' => [
-                    ['icon' => 'help', 'title' => 'FAQ', 'route_name' => 'content.faq.index'],
-                    ['icon' => 'article', 'title' => 'Blog', 'route_name' => 'content.blog.index'],
-                    ['icon' => 'info', 'title' => 'About Us', 'route_name' => 'content.about.index'],
-                    ['icon' => 'assignment_return', 'title' => 'How To Return', 'route_name' => 'content.how-to-return.index'],
-                    ['icon' => 'gavel', 'title' => 'Terms & Conditions', 'route_name' => 'content.terms.index'],
-                    ['icon' => 'privacy_tip', 'title' => 'Privacy Policy', 'route_name' => 'content.privacy.index'],
-                    ['icon' => 'verified', 'title' => 'Warranty Claims', 'route_name' => 'content.warranty.index'],
-                ]
+                'route_name' => 'content.faq.index',
+                'children' => []
             ],
             [
                 'title' => 'System',
                 'icon' => 'settings',
-                'children' => [
-                    ['icon' => 'admin_panel_settings', 'title' => 'Roles', 'route_name' => 'roles.index'],
-                    ['icon' => 'shield_person', 'title' => 'Permissions', 'route_name' => 'permissions.index'],
-                    ['icon' => 'group', 'title' => 'Users', 'route_name' => 'users.index'],
-                    ['icon' => 'person', 'title' => 'Profile', 'route_name' => 'profile.show'],
-                ]
+                'route_name' => 'roles.index',
+                'children' => []
             ],
         ];
         @endphp
@@ -217,6 +188,10 @@
     }
     aside#sidebar.sidebar-collapsed .sidebar-group-header .flex {
         gap: 0 !important;
+    }
+    aside#sidebar.sidebar-collapsed .sidebar-bottom-img,
+    aside#sidebar.sidebar-collapsed .sidebar-logo {
+        display: none;
     }
     aside#sidebar.sidebar-collapsed .sidebar-bottom {
         display: flex;

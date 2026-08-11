@@ -19,6 +19,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.shipping-payment-submenu')
+
     <form method="POST" action="{{ route('shipping-addresses.update', $shippingAddress->id) }}" class="space-y-6">
         @csrf
         @method('PUT')

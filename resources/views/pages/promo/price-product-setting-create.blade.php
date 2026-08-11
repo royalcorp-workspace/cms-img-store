@@ -19,6 +19,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.promotions-submenu')
+
     <form id="priceSettingForm" method="POST" action="{{ route('price-settings.store') }}">
         @csrf
         <!-- Hidden inputs container for storing state across AJAX paginations -->

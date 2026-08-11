@@ -7,56 +7,21 @@
         <div>
             <h1 class="font-headline-lg text-headline-lg text-on-surface">Customers</h1>
             <nav class="flex items-center gap-2 text-body-md text-on-surface-variant mt-1">
-                <a href="{{ route('dashboard') }}" class="text-primary hover:underline">Dashboard</a>
+                <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">Dashboard</a>
                 <span class="material-symbols-outlined text-[16px]">chevron_right</span>
                 <span>Customers</span>
             </nav>
         </div>
-        <a href="{{ route('customers.create') }}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">
+        <a href="{{ route('customers.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
             <span class="material-symbols-outlined text-[18px]">add</span> Add Customer
         </a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-container-gap mb-8">
-        <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30">
-            <div class="flex justify-between items-start mb-4">
-                <div class="p-2.5 bg-primary/10 text-primary rounded-lg">
-                    <span class="material-symbols-outlined">group</span>
-                </div>
-            </div>
-            <p class="text-on-surface-variant font-label-md uppercase tracking-wider">Total Customers</p>
-            <h3 class="font-metric-display text-metric-display">{{ number_format($customers->total()) }}</h3>
-        </div>
-        <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30">
-            <div class="flex justify-between items-start mb-4">
-                <div class="p-2.5 bg-tertiary/10 text-tertiary rounded-lg">
-                    <span class="material-symbols-outlined">how_to_reg</span>
-                </div>
-            </div>
-            <p class="text-on-surface-variant font-label-md uppercase tracking-wider">Active Customers</p>
-            <h3 class="font-metric-display text-metric-display">{{ number_format($customers->where('deleted', false)->count()) }}</h3>
-        </div>
-        <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30">
-            <div class="flex justify-between items-start mb-4">
-                <div class="p-2.5 bg-warning/10 text-warning rounded-lg">
-                    <span class="material-symbols-outlined">person_add_alt</span>
-                </div>
-            </div>
-            <p class="text-on-surface-variant font-label-md uppercase tracking-wider">New This Month</p>
-            <h3 class="font-metric-display text-metric-display">{{ number_format($customers->where('created_at', '>=', now()->startOfMonth())->count()) }}</h3>
-        </div>
-        <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30">
-            <div class="flex justify-between items-start mb-4">
-                <div class="p-2.5 bg-danger/10 text-danger rounded-lg">
-                    <span class="material-symbols-outlined">person_off</span>
-                </div>
-            </div>
-            <p class="text-on-surface-variant font-label-md uppercase tracking-wider">Inactive</p>
-            <h3 class="font-metric-display text-metric-display">{{ number_format($customers->where('deleted', true)->count()) }}</h3>
-        </div>
-    </div>
+    @include('layouts.partials.customer-submenu')
 
-    <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
+    
+
+    <div class="overflow-hidden">
         <div class="p-gutter border-b border-outline-variant flex flex-col md:flex-row justify-between items-center gap-4 bg-surface-container-lowest">
             <form method="GET" class="flex items-center gap-3 w-full md:w-auto">
                 <div class="relative w-full md:w-80">
@@ -68,7 +33,7 @@
                     <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                     <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
                 </select>
-                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Filter</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">Filter</button>
                 <a href="{{ route('customers.index') }}" class="px-4 py-2 border border-outline-variant text-on-surface rounded-lg font-label-md hover:bg-surface-container transition-colors">Clear</a>
             </form>
         </div>
@@ -84,7 +49,7 @@
                         <th class="px-gutter py-4 font-headline-md text-[13px]">Phone</th>
                         <th class="px-gutter py-4 font-headline-md text-[13px]">Orders</th>
                         <th class="px-gutter py-4 font-headline-md text-[13px]">Status</th>
-                        <th class="px-gutter py-4 font-headline-md text-[13px] text-right">Actions</th>
+                        <th class="px-gutter py-4 font-headline-md text-[13px] text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-outline-variant">
@@ -117,12 +82,12 @@
                             @endif
                         </td>
                         <td class="px-gutter py-4">
-                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <a href="{{ route('customers.show', $customer->id) }}" class="p-1.5 text-secondary hover:text-primary transition-colors"><span class="material-symbols-outlined">visibility</span></a>
-                                <a href="{{ route('customers.edit', $customer->id) }}" class="p-1.5 text-secondary hover:text-primary transition-colors"><span class="material-symbols-outlined">edit</span></a>
+                            <div class="flex gap-2 justify-center">
+                                <a href="{{ route('customers.show', $customer->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
+                                <a href="{{ route('customers.edit', $customer->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
                                 <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this customer?')">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="p-1.5 text-secondary hover:text-danger transition-colors"><span class="material-symbols-outlined">delete</span></button>
+                                    <button type="submit" class="text-on-surface-variant hover:text-danger transition-colors" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
                                 </form>
                             </div>
                         </td>

@@ -14,6 +14,8 @@
     </button>
 </div>
 
+    @include('layouts.partials.system-submenu')
+
 <div class="grid grid-cols-1 md:grid-cols-3 gap-container-gap">
     <div class="bg-white p-card-padding rounded-xl shadow-subtle border border-surface-container flex items-center gap-4">
         <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -70,7 +72,7 @@
                     <th class="px-6 py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Description</th>
                     <th class="px-6 py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-center">Users</th>
                     <th class="px-6 py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Date Created</th>
-                    <th class="px-6 py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+                    <th class="px-6 py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-center">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-surface-container">

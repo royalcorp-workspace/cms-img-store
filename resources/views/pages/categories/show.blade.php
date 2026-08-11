@@ -15,6 +15,8 @@
         @endif
     </div>
 
+    @include('layouts.partials.product-submenu')
+
     @if($products->isEmpty())
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-12 text-center">
             <span class="material-symbols-outlined text-[48px] text-on-surface-variant mb-4">inventory_2</span>

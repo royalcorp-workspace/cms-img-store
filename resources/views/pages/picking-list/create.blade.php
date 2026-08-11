@@ -21,6 +21,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.pick-pack-submenu')
+
     <form id="pickingListForm" method="POST" action="{{ route('picking-list.store') }}">
         @csrf
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6 mb-6">

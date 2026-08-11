@@ -18,6 +18,8 @@ class Category extends Model
         'name',
         'slug',
         'description',
+        'banner_web',
+        'banner_mobile',
         'sort_order',
         'is_active',
         'creator',

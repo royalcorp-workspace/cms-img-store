@@ -1,3 +1,11 @@
+<style>
+    /* Fix transparent checkmark issue in light mode */
+    html:not(.dark) input[type="checkbox"].variant-checkbox:checked {
+        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+        background-color: #2563eb !important; /* blue-600 */
+        border-color: #2563eb !important;
+    }
+</style>
 @foreach($products as $product)
     @php $attrs = $product->getAttributes(); @endphp
     @php $displayPrice = ($attrs['price'] ?? 0) ?: ($attrs['base_price'] ?? 0); @endphp
@@ -28,7 +36,7 @@
                 <div class="variant-row py-1.5 px-2 rounded-md {{ $stock > 0 ? 'hover:bg-surface-container-low' : 'opacity-50' }} transition-colors">
                     <div class="flex items-start gap-2">
                         <label class="flex items-center flex-shrink-0 pt-0.5">
-                            <input type="checkbox" class="variant-checkbox w-3.5 h-3.5 rounded border-outline-variant text-primary focus:ring-primary/30" value="{{ $variant->id }}" {{ $stock > 0 && in_array($variant->id, $selectedVariantIds ?? []) ? 'checked' : '' }} {{ $disabled }}>
+                            <input type="checkbox" class="variant-checkbox w-3.5 h-3.5 rounded border-outline-variant text-blue-600 checked:bg-blue-600 accent-blue-600 focus:ring-blue-600/30" value="{{ $variant->id }}" {{ $stock > 0 && in_array($variant->id, $selectedVariantIds ?? []) ? 'checked' : '' }} {{ $disabled }}>
                         </label>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2">
