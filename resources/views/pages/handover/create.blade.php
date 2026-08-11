@@ -21,6 +21,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.pick-pack-submenu')
+
     <form method="POST" action="{{ route('handover.store') }}">
         @csrf
         <input type="hidden" name="packing_out_id" value="{{ $packingOut->id }}">

@@ -19,6 +19,8 @@
     </a>
 </div>
 
+    @include('layouts.partials.promotions-submenu')
+
 <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
     <div class="p-6">
         <form id="voucherForm" method="POST" action="{{ route('vouchers.store') }}">

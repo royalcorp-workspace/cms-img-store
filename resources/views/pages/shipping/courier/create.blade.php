@@ -19,6 +19,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.shipping-payment-submenu')
+
     <form method="POST" action="{{ route('couriers.store') }}" class="space-y-6">
         @csrf
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6">

@@ -9,12 +9,14 @@
             <p class="text-body-md text-on-surface-variant mt-1">Manage pricing per store with rowset adjustments.</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('price-product-setting-store.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">
+            <a href="{{ route('price-product-setting-store.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
                 <span class="material-symbols-outlined text-[18px]">add</span>
                 Create Store Pricing
             </a>
         </div>
     </div>
+
+    @include('layouts.partials.promotions-submenu')
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-5">
@@ -82,7 +84,7 @@
                         <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">Rp{{ number_format($pricing->base_price, 2, ',', '.') }}</td>
                         <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-medium">Rp{{ number_format($pricing->final_price, 2, ',', '.') }}</td>
                         <td class="px-gutter py-4">
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 justify-center">
                                 <a href="{{ route('price-product-setting-store.edit', $pricing->id) }}" class="text-on-surface-variant hover:text-primary" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
                                 <form action="{{ route('price-product-setting-store.destroy', $pricing->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this store pricing?')">
                                     @csrf

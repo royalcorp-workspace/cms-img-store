@@ -14,10 +14,12 @@
                 <span>Payment Methods</span>
             </nav>
         </div>
-        <a href="{{ route('payment-methods.create') }}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">
+        <a href="{{ route('payment-methods.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
             <span class="material-symbols-outlined text-[18px]">add</span> Create Payment Method
         </a>
     </div>
+
+    @include('layouts.partials.shipping-payment-submenu')
 
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
         <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between">
@@ -110,7 +112,7 @@
                             @endif
                         </td>
                         <td class="px-gutter py-4">
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 justify-center">
                                 <a href="{{ route('payment-methods.edit', $method->id) }}" class="text-on-surface-variant hover:text-primary" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
                                 <form action="{{ route('payment-methods.destroy', $method->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete payment method {{ $method->name }}?')">
                                     @csrf

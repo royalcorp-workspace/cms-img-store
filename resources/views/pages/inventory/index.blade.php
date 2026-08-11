@@ -13,12 +13,14 @@
                 <span class="material-symbols-outlined text-[20px]">download</span>
                 Export Report
             </button>
-            <a href="{{ route('inventory.create') }}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md shadow-sm hover:opacity-90 transition-all">
+            <a href="{{ route('inventory.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
                 <span class="material-symbols-outlined text-[20px]">add</span>
                 Add New Stock
             </a>
         </div>
     </div>
+
+    @include('layouts.partials.inventory-submenu')
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-container-gap">
         <div class="bg-surface-container-lowest p-card-padding rounded-xl shadow-sm border border-outline-variant/30 group hover:border-primary/30 transition-all">
@@ -90,7 +92,7 @@
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Current Stock</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Reorder Level</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Status</th>
-                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Action</th>
+                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-outline-variant/20">

@@ -9,7 +9,7 @@
             <!-- Header -->
             <div class="relative z-10">
                 <div class="flex items-center gap-3">
-                    <img alt="IMG" class="h-10 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCw1ZGF6302w4lWIVt_kcT4ogN19MHVhH30g8u7R7QqSJxbjNkjzMlYLRkTKnhZFcK9Zb2PRTEnC5f0XHJlp4HbGntruKwSNZaHNYqdR6caShbMgT2nzJLg0AjJLQ2wqGJs7plSGiVyo_pkR0MQRWukfoas2qrcsRkYecZcdZ7nRUFjo9DaqQTNjNhiNtpTe_W-ngzqOTw_UK0yV2Nn_dUKwTTnMBj4LSNnmvj-t3p9DK_njHJGxJbXo">
+                    <img alt="IMG" class="h-10 w-auto object-contain" src="{{ asset('admin/assets/images/logo.png') }}">
                     <span class="font-headline-md text-headline-md font-bold tracking-tight text-white">IMG</span>
                 </div>
             </div>

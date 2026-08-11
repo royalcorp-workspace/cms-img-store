@@ -19,6 +19,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.promotions-submenu')
+
     <form method="POST" action="{{ route('price-product-setting-store.store') }}">
         @csrf
         <div class="rounded-xl shadow-sm border border-outline-variant/30 p-6 mb-6">

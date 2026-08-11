@@ -21,6 +21,8 @@
         </form>
     </div>
 
+    @include('layouts.partials.sales-submenu')
+
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-container-gap mb-8">
         <!-- Total Orders Today -->

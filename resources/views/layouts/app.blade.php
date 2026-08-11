@@ -4,11 +4,14 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>@yield('title', 'Dashboard') | IMG Admin</title>
+    <link rel="icon" type="image/png" href="{{ asset('admin/assets/images/logo.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('admin/assets/images/logo.png') }}">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet"/>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -103,14 +106,17 @@
                         "body-lg": ["Plus Jakarta Sans"]
                     },
                     "fontSize": {
-                        "headline-md": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
-                        "headline-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                        "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600"}],
-                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "metric-display": ["24px", {"lineHeight": "30px", "fontWeight": "700"}],
-                        "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
-                        "headline-xl": ["26px", {"lineHeight": "34px", "fontWeight": "700"}],
-                        "body-lg": ["15px", {"lineHeight": "22px", "fontWeight": "400"}]
+                        "headline-md": ["15px", {"lineHeight": "22px", "fontWeight": "600"}],
+                        "headline-lg": ["18px", {"lineHeight": "26px", "fontWeight": "600"}],
+                        "label-sm": ["10px", {"lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "body-md": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "metric-display": ["20px", {"lineHeight": "26px", "fontWeight": "700"}],
+                        "label-md": ["11px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-xl": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "body-lg": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "xs": ["11px", {"lineHeight": "16px"}],
+                        "sm": ["12px", {"lineHeight": "18px"}],
+                        "base": ["14px", {"lineHeight": "20px"}]
                     }
                 }
             }

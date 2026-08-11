@@ -19,6 +19,8 @@
     </a>
 </div>
 
+    @include('layouts.partials.content-submenu')
+
 <form method="POST" action="{{ route('content.warranty.update', $item->id) }}" id="warrantyForm" class="space-y-6">
     @csrf
     @method('PUT')

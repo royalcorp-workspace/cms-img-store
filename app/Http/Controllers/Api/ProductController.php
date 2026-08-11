@@ -16,6 +16,16 @@ class ProductController extends ApiController
     {
         $query = Product::query()->with(['images', 'variants.priceProductSettings', 'colors', 'priceProductSettings']);
 
+        // HANYA TAMPILKAN PRODUK YANG MEMILIKI VARIAN DENGAN HARGA > 0
+        $query->whereHas('variants', function ($q) {
+            $q->where('price', '>', 0);
+        });
+
+        // VALIDASI STOCK SOLD OUT DI-HIDE SEMENTARA (KARENA NANTI AKAN DIBUKA LAGI)
+        // $query->whereHas('variants', function ($q) {
+        //     $q->where('stock_quantity', '>', 0);
+        // });
+
         if ($request->filled('search')) {
             $query->where('name', 'ilike', '%' . $request->search . '%');
         }

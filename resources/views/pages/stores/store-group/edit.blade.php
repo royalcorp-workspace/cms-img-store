@@ -19,6 +19,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.store-submenu')
+
     <form method="POST" action="{{ route('store-groups.update', $storeGroup->id) }}" class="space-y-6">
         @csrf
         @method('PUT')

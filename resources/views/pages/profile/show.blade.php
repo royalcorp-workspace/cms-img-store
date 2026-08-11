@@ -10,6 +10,8 @@
         </div>
     </div>
 
+    @include('layouts.partials.system-submenu')
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-container-gap mb-8">
         <div class="bg-white p-card-padding rounded-xl shadow-sm border border-outline-variant/30 text-center">
             <div class="w-20 h-20 rounded-full bg-primary text-white flex items-center justify-center text-[32px] font-headline-lg mx-auto mb-4">A</div>

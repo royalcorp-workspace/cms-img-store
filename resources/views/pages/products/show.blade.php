@@ -21,6 +21,8 @@
         </div>
     </div>
 
+    @include('layouts.partials.product-submenu')
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
             <div class="p-6">

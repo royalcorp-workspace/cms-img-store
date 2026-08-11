@@ -18,6 +18,8 @@
         </div>
     </div>
 
+    @include('layouts.partials.promotions-submenu')
+
     <!-- Metadata Form Section -->
     <section class="bg-surface-container-low rounded-xl p-8 border border-outline-variant/30 shadow-sm mb-6">
         <div class="flex flex-col md:flex-row gap-8">

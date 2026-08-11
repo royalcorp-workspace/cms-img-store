@@ -19,6 +19,8 @@
         </a>
     </div>
 
+    @include('layouts.partials.customer-submenu')
+
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
         <div class="p-6">
             <form method="POST" action="{{ route('customers.store') }}">

@@ -19,6 +19,8 @@
     </div>
 </div>
 
+    @include('layouts.partials.system-submenu')
+
 <div class="bg-primary-container/10 border border-primary-container/30 rounded-xl px-5 py-4 mb-8 flex items-start gap-4">
     <span class="material-symbols-outlined text-primary text-[24px] mt-0.5">info</span>
     <div>
