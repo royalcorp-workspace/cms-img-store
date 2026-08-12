@@ -52,7 +52,7 @@
                 <div class="p-6 border-b border-outline-variant/30">
                     <h3 class="font-headline-md text-headline-md text-on-surface">Customer Information</h3>
                 </div>
-                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Phone</p>
                         <p class="font-body-md text-body-md text-on-surface">{{ $customer->phone ?? '-' }}</p>
@@ -62,12 +62,18 @@
                         <p class="font-body-md text-body-md text-on-surface">{{ $customer->user->name ?? 'Not linked' }}</p>
                     </div>
                     <div>
+                        <p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Created At</p>
+                        <p class="font-body-md text-body-md text-on-surface">{{ $customer->created_at?->format('d M Y H:i') ?? '-' }}</p>
+                    </div>
+                    <div>
                         <p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Total Orders</p>
                         <p class="font-body-md text-body-md text-on-surface">{{ $customer->orders->count() }}</p>
                     </div>
-                    <div>
-                        <p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Created At</p>
-                        <p class="font-body-md text-body-md text-on-surface">{{ $customer->created_at?->format('d M Y H:i') ?? '-' }}</p>
+                    <div class="md:col-span-2">
+                        <p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Total Belanja Nominal</p>
+                        <p class="font-headline-sm text-headline-sm text-primary font-bold">
+                            Rp {{ number_format($customer->orders->where('status', '!=', 9)->sum('grand_total'), 0, ',', '.') }}
+                        </p>
                     </div>
                 </div>
             </div>

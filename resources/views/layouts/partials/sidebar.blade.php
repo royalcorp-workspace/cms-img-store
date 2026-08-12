@@ -21,6 +21,12 @@
                 'children' => []
             ],
             [
+                'title' => 'Live Chat',
+                'icon' => 'forum',
+                'route_name' => 'chat.index',
+                'children' => []
+            ],
+            [
                 'title' => 'Products',
                 'icon' => 'inventory_2',
                 'route_name' => 'products.index',

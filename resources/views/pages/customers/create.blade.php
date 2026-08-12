@@ -51,6 +51,46 @@
                         </select>
                         @error('user_id')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                     </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Customer Type <span class="text-danger">*</span></label>
+                        <select name="customer_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                            <option value="1" {{ old('customer_type') == '1' ? 'selected' : '' }}>Customer Biasa</option>
+                            <option value="2" {{ old('customer_type') == '2' ? 'selected' : '' }}>Reseller</option>
+                        </select>
+                        @error('customer_type')<p class="text-danger text-sm">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <hr class="my-6 border-outline-variant">
+                <h3 class="font-headline-sm text-headline-sm text-on-surface mb-4">Initial Address (Optional)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Address Label</label>
+                        <input type="text" name="label" value="{{ old('label') }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Rumah, Kantor">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Postal Code</label>
+                        <input type="text" name="postal_code" value="{{ old('postal_code') }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. 12345">
+                    </div>
+                    <div class="space-y-1.5 md:col-span-2">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Sub-District & City</label>
+                        <select name="sub_district_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                            <option value="">Pilih Kecamatan / Kota</option>
+                            @foreach($subDistricts ?? [] as $sub)
+                                <option value="{{ $sub->id }}" {{ old('sub_district_id') == $sub->id ? 'selected' : '' }}>{{ $sub->sub_district }}, {{ $sub->city->name ?? '' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="space-y-1.5 md:col-span-2">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Full Address</label>
+                        <textarea name="address" rows="3" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Nama jalan, nomor rumah, RT/RW">{{ old('address') }}</textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="flex items-center gap-2 cursor-pointer mt-2">
+                            <input type="checkbox" name="is_primary" value="1" {{ old('is_primary', true) ? 'checked' : '' }} class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary">
+                            <span class="text-label-sm font-medium text-on-surface-variant">Set as Primary Address</span>
+                        </label>
+                    </div>
                 </div>
                 <hr class="my-6 border-outline-variant">
                 <div class="flex justify-end gap-3">

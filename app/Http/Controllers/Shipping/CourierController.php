@@ -42,7 +42,9 @@ class CourierController extends Controller
 
     public function create()
     {
-        return view('pages.shipping.courier.create');
+        $categories = \App\Models\Product\Category::all();
+        $products = \App\Models\Product\Product::all();
+        return view('pages.shipping.courier.create', compact('categories', 'products'));
     }
 
     public function store(Request $request)
@@ -53,6 +55,8 @@ class CourierController extends Controller
             'type' => 'required|integer|in:1,2,3,4',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
+            'category_ids' => 'nullable|array',
+            'product_ids' => 'nullable|array',
         ]);
 
         $validated['creator'] = auth()->user()->name ?? 'admin';
@@ -60,7 +64,14 @@ class CourierController extends Controller
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
-        Courier::create($validated);
+        $courier = Courier::create($validated);
+        
+        if (!empty($validated['category_ids'])) {
+            $courier->restrictedCategories()->sync($validated['category_ids']);
+        }
+        if (!empty($validated['product_ids'])) {
+            $courier->restrictedProducts()->sync($validated['product_ids']);
+        }
 
         return redirect()->route('couriers.index')->with('success', 'Courier created successfully');
     }
@@ -68,8 +79,10 @@ class CourierController extends Controller
     public function edit(string $id)
     {
         $courier = Courier::withoutGlobalScope('active')->findOrFail($id);
+        $categories = \App\Models\Product\Category::all();
+        $products = \App\Models\Product\Product::all();
 
-        return view('pages.shipping.courier.edit', compact('courier'));
+        return view('pages.shipping.courier.edit', compact('courier', 'categories', 'products'));
     }
 
     public function update(Request $request, string $id)
@@ -82,6 +95,8 @@ class CourierController extends Controller
             'type' => 'required|integer|in:1,2,3,4',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
+            'category_ids' => 'nullable|array',
+            'product_ids' => 'nullable|array',
         ]);
 
         $validated['editor'] = auth()->user()->name ?? 'admin';
@@ -89,6 +104,9 @@ class CourierController extends Controller
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
         $courier->update($validated);
+        
+        $courier->restrictedCategories()->sync($validated['category_ids'] ?? []);
+        $courier->restrictedProducts()->sync($validated['product_ids'] ?? []);
 
         return redirect()->route('couriers.index')->with('success', 'Courier updated successfully');
     }

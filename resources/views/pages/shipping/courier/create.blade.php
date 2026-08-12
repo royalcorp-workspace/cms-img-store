@@ -53,7 +53,27 @@
                     @error('sort_order')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
             </div>
-            <div class="mt-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 border-t border-outline-variant/30 pt-4">
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Batasi Jenis (Kategori)</label>
+                    <p class="text-xs text-gray-500 mb-1">Pilih kategori yang diizinkan untuk kurir ini (Tahan CTRL untuk pilih banyak). Kosongkan jika berlaku untuk semua kategori.</p>
+                    <select name="category_ids[]" multiple class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" size="5">
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Batasi Kode Barang (Produk)</label>
+                    <p class="text-xs text-gray-500 mb-1">Pilih produk yang diizinkan (Tahan CTRL untuk pilih banyak). Kosongkan jika berlaku untuk semua barang.</p>
+                    <select name="product_ids[]" multiple class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" size="5">
+                        @foreach($products as $prod)
+                            <option value="{{ $prod->id }}">{{ $prod->code }} - {{ $prod->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div class="mt-4 border-t border-outline-variant/30 pt-4">
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }} class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary">
                     <span class="text-label-sm font-medium text-on-surface-variant">Active</span>

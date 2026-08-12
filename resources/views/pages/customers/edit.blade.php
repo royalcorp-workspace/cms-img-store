@@ -51,6 +51,14 @@
                         </select>
                         @error('user_id')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                     </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Customer Type <span class="text-danger">*</span></label>
+                        <select name="customer_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                            <option value="1" {{ old('customer_type', $customer->customer_type) == 1 ? 'selected' : '' }}>Customer Biasa</option>
+                            <option value="2" {{ old('customer_type', $customer->customer_type) == 2 ? 'selected' : '' }}>Reseller</option>
+                        </select>
+                        @error('customer_type')<p class="text-danger text-sm">{{ $message }}</p>@enderror
+                    </div>
                 </div>
                 <hr class="my-6 border-outline-variant">
                 <div class="flex justify-end gap-3">

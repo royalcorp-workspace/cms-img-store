@@ -484,6 +484,7 @@
 
         // Show page loader on valid form submissions
         document.addEventListener('submit', function(e) {
+            if (e.defaultPrevented) return; // Skip if form submission is prevented (e.g. AJAX)
             const loader = document.getElementById('page-loader');
             if (loader) {
                 loader.classList.remove('hidden');

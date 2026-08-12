@@ -6,6 +6,7 @@ use App\Models\Shipping\ShippingAddress;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Courier extends Model
 {
@@ -48,7 +49,17 @@ class Courier extends Model
 
     public function shippingAddresses(): HasMany
     {
-        return $this->hasMany(ShippingAddress::class, 'courier_id', 'id');
+        return $this->hasMany(ShippingAddress::class, 'courier_id');
+    }
+
+    public function restrictedCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Product\Category::class, 'courier_category', 'courier_id', 'category_id');
+    }
+
+    public function restrictedProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Product\Product::class, 'courier_product', 'courier_id', 'product_id');
     }
 
     public function shippingPrices(): HasMany
