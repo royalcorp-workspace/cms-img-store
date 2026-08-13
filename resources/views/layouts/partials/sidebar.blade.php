@@ -28,6 +28,24 @@
                 'badge' => \App\Models\Message::where('sender_type', 'customer')->where('is_read', false)->count()
             ],
             [
+                'title' => 'CRM Pipeline',
+                'icon' => 'view_kanban',
+                'route_name' => 'admin.crm.leads.index',
+                'children' => []
+            ],
+            [
+                'title' => 'Email Templates',
+                'icon' => 'mail',
+                'route_name' => 'admin.crm.email-templates.index',
+                'children' => []
+            ],
+            [
+                'title' => 'Email Campaigns',
+                'icon' => 'send',
+                'route_name' => 'admin.crm.campaigns.index',
+                'children' => []
+            ],
+            [
                 'title' => 'Products',
                 'icon' => 'inventory_2',
                 'route_name' => 'products.index',

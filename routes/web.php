@@ -13,6 +13,9 @@ Route::get('/category/{slug}', [CategoryController::class, 'show'])->name('categ
 // Public route bypass for screenshots
 Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
 
+// Public CRM Tracking Routes
+Route::get('/track/open/{log_id}', [\App\Http\Controllers\CRM\TrackingController::class, 'openTracking'])->name('crm.tracking.open');
+
 require __DIR__ . '/web/auth.php';
 
 Route::middleware(['auth:admin', 'admin'])->group(function () {
@@ -27,4 +30,5 @@ Route::middleware(['auth:admin', 'admin'])->group(function () {
     require __DIR__ . '/web/shipping.php';
     require __DIR__ . '/web/customer.php';
     require __DIR__ . '/web/chat.php';
+    require __DIR__ . '/web/crm.php';
 });
