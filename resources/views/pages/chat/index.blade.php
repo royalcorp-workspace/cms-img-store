@@ -76,10 +76,12 @@
     let activeConversationId = null;
     
     function loadConversations() {
-        axios.get('{{ route('chat.conversations') }}')
+        axios.get('/chat/conversations')
             .then(res => {
                 const list = document.getElementById('conversations-list');
                 list.innerHTML = '';
+                
+                let totalUnread = 0;
                 
                 if(res.data.length === 0) {
                     list.innerHTML = '<div class="p-4 text-center text-xs text-on-surface-variant">No conversations yet.</div>';
@@ -87,6 +89,7 @@
                 }
 
                 res.data.forEach(conv => {
+                    totalUnread += parseInt(conv.unread_count) || 0;
                     const name = conv.customer ? conv.customer.name : 'Unknown Customer';
                     const lastMsg = conv.latest_message ? conv.latest_message.text : 'No messages yet';
                     const time = conv.latest_message ? new Date(conv.latest_message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
@@ -106,6 +109,18 @@
                     `;
                     list.appendChild(div);
                 });
+                
+                // Update global badge
+                const badge = document.getElementById('menu-badge-live-chat');
+                if (badge) {
+                    if (totalUnread > 0) {
+                        badge.innerText = totalUnread;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.innerText = '0';
+                        badge.classList.add('hidden');
+                    }
+                }
             });
     }
 
@@ -196,6 +211,9 @@
             window.Echo.channel('admin.chat')
                 .listen('.message.sent', (e) => {
                     loadConversations();
+                    console.log("Incoming message:", e);
+                    console.log("activeConversationId:", activeConversationId);
+                    
                     // If the incoming message belongs to the currently open chat, append it!
                     if (activeConversationId == e.conversation_id) {
                         appendMessage(e);

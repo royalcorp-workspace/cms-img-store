@@ -202,14 +202,11 @@ class PriceProductSettingController extends Controller
             'type' => 'required|integer|in:1,2',
             'discount_type' => 'required|integer|in:1,2',
             'discount_value' => 'required|numeric|min:0',
-            'min_purchase' => 'nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
-            'scope' => 'required|integer|in:1,2,3,4',
+            'scope' => 'required|integer|in:1,2',
             'scope_store_type' => 'nullable|integer|in:0,1,2,3',
             'scope_store_id' => 'nullable|uuid|exists:store,id',
             'scope_tier_id' => 'nullable|uuid|exists:store_tier,id',
@@ -247,22 +244,26 @@ class PriceProductSettingController extends Controller
         try {
             DB::beginTransaction();
 
-            unset($validated['volume_tiers']);
-            $setting->update($validated);
+            $variantIds = $request->input('variant_ids', []);
+            $variantPrices = $request->input('variant_prices', []);
+            $variants = Variant::whereIn('id', $variantIds)->get(['id', 'product_id'])->keyBy('id');
+            
+            $bundlingIds = $request->input('bundling_ids', []);
+            $bundlingPrices = $request->input('bundling_prices', []);
 
             if (!empty($variantIds)) {
                 $pivotData = [];
-                $variantPrices = $request->input('variant_prices', []);
-                $variants = Variant::whereIn('id', $variantIds)->get(['id', 'product_id'])->keyBy('id');
-
                 foreach ($variantIds as $variantId) {
                     $variant = $variants->get($variantId);
                     $productId = $variant ? $variant->product_id : null;
 
+                    // If scope == 1 (Global), force use the header discount_value
+                    $discountValue = $validated['scope'] == 1 ? $validated['discount_value'] : ($variantPrices[$variantId] ?? $validated['discount_value']);
+
                     $pivotData[$variantId] = [
                         'product_id' => $productId,
                         'discount_type' => $validated['discount_type'],
-                        'discount_value' => $variantPrices[$variantId] ?? $validated['discount_value'],
+                        'discount_value' => $discountValue,
                     ];
                 }
                 $setting->variants()->sync($pivotData);
@@ -270,15 +271,15 @@ class PriceProductSettingController extends Controller
                 $setting->variants()->detach();
             }
 
-            // Save bundling items
-            $bundlingIds = $request->input('bundling_ids', []);
             if (!empty($bundlingIds)) {
                 $bundlingPivotData = [];
-                $bundlingPrices = $request->input('bundling_prices', []);
                 foreach ($bundlingIds as $bId) {
+                    // If scope == 1 (Global), force use the header discount_value
+                    $discountValue = $validated['scope'] == 1 ? $validated['discount_value'] : ($bundlingPrices[$bId] ?? $validated['discount_value']);
+
                     $bundlingPivotData[$bId] = [
                         'discount_type' => $validated['discount_type'],
-                        'discount_value' => $bundlingPrices[$bId] ?? $validated['discount_value'],
+                        'discount_value' => $discountValue,
                     ];
                 }
                 $setting->bundlings()->sync($bundlingPivotData);
@@ -395,14 +396,11 @@ class PriceProductSettingController extends Controller
             'type' => 'required|integer|in:1,2',
             'discount_type' => 'required|integer|in:1,2',
             'discount_value' => 'required|numeric|min:0',
-            'min_purchase' => 'nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
-            'scope' => 'required|integer|in:1,2,3,4',
+            'scope' => 'required|integer|in:1,2',
             'scope_store_type' => 'nullable|integer|in:0,1,2,3',
             'scope_store_id' => 'nullable|uuid|exists:store,id',
             'scope_tier_id' => 'nullable|uuid|exists:store_tier,id',
@@ -443,34 +441,40 @@ class PriceProductSettingController extends Controller
             unset($validated['volume_tiers']);
             $setting = PriceProductSetting::create($validated);
 
+            $variantIds = $request->input('variant_ids', []);
+            $variantPrices = $request->input('variant_prices', []);
+            $variants = Variant::whereIn('id', $variantIds)->get(['id', 'product_id'])->keyBy('id');
+            
+            $bundlingIds = $request->input('bundling_ids', []);
+            $bundlingPrices = $request->input('bundling_prices', []);
+
             if (!empty($variantIds)) {
                 $pivotData = [];
-                $variantPrices = $request->input('variant_prices', []);
-                // Fetch product_id for each variant to prevent Not-Null constraint errors
-                $variants = Variant::whereIn('id', $variantIds)->get(['id', 'product_id'])->keyBy('id');
-
                 foreach ($variantIds as $variantId) {
                     $variant = $variants->get($variantId);
                     $productId = $variant ? $variant->product_id : null;
 
+                    // If scope == 1 (Global), force use the header discount_value
+                    $discountValue = $validated['scope'] == 1 ? $validated['discount_value'] : ($variantPrices[$variantId] ?? $validated['discount_value']);
+
                     $pivotData[$variantId] = [
                         'product_id' => $productId,
                         'discount_type' => $validated['discount_type'],
-                        'discount_value' => $variantPrices[$variantId] ?? $validated['discount_value'],
+                        'discount_value' => $discountValue,
                     ];
                 }
                 $setting->variants()->attach($pivotData);
             }
 
-            // Save bundling items
-            $bundlingIds = $request->input('bundling_ids', []);
             if (!empty($bundlingIds)) {
                 $bundlingPivotData = [];
-                $bundlingPrices = $request->input('bundling_prices', []);
                 foreach ($bundlingIds as $bId) {
+                    // If scope == 1 (Global), force use the header discount_value
+                    $discountValue = $validated['scope'] == 1 ? $validated['discount_value'] : ($bundlingPrices[$bId] ?? $validated['discount_value']);
+
                     $bundlingPivotData[$bId] = [
                         'discount_type' => $validated['discount_type'],
-                        'discount_value' => $bundlingPrices[$bId] ?? $validated['discount_value'],
+                        'discount_value' => $discountValue,
                     ];
                 }
                 $setting->bundlings()->attach($bundlingPivotData);

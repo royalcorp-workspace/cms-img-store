@@ -66,22 +66,8 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Min Purchase (Rp) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Harga minimum pembelian agar diskon berlaku</span></span></label>
-                    <input type="number" name="min_purchase" step="0.01" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0" value="{{ old('min_purchase', $setting->min_purchase) }}">
-                </div>
-                <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Max Discount (Rp) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Batas maksimal potongan harga</span></span></label>
                     <input type="number" name="max_discount" step="0.01" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0" value="{{ old('max_discount', $setting->max_discount) }}">
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Start Date <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Tanggal mulai diskon berlaku</span></span></label>
-                    <input type="date" name="start_date" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" value="{{ old('start_date', $setting->start_date?->format('Y-m-d')) }}">
-                </div>
-                <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">End Date <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Tanggal berakhir diskon berlaku</span></span></label>
-                    <input type="date" name="end_date" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" value="{{ old('end_date', $setting->end_date?->format('Y-m-d')) }}">
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Sort Order <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Urutan tampilan di halaman</span></span></label>
@@ -91,10 +77,9 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Scope <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Jangkauan produk yang terkena diskon</span></span></label>
-                    <select name="scope" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                        <option value="1" {{ old('scope', $setting->scope) == 1 ? 'selected' : '' }}>All products</option>
-                        <option value="2" {{ old('scope', $setting->scope) == 2 ? 'selected' : '' }}>Specific products</option>
-                        <option value="3" {{ old('scope', $setting->scope) == 3 ? 'selected' : '' }}>Category</option>
+                    <select name="scope" id="scopeType" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" onchange="toggleProductsEditability()">
+                        <option value="1" {{ old('scope', $setting->scope) == 1 ? 'selected' : '' }}>Global</option>
+                        <option value="2" {{ old('scope', $setting->scope) == 2 ? 'selected' : '' }}>Per Produk</option>
                     </select>
                 </div>
                 <div class="space-y-1.5">
@@ -177,7 +162,7 @@
             </button>
         </div>
 
-        <div class="rounded-xl shadow-sm border border-outline-variant/30 p-6 mb-6">
+        <div class="rounded-xl shadow-sm border border-outline-variant/30 p-6 mb-6" id="productsSection">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-headline-md text-headline-md text-on-surface">Products</h3>
                 <div class="flex items-center gap-3">
@@ -452,6 +437,7 @@ async function fetchProducts(append = false) {
         
         restoreCheckedStates();
         bindEventHandlers();
+        toggleProductsEditability();
         
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -613,10 +599,45 @@ function toggleStoreScopeSelect() {
     }
 }
 
+function toggleProductsEditability() {
+    const scope = document.getElementById('scopeType').value;
+    const globalValue = document.getElementById('discountValueInput').value || '0';
+    const inputs = document.querySelectorAll('.variant-price-input');
+    
+    if (scope == '1') {
+        inputs.forEach(input => {
+            input.readOnly = true;
+            input.value = globalValue;
+            input.classList.add('bg-surface-container-high', 'cursor-not-allowed');
+            input.classList.remove('bg-transparent', 'focus:border-brand-gold');
+            updateDiscountInfo(input);
+        });
+    } else {
+        inputs.forEach(input => {
+            if (!input.disabled) {
+                input.readOnly = false;
+                input.value = input.dataset.original || globalValue;
+                input.classList.remove('bg-surface-container-high', 'cursor-not-allowed');
+                input.classList.add('bg-transparent', 'focus:border-brand-gold');
+                updateDiscountInfo(input);
+            }
+        });
+    }
+}
+
+// Ensure global discount syncs when scope is global
+document.getElementById('discountValueInput').addEventListener('input', function() {
+    const scope = document.getElementById('scopeType').value;
+    if (scope == '1') {
+        toggleProductsEditability();
+    }
+});
+
 // Initial setup
 syncDiscountInput();
 toggleVolumeTierSection();
 toggleStoreScopeSelect();
+toggleProductsEditability();
 
 // Restore and bind on load
 restoreCheckedStates();

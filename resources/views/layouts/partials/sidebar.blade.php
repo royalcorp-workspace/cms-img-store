@@ -24,7 +24,8 @@
                 'title' => 'Live Chat',
                 'icon' => 'forum',
                 'route_name' => 'chat.index',
-                'children' => []
+                'children' => [],
+                'badge' => \App\Models\Message::where('sender_type', 'customer')->where('is_read', false)->count()
             ],
             [
                 'title' => 'Products',
@@ -84,9 +85,14 @@
                         $routePrefix = \Illuminate\Support\Str::beforeLast($menu['route_name'], '.');
                         $isActive = request()->routeIs($routePrefix . '*');
                     @endphp
-                    <a class="sidebar-link flex items-center justify-start px-4 py-3 text-sidebar-text hover:bg-sidebar-active/10 hover:text-sidebar-active transition-colors duration-200 gap-3 {{ $isActive ? 'bg-primary-container text-sidebar-active' : '' }}" href="{{ route($menu['route_name']) }}">
-                        <span class="material-symbols-outlined shrink-0">{{ $menu['icon'] }}</span>
-                        <span class="sidebar-link-text font-label-md text-label-md whitespace-nowrap">{{ $menu['title'] }}</span>
+                    <a class="sidebar-link flex items-center justify-between w-full px-4 py-3 text-sidebar-text hover:bg-sidebar-active/10 hover:text-sidebar-active transition-colors duration-200 {{ $isActive ? 'bg-primary-container text-sidebar-active' : '' }}" href="{{ route($menu['route_name']) }}">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined shrink-0">{{ $menu['icon'] }}</span>
+                            <span class="sidebar-link-text font-label-md text-label-md whitespace-nowrap">{{ $menu['title'] }}</span>
+                        </div>
+                        @if(isset($menu['badge']))
+                            <span id="menu-badge-{{ \Illuminate\Support\Str::slug($menu['title']) }}" class="sidebar-badge bg-danger text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center {{ $menu['badge'] > 0 ? '' : 'hidden' }}">{{ $menu['badge'] }}</span>
+                        @endif
                     </a>
                 @else
                     @php
@@ -150,6 +156,26 @@
         <span id="sidebarToggleIcon" class="material-symbols-outlined text-base">chevron_left</span>
     </button>
 </aside>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof window.Echo !== 'undefined') {
+            window.Echo.channel('admin.chat')
+                .listen('.message.sent', (e) => {
+                    const badge = document.getElementById('menu-badge-live-chat');
+                    if (badge) {
+                        let count = parseInt(badge.innerText) || 0;
+                        count++;
+                        badge.innerText = count;
+                        badge.classList.remove('hidden');
+                        
+                        // Play a small notification sound optionally
+                        // new Audio('notification.mp3').play().catch(()=>{});
+                    }
+                });
+        }
+    });
+</script>
 
 <style>
 /* Accordion Grid animation styling */

@@ -7,8 +7,25 @@
     }
 </style>
 @foreach($products as $product)
-    @php $attrs = $product->getAttributes(); @endphp
-    @php $displayPrice = ($attrs['price'] ?? 0) ?: ($attrs['base_price'] ?? 0); @endphp
+    @php 
+        $attrs = $product->getAttributes();
+        $displayPrice = ($attrs['price'] ?? 0) ?: ($attrs['base_price'] ?? 0);
+        
+        $hasValidVariants = false;
+        foreach($product->variants as $variant) {
+            $vAttrs = $variant->getAttributes();
+            $vp = isset($variantPricesFromPivot[$variant->id]) ? $variantPricesFromPivot[$variant->id] : (($vAttrs['price'] ?? 0) ?: ($attrs['price'] ?? 0) ?: ($attrs['base_price'] ?? 0));
+            if ($vp > 0) {
+                $hasValidVariants = true;
+                break;
+            }
+        }
+    @endphp
+
+    @if(!$hasValidVariants)
+        @continue
+    @endif
+    
     <div class="product-variant-card bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm flex flex-col group transition-all hover:shadow-md" data-product-id="{{ $product->id }}" data-category="{{ $product->category->slug ?? 'uncategorized' }}">
         <div class="p-3.5 flex items-center gap-3 border-b border-outline-variant/30">
             <div class="w-10 h-10 rounded-md overflow-hidden bg-surface-gray flex-shrink-0 border border-outline-variant/30">
@@ -30,22 +47,22 @@
             @foreach($product->variants as $variant)
                 @php $vAttrs = $variant->getAttributes(); @endphp
                 @php $vp = isset($variantPricesFromPivot[$variant->id]) ? $variantPricesFromPivot[$variant->id] : (($vAttrs['price'] ?? 0) ?: ($attrs['price'] ?? 0) ?: ($attrs['base_price'] ?? 0)); @endphp
-                @php $stock = $variant->stock_qty ?? 0; @endphp
-                @php $hasStock = $hasStock || $stock > 0; @endphp
-                @php $disabled = $stock <= 0 ? 'disabled' : ''; @endphp
-                <div class="variant-row py-1.5 px-2 rounded-md {{ $stock > 0 ? 'hover:bg-surface-container-low' : 'opacity-50' }} transition-colors">
+                @php $stock = $variant->stock_quantity ?? 0; @endphp
+                @php $hasStock = true; @endphp
+                @php $disabled = $vp <= 0 ? 'disabled title="Harga 0 tidak dapat dipromokan"' : ''; @endphp
+                <div class="variant-row py-1.5 px-2 rounded-md {{ $vp > 0 ? 'hover:bg-surface-container-low' : 'opacity-50' }} transition-colors" {!! $vp <= 0 ? 'style="display: none;"' : '' !!}>
                     <div class="flex items-start gap-2">
                         <label class="flex items-center flex-shrink-0 pt-0.5">
-                            <input type="checkbox" class="variant-checkbox w-3.5 h-3.5 rounded border-outline-variant text-blue-600 checked:bg-blue-600 accent-blue-600 focus:ring-blue-600/30" value="{{ $variant->id }}" {{ $stock > 0 && in_array($variant->id, $selectedVariantIds ?? []) ? 'checked' : '' }} {{ $disabled }}>
+                            <input type="checkbox" class="variant-checkbox w-3.5 h-3.5 rounded border-outline-variant text-blue-600 checked:bg-blue-600 accent-blue-600 focus:ring-blue-600/30" value="{{ $variant->id }}" {{ $vp > 0 && in_array($variant->id, $selectedVariantIds ?? []) ? 'checked' : '' }} {!! $disabled !!}>
                         </label>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2">
-                                <span class="text-label-sm text-on-surface font-medium truncate block leading-tight {{ $stock <= 0 ? 'text-on-surface-variant' : '' }}">{{ $variant->variant_name ?? ($variant->sku ?? 'Default') }}</span>
+                                <span class="text-label-sm text-on-surface font-medium truncate block leading-tight {{ $vp <= 0 ? 'text-on-surface-variant' : '' }}">{{ $variant->variant_name ?? ($variant->sku ?? 'Default') }} {!! $vp <= 0 ? '<span class="text-[9px] text-danger font-bold ml-1">(Harga Rp0)</span>' : '' !!}</span>
                             </div>
                             <div class="flex items-center gap-2 mt-1">
                                 <div class="relative w-52">
                                     <span class="absolute left-1.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[10px] font-bold">Rp</span>
-                                    <input type="text" class="variant-price-input w-full pl-6 pr-1 py-1 text-body-xs text-right {{ $stock <= 0 ? 'bg-surface-container-high cursor-not-allowed' : 'bg-transparent border-b border-outline-variant focus:border-brand-gold' }}" value="{{ $vp }}" data-original="{{ $vp }}" oninput="updateDiscountInfo(this)" {{ $disabled }}>
+                                    <input type="text" class="variant-price-input w-full pl-6 pr-1 py-1 text-body-xs text-right {{ $vp <= 0 ? 'bg-surface-container-high cursor-not-allowed' : 'bg-transparent border-b border-outline-variant focus:border-brand-gold' }}" value="{{ $vp }}" data-original="{{ $vp }}" oninput="updateDiscountInfo(this)" {!! $disabled !!}>
                                 </div>
                                 <label class="discount-info text-[11px] text-on-surface-variant whitespace-nowrap w-44 text-right" data-price="{{ $vp }}">
                                     <span class="discount-text">→Rp{{ number_format($vp, 2, ',', '.') }}</span>

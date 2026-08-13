@@ -14,6 +14,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (env('APP_ENV') !== 'local' || env('FORCE_HTTPS', true)) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         view()->composer('layouts.partials.sidebar', function ($view) {
             if (Schema::hasTable('menus')) {
                 $view->with('menus', Menu::with('children')
