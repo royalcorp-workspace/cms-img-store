@@ -21,7 +21,7 @@
         <h4 class="font-headline-md text-headline-md text-on-surface">Voucher List</h4>
         <form method="GET" class="flex items-center gap-2 w-full sm:w-auto">
             <input name="search" value="{{ request('search') }}" class="px-4 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-1 focus:ring-primary focus:border-primary" placeholder="Search code or title..."/>
-            <select name="status" class="px-4 py-2 border border-outline-variant rounded-lg text-body-md">
+            <select name="status" class="px-4 py-2 border border-outline-variant rounded-lg text-body-md select2-enable">
                 <option value="">All Status</option>
                 <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                 <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>

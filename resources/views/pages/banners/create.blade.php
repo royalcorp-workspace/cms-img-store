@@ -36,7 +36,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6" x-data="{ bannerType: '1' }">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Banner Type <span class="text-danger">*</span></label>
-                    <select name="type" x-model="bannerType" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" required>
+                    <select name="type" x-model="bannerType" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none select2-enable" required>
                         <option value="1">Home Slider</option>
                         <option value="3">Brand Slider</option>
                         <option value="4">Category Slider</option>
@@ -44,7 +44,7 @@
                 </div>
                 <div class="space-y-1.5" x-show="bannerType === '3'" style="display: none;">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Select Brand <span class="text-danger">*</span></label>
-                    <select name="target_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" :required="bannerType === '3'" :disabled="bannerType !== '3'">
+                    <select name="target_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none select2-enable" :required="bannerType === '3'" :disabled="bannerType !== '3'">
                         <option value="">-- Choose Brand --</option>
                         @foreach($brands as $brand)
                             <option value="{{ $brand->id }}">{{ $brand->name }}</option>
@@ -53,7 +53,7 @@
                 </div>
                 <div class="space-y-1.5" x-show="bannerType === '4'" style="display: none;">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Select Category <span class="text-danger">*</span></label>
-                    <select name="target_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" :required="bannerType === '4'" :disabled="bannerType !== '4'">
+                    <select name="target_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none select2-enable" :required="bannerType === '4'" :disabled="bannerType !== '4'">
                         <option value="">-- Choose Category --</option>
                         @foreach($categories as $category)
                             <option value="{{ $category->id }}">{{ $category->name }}</option>

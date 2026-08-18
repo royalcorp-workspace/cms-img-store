@@ -100,7 +100,7 @@
 
             <div class="space-y-1.5">
                 <label class="block text-label-sm font-medium text-on-surface-variant">Select Price Product Setting <span class="text-danger">*</span></label>
-                <select name="price_product_setting_id" required class="w-full border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20">
+                <select name="price_product_setting_id" required class="w-full border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 select2-enable">
                     <option value="">-- Choose Price Product Setting --</option>
                     @foreach($priceProductSettings as $setting)
                         <option value="{{ $setting->id }}" {{ old('price_product_setting_id', $promo->id ?? '') == $setting->id ? 'selected' : '' }}>

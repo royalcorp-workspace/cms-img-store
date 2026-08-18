@@ -18,6 +18,11 @@ Route::get('/products/{id}/edit', [ProductController::class, 'edit'])->name('pro
 Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
 Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
 
+use App\Http\Controllers\Product\ProductSuggestionController;
+Route::get('/product-suggestions', [ProductSuggestionController::class, 'index'])->name('product-suggestions.index');
+Route::get('/product-suggestions/{id}/edit', [ProductSuggestionController::class, 'edit'])->name('product-suggestions.edit');
+Route::put('/product-suggestions/{id}', [ProductSuggestionController::class, 'update'])->name('product-suggestions.update');
+
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/flat', [CategoryController::class, 'flat'])->name('categories.flat');
 Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');

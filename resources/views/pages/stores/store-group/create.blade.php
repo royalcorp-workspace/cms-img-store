@@ -49,7 +49,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                    <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                         <option value="1" {{ old('status', '1') == '1' ? 'selected' : '' }}>Active</option>
                         <option value="0" {{ old('status') == '0' ? 'selected' : '' }}>Inactive</option>
                     </select>

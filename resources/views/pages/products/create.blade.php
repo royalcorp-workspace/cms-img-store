@@ -65,14 +65,14 @@
                         </div>
                         <div class="space-y-1.5">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Category <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Kategori untuk mengelompokkan produk</span></span></label>
-                            <select name="category_id" id="categorySelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                            <select name="category_id" id="categorySelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                                 <option value="">Select Category</option>
                                 {!! buildCategoryOptions(\App\Models\Product\Category::all(), null, '', old('category_id', $product->category_id ?? '')) !!}
                             </select>
                         </div>
                         <div class="space-y-1.5">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Brand <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Merek produk</span></span></label>
-                            <select name="brand_id" id="brandSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                            <select name="brand_id" id="brandSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                                 <option value="">Select Brand</option>
                                 @foreach(\App\Models\Product\Brand::all() as $brand)
                                     <option value="{{ $brand->id }}" {{ old('brand_id', $product->brand_id ?? '') == $brand->id ? 'selected' : '' }}>
@@ -448,7 +448,7 @@ let localImages = [];
             'height' => $v->height ?? 0,
             'weight' => $v->weight ?? 0,
             'price' => $v->price ?? 0,
-            'stock_qty' => $v->stock_qty ?? 0,
+            'stock_qty' => $v->stock_quantity ?? 0,
             'min_order_qty' => $v->min_order_qty ?? 1,
             'status' => $v->status ?? 1,
         ];

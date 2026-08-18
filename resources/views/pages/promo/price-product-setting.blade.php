@@ -43,12 +43,12 @@
             <input name="search" value="{{ request('search') }}" type="text" placeholder="Search price settings..." class="w-full pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none">
         </div>
         <div class="flex items-center gap-2">
-            <select name="type" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" onchange="this.form.submit()">
+            <select name="type" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" onchange="this.form.submit()">
                 <option value="">All Types</option>
                 <option value="1" {{ request('type') == '1' ? 'selected' : '' }}>Direct Discount</option>
                 <option value="2" {{ request('type') == '2' ? 'selected' : '' }}>Volume Discount</option>
             </select>
-            <select name="status" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" onchange="this.form.submit()">
+            <select name="status" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" onchange="this.form.submit()">
                 <option value="">All Status</option>
                 <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                 <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>

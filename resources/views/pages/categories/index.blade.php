@@ -113,7 +113,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1.5">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Parent</label>
-                        <select id="categoryParent" name="parent_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                        <select id="categoryParent" name="parent_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                             <option value="">None (Top Level)</option>
                         </select>
                     </div>
@@ -124,7 +124,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                    <select id="categoryStatus" name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <select id="categoryStatus" name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                         <option value="1">Active</option>
                         <option value="0">Inactive</option>
                     </select>

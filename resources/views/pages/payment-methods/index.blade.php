@@ -28,7 +28,7 @@
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] material-symbols-outlined">search</span>
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search payment methods..." class="pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none">
                 </div>
-                <select name="type" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-white">
+                <select name="type" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-white select2-enable">
                     <option value="">All Types</option>
                     <option value="1" {{ request('type') == '1' ? 'selected' : '' }}>Bank Transfer</option>
                     <option value="2" {{ request('type') == '2' ? 'selected' : '' }}>Virtual Account</option>
@@ -39,7 +39,7 @@
                     <option value="7" {{ request('type') == '7' ? 'selected' : '' }}>COD</option>
                     <option value="8" {{ request('type') == '8' ? 'selected' : '' }}>PayLater</option>
                 </select>
-                <select name="status" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-white">
+                <select name="status" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-white select2-enable">
                     <option value="">All Status</option>
                     <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                     <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>

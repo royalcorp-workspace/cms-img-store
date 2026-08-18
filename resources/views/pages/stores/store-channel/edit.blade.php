@@ -28,7 +28,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Store <span class="text-danger">*</span></label>
-                    <select name="store_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
+                    <select name="store_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
                         <option value="">Select Store</option>
                         @foreach($stores as $store)
                             <option value="{{ $store->id }}" {{ old('store_id', $channel->store_id) == $store->id ? 'selected' : '' }}>{{ $store->name }} ({{ $store->code }})</option>
@@ -38,7 +38,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Channel Group <span class="text-danger">*</span></label>
-                    <select name="store_channel_group_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
+                    <select name="store_channel_group_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
                         <option value="">Select Channel Group</option>
                         @foreach($channelGroups as $group)
                             <option value="{{ $group->id }}" {{ old('store_channel_group_id', $channel->store_channel_group_id) == $group->id ? 'selected' : '' }}>{{ $group->name }} ({{ $group->code }})</option>
@@ -72,7 +72,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                    <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                         <option value="1" {{ old('status', $channel->status ?? '1') == '1' ? 'selected' : '' }}>Active</option>
                         <option value="0" {{ old('status', $channel->status ?? '1') == '0' ? 'selected' : '' }}>Inactive</option>
                     </select>

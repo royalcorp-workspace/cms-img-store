@@ -47,7 +47,7 @@
                         <div>
                             <label for="courier_id" class="block font-label-md text-label-md text-on-surface-variant mb-2">Courier / Shipping Service</label>
                             <select name="courier_id" id="courier_id" 
-                                class="w-full px-4 py-2.5 border border-outline/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-body-md bg-white">
+                                class="w-full px-4 py-2.5 border border-outline/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-body-md bg-white select2-enable">
                                 <option value="" selected>-- Local Delivery / Self pickup --</option>
                                 @foreach($couriers as $courier)
                                     <option value="{{ $courier->id }}">{{ $courier->name }} ({{ $courier->code }})</option>

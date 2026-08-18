@@ -43,7 +43,7 @@
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-label-sm font-medium text-on-surface-variant">User (optional)</label>
-                        <select name="user_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                        <select name="user_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none select2-enable">
                             <option value="">None</option>
                             @foreach(\App\Models\User::all() as $user)
                                 <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }} ({{ $user->email }})</option>
@@ -74,7 +74,7 @@
                     </div>
                     <div class="space-y-1.5 md:col-span-2">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Sub-District & City</label>
-                        <select name="sub_district_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                        <select name="sub_district_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                             <option value="">Pilih Kecamatan / Kota</option>
                             @foreach($subDistricts ?? [] as $sub)
                                 <option value="{{ $sub->id }}" {{ old('sub_district_id') == $sub->id ? 'selected' : '' }}>{{ $sub->sub_district }}, {{ $sub->city->name ?? '' }}</option>

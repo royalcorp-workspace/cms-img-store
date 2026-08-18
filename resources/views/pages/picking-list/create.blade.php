@@ -29,7 +29,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Order <span class="text-danger">*</span></label>
-                    <select name="order_id" id="orderSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
+                    <select name="order_id" id="orderSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
                         <option value="">Select Order</option>
                         @foreach($orders as $o)
                             <option value="{{ $o->id }}" {{ (old('order_id', $order->id ?? '') == $o->id) ? 'selected' : '' }}>
@@ -41,7 +41,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Warehouse <span class="text-danger">*</span></label>
-                    <select name="warehouse_id" id="warehouseSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
+                    <select name="warehouse_id" id="warehouseSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
                         <option value="">Select Warehouse</option>
                         @foreach($warehouses as $warehouse)
                             <option value="{{ $warehouse->id }}" {{ old('warehouse_id') == $warehouse->id ? 'selected' : '' }}>

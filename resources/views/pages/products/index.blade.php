@@ -27,6 +27,38 @@
     @include('layouts.partials.product-submenu')
 
     <div class="bg-white rounded-lg shadow-sm border border-outline-variant/30 overflow-hidden mb-8">
+        <div class="p-4 border-b border-outline-variant/30 bg-surface-container-lowest">
+            <form method="GET" action="{{ route('products.index') }}" class="flex flex-col md:flex-row gap-3">
+                <div class="flex-1 relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama atau kode produk..." class="w-full pl-9 pr-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm bg-white">
+                </div>
+                <div class="w-full md:w-48">
+                    <select name="category_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm bg-white select2-enable" onchange="this.form.submit()">
+                        <option value="">Semua Kategori</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="w-full md:w-48">
+                    <select name="brand_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm bg-white select2-enable" onchange="this.form.submit()">
+                        <option value="">Semua Brand</option>
+                        @foreach($brands as $brand)
+                            <option value="{{ $brand->id }}" {{ request('brand_id') == $brand->id ? 'selected' : '' }}>{{ $brand->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <button type="submit" class="px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-lg text-sm font-semibold border border-outline-variant/30 transition-colors hidden md:block">Filter</button>
+                    @if(request()->hasAny(['search', 'category_id', 'brand_id']))
+                        <a href="{{ route('products.index') }}" class="ml-2 px-3 py-2 text-danger hover:bg-danger/10 rounded-lg text-sm font-semibold transition-colors" title="Reset Filters">
+                            <span class="material-symbols-outlined text-[18px] align-middle">close</span>
+                        </a>
+                    @endif
+                </div>
+            </form>
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>

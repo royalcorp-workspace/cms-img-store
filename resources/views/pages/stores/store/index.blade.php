@@ -29,13 +29,13 @@
                 <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Search</button>
             </form>
             <div class="flex items-center gap-2">
-                <select name="store_group_id" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" onchange="this.form.submit()">
+                <select name="store_group_id" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" onchange="this.form.submit()">
                     <option value="">All Groups</option>
                     @foreach($storeGroups as $group)
                         <option value="{{ $group->id }}" {{ request('store_group_id') == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
                     @endforeach
                 </select>
-                <select name="tier_id" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" onchange="this.form.submit()">
+                <select name="tier_id" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" onchange="this.form.submit()">
                     <option value="">All Tiers</option>
                     @foreach($tiers as $tier)
                         <option value="{{ $tier->id }}" {{ request('tier_id') == $tier->id ? 'selected' : '' }}>{{ $tier->name }}</option>

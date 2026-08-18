@@ -106,7 +106,7 @@
                     @csrf
                     <div>
                         <label class="block text-[10px] font-bold mb-1 text-on-surface-variant uppercase tracking-wider">Update Status</label>
-                        <select name="status" class="w-full px-2 py-1.5 border border-outline-variant rounded-lg bg-white text-xs">
+                        <select name="status" class="w-full px-2 py-1.5 border border-outline-variant rounded-lg bg-white text-xs select2-enable">
                             <option value="1" {{ $order->status == 1 ? 'selected' : '' }}>Pending</option>
                             <option value="2" {{ $order->status == 2 ? 'selected' : '' }}>Confirmed</option>
                             <option value="3" {{ $order->status == 3 ? 'selected' : '' }}>Processing</option>

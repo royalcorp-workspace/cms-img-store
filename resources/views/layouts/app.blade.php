@@ -416,6 +416,17 @@
             color: var(--color-on-surface);
         }
 
+        /* Fix transparent checkmark & radio issue in light mode */
+        html:not(.dark) input[type="checkbox"]:checked {
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+            background-color: var(--color-primary) !important;
+            border-color: var(--color-primary) !important;
+        }
+        html:not(.dark) input[type="radio"]:checked {
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3.5'/%3e%3c/svg%3e") !important;
+            background-color: var(--color-primary) !important;
+            border-color: var(--color-primary) !important;
+        }
     </style>
     @stack('styles')
 </head>
@@ -442,6 +453,19 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Select2 globally
+            if (typeof jQuery !== 'undefined' && $.fn.select2) {
+                $('.select2-enable').select2({
+                    width: '100%',
+                    dropdownCssClass: 'text-sm font-sans',
+                    selectionCssClass: 'text-sm font-sans'
+                }).on('select2:select', function (e) {
+                    // Dispatch native event for Alpine JS compatibility
+                    e.target.dispatchEvent(new Event('input', { bubbles: true }));
+                    e.target.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            }
+
             const loader = document.getElementById('page-loader');
             if (loader) loader.classList.add('hidden');
 
@@ -490,6 +514,16 @@
             const loader = document.getElementById('page-loader');
             if (loader) {
                 loader.classList.remove('hidden');
+            }
+        });
+
+        // Hide loader when navigating back (BFCache)
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                const loader = document.getElementById('page-loader');
+                if (loader) {
+                    loader.classList.add('hidden');
+                }
             }
         });
 

@@ -28,7 +28,7 @@
                     <input name="search" value="{{ request('search') }}" class="w-full border border-outline-variant rounded-lg px-10 py-2 text-body-md focus:ring-1 focus:ring-primary focus:border-primary transition-all" placeholder="Search customers..."/>
                     <span class="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-[20px]">search</span>
                 </div>
-                <select name="status" class="text-label-md font-label-md bg-white border border-outline-variant rounded-lg px-4 py-2 pr-10 focus:ring-1 focus:ring-primary">
+                <select name="status" class="text-label-md font-label-md bg-white border border-outline-variant rounded-lg px-4 py-2 pr-10 focus:ring-1 focus:ring-primary select2-enable">
                     <option value="">Status: All</option>
                     <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                     <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
@@ -82,9 +82,11 @@
                             @endif
                         </td>
                         <td class="px-gutter py-4">
-                            <div class="flex gap-2 justify-center">
-                                <a href="{{ route('customers.show', $customer->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
-                                <a href="{{ route('customers.edit', $customer->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
+                            <div class="flex gap-2 justify-center items-center">
+                                <a href="{{ route('customers.show', $customer->id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-md font-label-sm hover:bg-primary/20 transition-colors" title="Dashboard Riwayat">
+                                    <span class="material-symbols-outlined text-[16px]">dashboard</span> Riwayat
+                                </a>
+                                <a href="{{ route('customers.edit', $customer->id) }}" class="text-on-surface-variant hover:text-primary transition-colors ml-2" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
                                 <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this customer?')">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="text-on-surface-variant hover:text-danger transition-colors" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>

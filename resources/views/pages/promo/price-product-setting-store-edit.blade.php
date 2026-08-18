@@ -28,7 +28,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Store <span class="text-danger">*</span></label>
-                    <select name="store_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
+                    <select name="store_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
                         <option value="">Select Store</option>
                         @foreach($stores as $store)
                             <option value="{{ $store->id }}" {{ old('store_id', $pricing->store_id) == $store->id ? 'selected' : '' }}>{{ $store->name }} ({{ $store->code }})</option>
@@ -57,7 +57,7 @@
 
             <div class="space-y-1.5 mt-4 {{ old('target_type', $pricing->variant_id ? 'variant' : 'product') == 'product' ? 'hidden' : '' }}" id="variantSelect">
                 <label class="block text-label-sm font-medium text-on-surface-variant">Variant <span class="text-danger">*</span></label>
-                <select name="variant_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                <select name="variant_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                     <option value="">Select Variant</option>
                     @foreach($products as $product)
                         @foreach($product->variants as $variant)

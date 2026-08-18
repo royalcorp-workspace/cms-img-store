@@ -47,7 +47,7 @@
                         <div>
                             <label for="warehouse_id" class="block font-label-md text-label-md text-on-surface-variant mb-2">Select Warehouse</label>
                             <select name="warehouse_id" id="warehouse_id" 
-                                class="w-full px-4 py-2.5 border border-outline/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-body-md bg-white" required>
+                                class="w-full px-4 py-2.5 border border-outline/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-body-md bg-white select2-enable" required>
                                 <option value="" disabled selected>-- Choose Warehouse --</option>
                                 @foreach(\App\Models\Warehouse\Warehouse::where('status', true)->get() as $wh)
                                     <option value="{{ $wh->id }}">{{ $wh->name }} ({{ $wh->code }})</option>

@@ -46,7 +46,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Type <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Diskon langsung: potongan per item. Diskon volume: potongan berdasarkan qty pembelian</span></span></label>
-                    <select name="type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <select name="type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                         <option value="1" {{ old('type', $setting->type) == 1 ? 'selected' : '' }}>Diskon Langsung</option>
                         <option value="2" {{ old('type', $setting->type) == 2 ? 'selected' : '' }}>Diskon Volume</option>
                     </select>
@@ -100,7 +100,7 @@
                         <option value="3" {{ old('scope_store_type', $setting->scope_store_type ?? 0) == 3 ? 'selected' : '' }}>Berdasarkan Channel Group</option>
                     </select>
                     <div class="mt-2 hidden" id="storeTierSelect">
-                        <select name="scope_tier_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                        <select name="scope_tier_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                             <option value="">Pilih Tier</option>
                             @foreach($tiers as $t)
                                 <option value="{{ $t->id }}" {{ old('scope_tier_id', $setting->scope_store_id ?? '') == $t->id ? 'selected' : '' }}>{{ $t->name }} (Level {{ $t->level }})</option>
@@ -108,7 +108,7 @@
                         </select>
                     </div>
                     <div class="mt-2 hidden" id="storeSelect">
-                        <select name="scope_store_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                        <select name="scope_store_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                             <option value="">Pilih Store</option>
                             @foreach($stores as $s)
                                 <option value="{{ $s->id }}" {{ old('scope_store_id', $setting->scope_store_id ?? '') == $s->id ? 'selected' : '' }}>{{ $s->name }} ({{ $s->code }})</option>
@@ -116,7 +116,7 @@
                         </select>
                     </div>
                     <div class="mt-2 hidden" id="channelGroupSelect">
-                        <select name="scope_channel_group_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                        <select name="scope_channel_group_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                             <option value="">Pilih Channel Group</option>
                             @foreach($channelGroups as $g)
                                 <option value="{{ $g->id }}" {{ old('scope_channel_group_id', $setting->scope_store_id ?? '') == $g->id ? 'selected' : '' }}>{{ $g->name }} ({{ $g->code }})</option>

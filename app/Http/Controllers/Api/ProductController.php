@@ -272,8 +272,12 @@ class ProductController extends ApiController
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
         ]);
+        $data = $request->only(['sku', 'variant_name', 'width', 'length', 'height', 'weight', 'price', 'min_order_qty', 'sort_order', 'status']);
+        if ($request->has('stock_qty')) {
+            $data['stock_quantity'] = $request->stock_qty;
+        }
         $variant = Variant::create(array_merge(
-            $request->only(['sku', 'variant_name', 'width', 'length', 'height', 'weight', 'price', 'stock_qty', 'min_order_qty', 'sort_order', 'status']),
+            $data,
             ['product_id' => $product->id]
         ));
         return $this->successResponse($variant, 'Variant created', 201);
@@ -298,7 +302,11 @@ class ProductController extends ApiController
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
         ]);
-        $variant->update($request->only(['sku', 'variant_name', 'width', 'length', 'height', 'weight', 'price', 'stock_qty', 'min_order_qty', 'sort_order', 'status']));
+        $data = $request->only(['sku', 'variant_name', 'width', 'length', 'height', 'weight', 'price', 'min_order_qty', 'sort_order', 'status']);
+        if ($request->has('stock_qty')) {
+            $data['stock_quantity'] = $request->stock_qty;
+        }
+        $variant->update($data);
         return $this->successResponse($variant, 'Variant updated');
     }
 

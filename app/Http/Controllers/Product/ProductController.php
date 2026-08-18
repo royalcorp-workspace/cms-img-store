@@ -17,22 +17,54 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::paginate(15);
-        return view('pages.products.index', compact('products'));
+        $query = Product::with(['category', 'brand', 'images']);
+
+        if ($search = $request->query('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('code', 'ilike', "%{$search}%");
+            });
+        }
+
+        if ($categoryId = $request->query('category_id')) {
+            $query->where('category_id', $categoryId);
+        }
+
+        if ($brandId = $request->query('brand_id')) {
+            $query->where('brand_id', $brandId);
+        }
+
+        $products = $query->latest()->paginate(15)->appends($request->query());
+        
+        $categories = Category::orderBy('name')->get();
+        $brands = Brand::orderBy('name')->get();
+        
+        return view('pages.products.index', compact('products', 'categories', 'brands'));
     }
 
     public function create()
     {
         $product = new Product();
-        return view('pages.products.create', compact('product'));
+        $allProducts = Product::orderBy('name')->get();
+        return view('pages.products.create', compact('product', 'allProducts'));
     }
 
     public function store(Request $request)
     {
         if (is_string($request->variants)) {
-            $request->merge(['variants' => json_decode($request->variants, true)]);
+            $variantsData = json_decode($request->variants, true);
+            if (is_array($variantsData)) {
+                foreach ($variantsData as &$vData) {
+                    foreach (['width', 'length', 'height', 'weight', 'price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
+                        if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
+                            $vData[$field] = null;
+                        }
+                    }
+                }
+            }
+            $request->merge(['variants' => $variantsData]);
         }
         if (is_string($request->colors)) {
             $request->merge(['colors' => json_decode($request->colors, true)]);
@@ -102,14 +134,25 @@ class ProductController extends Controller
 
     public function edit($id)
     {
-        $product = Product::with('colors')->findOrFail($id);
-        return view('pages.products.create', compact('product'));
+        $product = Product::with('colors', 'suggestedProducts')->findOrFail($id);
+        $allProducts = Product::where('id', '!=', $id)->orderBy('name')->get();
+        return view('pages.products.create', compact('product', 'allProducts'));
     }
 
     public function update(Request $request, $id)
     {
         if (is_string($request->variants)) {
-            $request->merge(['variants' => json_decode($request->variants, true)]);
+            $variantsData = json_decode($request->variants, true);
+            if (is_array($variantsData)) {
+                foreach ($variantsData as &$vData) {
+                    foreach (['width', 'length', 'height', 'weight', 'price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
+                        if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
+                            $vData[$field] = null;
+                        }
+                    }
+                }
+            }
+            $request->merge(['variants' => $variantsData]);
         }
         if (is_string($request->colors)) {
             $request->merge(['colors' => json_decode($request->colors, true)]);
@@ -179,7 +222,7 @@ class ProductController extends Controller
         }
 
         if (isset($validated['variants']) && is_array($validated['variants'])) {
-            $submittedIds = [];
+            $submittedVariantIds = [];
             foreach ($validated['variants'] as $variantData) {
                 // Map stock_qty from frontend to stock_quantity for database
                 if (array_key_exists('stock_qty', $variantData)) {
@@ -188,7 +231,7 @@ class ProductController extends Controller
                 }
                 
                 if (isset($variantData['id'])) {
-                    $submittedIds[] = $variantData['id'];
+                    $submittedVariantIds[] = $variantData['id'];
                     $variant = \App\Models\Product\Variant::find($variantData['id']);
                     if ($variant) {
                         $variant->update($variantData);
@@ -198,13 +241,12 @@ class ProductController extends Controller
                 }
             }
 
-            if (!empty($submittedIds)) {
-                $product->variants()->whereNotIn('id', $submittedIds)->delete();
-            } else {
-                $product->variants()->delete();
-            }
+            // Delete removed variants
+            \App\Models\Product\Variant::where('product_id', $product->id)
+                ->whereNotIn('id', $submittedVariantIds)
+                ->delete();
         } else {
-            $product->variants()->delete();
+            \App\Models\Product\Variant::where('product_id', $product->id)->delete();
         }
 
         return redirect()->route('products.index')->with('success', 'Product updated successfully');

@@ -28,7 +28,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Store Group <span class="text-danger">*</span></label>
-                    <select name="store_group_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
+                    <select name="store_group_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
                         <option value="">Select Group</option>
                         @foreach($storeGroups as $group)
                             <option value="{{ $group->id }}" {{ old('store_group_id', $store->store_group_id) == $group->id ? 'selected' : '' }}>{{ $group->name }} ({{ $group->code }})</option>
@@ -50,7 +50,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Tier</label>
-                    <select name="tier_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <select name="tier_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                         <option value="">Select Tier</option>
                         @foreach($tiers as $tier)
                             <option value="{{ $tier->id }}" {{ old('tier_id', $store->tier_id) == $tier->id ? 'selected' : '' }}>{{ $tier->name }} (Level {{ $tier->level }})</option>
@@ -62,7 +62,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Owner User</label>
-                    <select name="owner_user_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <select name="owner_user_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                         <option value="">Select Owner</option>
                         @foreach(\App\Models\Admin::all() as $admin)
                             <option value="{{ $admin->id }}" {{ old('owner_user_id', $store->owner_user_id) == $admin->id ? 'selected' : '' }}>{{ $admin->name }} ({{ $admin->email }})</option>
@@ -106,7 +106,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                    <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                         <option value="1" {{ old('status', $store->status ?? '1') == '1' ? 'selected' : '' }}>Active</option>
                         <option value="0" {{ old('status', $store->status ?? '1') == '0' ? 'selected' : '' }}>Inactive</option>
                     </select>

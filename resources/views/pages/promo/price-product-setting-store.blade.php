@@ -39,7 +39,7 @@
             <input name="search" value="{{ request('search') }}" type="text" placeholder="Search by store, product, or variant..." class="w-full pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none">
         </div>
         <div class="flex items-center gap-2">
-            <select name="store_id" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" onchange="this.form.submit()">
+            <select name="store_id" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" onchange="this.form.submit()">
                 <option value="">All Stores</option>
                 @foreach($stores as $s)
                     <option value="{{ $s->id }}" {{ request('store_id') == $s->id ? 'selected' : '' }}>{{ $s->name }} ({{ $s->code }})</option>

@@ -48,6 +48,22 @@ class Product extends Model
             if (empty($product->slug)) {
                 $product->slug = \Illuminate\Support\Str::slug($product->name);
             }
+            if (empty($product->code)) {
+                $datePrefix = 'PRD' . date('dmy');
+                $lastProduct = static::withoutGlobalScope('not-deleted')
+                    ->where('code', 'like', $datePrefix . '%')
+                    ->orderBy('code', 'desc')
+                    ->first();
+                    
+                if ($lastProduct && preg_match('/(\d{5})$/', $lastProduct->code, $matches)) {
+                    $lastNumber = (int) $matches[1];
+                    $newNumber = $lastNumber + 1;
+                } else {
+                    $newNumber = 1;
+                }
+                
+                $product->code = $datePrefix . str_pad((string)$newNumber, 5, '0', STR_PAD_LEFT);
+            }
         });
     }
 
@@ -168,6 +184,16 @@ class Product extends Model
     public function images(): HasMany
     {
         return $this->hasMany(Image::class, 'product_id');
+    }
+
+    public function suggestedProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'product_suggestions',
+            'product_id',
+            'suggested_product_id'
+        )->withPivot('sort_order')->orderByPivot('sort_order');
     }
 
     public function variants(): HasMany

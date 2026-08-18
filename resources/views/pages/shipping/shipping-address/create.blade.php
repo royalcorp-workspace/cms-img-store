@@ -27,7 +27,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Sub District <span class="text-label-xs text-on-surface-variant/70">(Optional, empty for global rate)</span></label>
-                    <select name="sub_district_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <select name="sub_district_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                         <option value="">All Sub Districts (Global)</option>
                         @foreach($subDistricts as $subDistrict)
                             <option value="{{ $subDistrict->id }}" {{ old('sub_district_id') == $subDistrict->id ? 'selected' : '' }}>{{ $subDistrict->sub_district }} ({{ $subDistrict->district }})</option>
@@ -37,7 +37,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Service Type <span class="text-danger">*</span></label>
-                    <select name="type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
+                    <select name="type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
                         <option value="1" {{ old('type') == '1' ? 'selected' : '' }}>Regular</option>
                         <option value="2" {{ old('type') == '2' ? 'selected' : '' }}>Express</option>
                         <option value="3" {{ old('type') == '3' ? 'selected' : '' }}>Same Day</option>

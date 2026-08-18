@@ -72,7 +72,7 @@
                     <div class="md:col-span-2">
                         <p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Total Belanja Nominal</p>
                         <p class="font-headline-sm text-headline-sm text-primary font-bold">
-                            Rp {{ number_format($customer->orders->where('status', '!=', 9)->sum('grand_total'), 0, ',', '.') }}
+                            Rp {{ number_format($customer->orders->where('status', '!=', \App\Models\Order\Order::STATUS_CANCELLED)->sum('total'), 0, ',', '.') }}
                         </p>
                     </div>
                 </div>
@@ -102,6 +102,68 @@
                     <p class="text-body-md text-on-surface-variant">No addresses found</p>
                     @endif
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order History Section -->
+    <div class="mt-6">
+        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
+            <div class="p-6 border-b border-outline-variant/30">
+                <h3 class="font-headline-md text-headline-md text-on-surface">Order History</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-surface-gray">
+                        <tr>
+                            <th class="px-gutter py-4 font-headline-md text-[13px]">Order Number</th>
+                            <th class="px-gutter py-4 font-headline-md text-[13px]">Date</th>
+                            <th class="px-gutter py-4 font-headline-md text-[13px]">Total</th>
+                            <th class="px-gutter py-4 font-headline-md text-[13px]">Status</th>
+                            <th class="px-gutter py-4 font-headline-md text-[13px]">Resi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant">
+                        @forelse($customer->orders->sortByDesc('created_at') as $order)
+                        <tr class="hover:bg-surface-container-low transition-colors">
+                            <td class="px-gutter py-4 text-body-md font-medium text-primary">
+                                <a href="{{ route('orders.show', $order->id) }}">#{{ strtoupper(substr($order->id, 0, 8)) }}</a>
+                            </td>
+                            <td class="px-gutter py-4 text-body-md">{{ $order->created_at->format('d M Y') }}</td>
+                            <td class="px-gutter py-4 text-body-md font-medium">
+                                Rp {{ number_format($order->total ?? 0, 0, ',', '.') }}
+                                <br><span class="text-xs text-on-surface-variant font-normal">{{ $order->items ? $order->items->count() : 0 }} items</span>
+                            </td>
+                            <td class="px-gutter py-4">
+                                @if($order->status == \App\Models\Order\Order::STATUS_DRAFT)
+                                <span class="px-2 py-1 bg-surface-gray text-on-surface-variant text-xs font-bold rounded">DRAFT</span>
+                                @elseif($order->status == \App\Models\Order\Order::STATUS_PENDING_APPROVAL)
+                                <span class="px-2 py-1 bg-warning/20 text-warning text-xs font-bold rounded">PENDING</span>
+                                @elseif($order->status == \App\Models\Order\Order::STATUS_CONFIRMED)
+                                <span class="px-2 py-1 bg-primary/20 text-primary text-xs font-bold rounded">CONFIRMED</span>
+                                @elseif($order->status == \App\Models\Order\Order::STATUS_PROCESSING)
+                                <span class="px-2 py-1 bg-primary/20 text-primary text-xs font-bold rounded">PROCESSING</span>
+                                @elseif($order->status == \App\Models\Order\Order::STATUS_SHIPPED)
+                                <span class="px-2 py-1 bg-success/20 text-success text-xs font-bold rounded">SHIPPED</span>
+                                @elseif($order->status == \App\Models\Order\Order::STATUS_DELIVERED)
+                                <span class="px-2 py-1 bg-success/20 text-success text-xs font-bold rounded">DELIVERED</span>
+                                @elseif($order->status == \App\Models\Order\Order::STATUS_CANCELLED)
+                                <span class="px-2 py-1 bg-danger/20 text-danger text-xs font-bold rounded">CANCELLED</span>
+                                @elseif($order->status == \App\Models\Order\Order::STATUS_RETURNED)
+                                <span class="px-2 py-1 bg-danger/20 text-danger text-xs font-bold rounded">RETURNED</span>
+                                @else
+                                <span class="px-2 py-1 bg-surface-gray text-on-surface-variant text-xs font-bold rounded">UNKNOWN</span>
+                                @endif
+                            </td>
+                            <td class="px-gutter py-4 text-body-md">-</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="px-gutter py-8 text-center text-on-surface-variant">Belum ada riwayat pesanan.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

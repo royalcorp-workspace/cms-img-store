@@ -40,7 +40,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Type <span class="text-danger">*</span></label>
-                    <select name="type" id="typeSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
+                    <select name="type" id="typeSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
                         <option value="1" {{ old('type', $paymentMethod->type ?? '1') == '1' ? 'selected' : '' }}>Bank Transfer</option>
                         <option value="2" {{ old('type', $paymentMethod->type ?? '1') == '2' ? 'selected' : '' }}>Virtual Account</option>
                         <option value="3" {{ old('type', $paymentMethod->type ?? '1') == '3' ? 'selected' : '' }}>E-Wallet</option>
@@ -79,7 +79,7 @@
             <div id="chargeFields" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 {{ old('has_charge', $paymentMethod->has_charge) ? '' : 'hidden' }}">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Charge Type</label>
-                    <select name="charge_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <select name="charge_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                         <option value="1" {{ (old('charge_type', $paymentMethod->charge_type) == '1') ? 'selected' : '' }}>Percentage (%)</option>
                         <option value="2" {{ (old('charge_type', $paymentMethod->charge_type) == '2') ? 'selected' : '' }}>Fixed Amount (Rp)</option>
                     </select>
