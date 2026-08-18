@@ -104,7 +104,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Slug</label>
-                    <input type="text" id="categorySlug" name="slug" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="auto-generated">
+                    <input type="text" id="categorySlug" name="slug" class="w-full px-3 py-2 border border-outline-variant rounded-lg bg-surface-container-low text-on-surface-variant cursor-not-allowed focus:outline-none" placeholder="auto-generated" readonly>
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Description</label>
@@ -122,12 +122,21 @@
                         <input type="number" id="categorySort" name="sort_order" value="0" min="0" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
                     </div>
                 </div>
-                <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                    <select id="categoryStatus" name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
+                        <select id="categoryStatus" name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Garansi</label>
+                        <select id="categoryWarranty" name="has_warranty" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
+                            <option value="1">Ya</option>
+                            <option value="0">Tidak</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 border-t border-outline-variant pt-4 mt-2">
                     <div class="space-y-1.5">
@@ -159,6 +168,7 @@ function createCategory(parentName = null, parentId = null) {
     $('#categoryDesc').val('');
     $('#categorySort').val(0);
     $('#categoryStatus').val(1);
+    $('#categoryWarranty').val(1);
     $('#categoryParent').val(parentId || '');
     $('#modalTitle').text('Create Category');
     openModal();
@@ -173,6 +183,7 @@ function editCategory(id) {
         $('#categoryDesc').val(cat.description);
         $('#categorySort').val(cat.sort_order);
         $('#categoryStatus').val(cat.status ? 1 : 0);
+        $('#categoryWarranty').val(cat.has_warranty ? 1 : 0);
         $('#categoryParent').val(cat.parent_id || '');
         $('#modalTitle').text('Edit Category');
         openModal();
@@ -193,6 +204,11 @@ function deleteCategory(id) {
         }
     });
 }
+
+$('#categoryName').on('input', function() {
+    let slug = $(this).val().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    $('#categorySlug').val(slug);
+});
 
 $('#categoryForm').on('submit', function (e) {
     e.preventDefault();
@@ -222,7 +238,11 @@ $('#categoryForm').on('submit', function (e) {
             window.location.reload();
         },
         error: function (xhr) {
-            alert(xhr.responseJSON?.message || 'Error saving category');
+            if (xhr.status === 422 && xhr.responseJSON?.errors?.slug) {
+                alert('Warning: Slug (URL) yang dihasilkan sudah digunakan oleh data lain. Silakan ubah nama atau slug secara manual.');
+            } else {
+                alert(xhr.responseJSON?.message || 'Error saving category');
+            }
         }
     });
 });

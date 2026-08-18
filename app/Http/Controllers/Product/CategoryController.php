@@ -77,6 +77,7 @@ class CategoryController extends Controller
             'banner_mobile' => 'nullable|image|max:2048',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
+            'has_warranty' => 'boolean',
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
         
@@ -118,6 +119,7 @@ class CategoryController extends Controller
             'banner_mobile' => 'nullable|image|max:2048',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
+            'has_warranty' => 'boolean',
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
 

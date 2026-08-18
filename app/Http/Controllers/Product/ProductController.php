@@ -19,12 +19,15 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'brand', 'images']);
+        $query = Product::with(['category', 'brand', 'images', 'variants']);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'ilike', "%{$search}%")
-                  ->orWhere('code', 'ilike', "%{$search}%");
+                  ->orWhere('code', 'ilike', "%{$search}%")
+                  ->orWhereHas('variants', function ($q2) use ($search) {
+                      $q2->where('sku', 'ilike', "%{$search}%");
+                  });
             });
         }
 
@@ -77,6 +80,7 @@ class ProductController extends Controller
             'alt_text' => 'nullable|string|max:255',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
+            'warranty_duration' => 'nullable|string|max:255',
             'base_price' => 'nullable|numeric|min:0',
             'segments' => 'nullable|array',
             'segments.*' => 'nullable|string|max:255',
@@ -167,6 +171,7 @@ class ProductController extends Controller
             'alt_text' => 'nullable|string|max:255',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
+            'warranty_duration' => 'nullable|string|max:255',
             'base_price' => 'nullable|numeric|min:0',
             'segments' => 'nullable|array',
             'segments.*' => 'nullable|string|max:255',

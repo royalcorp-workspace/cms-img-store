@@ -64,6 +64,10 @@
                             <input type="text" name="name" value="{{ $product->name ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter product name" required>
                         </div>
                         <div class="space-y-1.5">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Product Slug <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">URL ramah mesin pencari (otomatis dari nama produk)</span></span></label>
+                            <input type="text" name="slug" id="productSlug" value="{{ $product->slug ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg bg-surface-container-low text-on-surface-variant cursor-not-allowed focus:outline-none" placeholder="auto-generated-slug" readonly>
+                        </div>
+                        <div class="space-y-1.5">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Category <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Kategori untuk mengelompokkan produk</span></span></label>
                             <select name="category_id" id="categorySelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                                 <option value="">Select Category</option>
@@ -144,6 +148,10 @@
                         <div class="md:col-span-2 space-y-1.5">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Description <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Deskripsi lengkap produk untuk customer</span></span></label>
                             <textarea name="description" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" rows="4" placeholder="Enter product description">{{ $product->description ?? '' }}</textarea>
+                        </div>
+                        <div class="md:col-span-2 space-y-1.5">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Durasi Garansi <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Tuliskan durasi garansi jika ada (contoh: 15 Tahun). Kosongkan jika tidak ada.</span></span></label>
+                            <input type="text" name="warranty_duration" value="{{ $product->warranty_duration ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Contoh: 15 Tahun">
                         </div>
                     </div>
                 </div>
@@ -989,6 +997,15 @@ $(document).ready(function() {
         allowClear: true,
         width: '100%'
     });
+
+    $('input[name="name"]').on('input', function() {
+        let slug = $(this).val().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        $('#productSlug').val(slug);
+    });
+
+    @if($errors->has('slug'))
+        alert('Warning: Slug (URL) yang dihasilkan sudah digunakan oleh data lain. Silakan ubah nama atau slug secara manual.');
+    @endif
 });
 </script>
 @endpush

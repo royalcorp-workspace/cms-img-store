@@ -78,6 +78,7 @@ class Product extends Model
         'alt_text',
         'short_description',
         'description',
+        'warranty_duration',
         'base_price',
         'segments',
         'best_seller',

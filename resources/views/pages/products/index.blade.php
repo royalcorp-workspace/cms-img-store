@@ -82,6 +82,18 @@
                                     </div>
                                     <div>
                                         <a href="{{ route('products.show', $product->id) }}" class="font-headline-md text-[14px] font-semibold text-on-surface hover:text-primary transition-colors">{{ $product->name }}</a>
+                                        @if($product->variants && $product->variants->isNotEmpty())
+                                            <div class="mt-1 flex flex-wrap gap-1">
+                                                @foreach($product->variants->take(4) as $variant)
+                                                    @if(!empty($variant->sku))
+                                                        <span class="text-[10px] bg-surface-container-low text-on-surface-variant px-1.5 py-0.5 rounded border border-outline-variant/30 font-mono">{{ $variant->sku }}</span>
+                                                    @endif
+                                                @endforeach
+                                                @if($product->variants->count() > 4)
+                                                    <span class="text-[10px] text-on-surface-variant px-1 font-mono">+{{ $product->variants->count() - 4 }}</span>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </td>

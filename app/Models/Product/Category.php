@@ -22,6 +22,7 @@ class Category extends Model
         'banner_mobile',
         'sort_order',
         'is_active',
+        'has_warranty',
         'creator',
         'editor',
         'deleted',
