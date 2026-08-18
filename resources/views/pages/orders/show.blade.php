@@ -150,9 +150,12 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-outline-variant/30">
-                            @php $originalSubtotal = 0; $totalDiscount = 0; @endphp
+                            @php $originalSubtotal = 0; $totalDiscount = 0; $runningNo = 1; @endphp
                             @foreach($order->items as $index => $item)
                             @php 
+                                $meta = is_string($item->meta) ? json_decode($item->meta, true) : ($item->meta ?? []);
+                                $isBundleItem = $meta['is_bundle_item'] ?? false;
+                                
                                 $price = $item->unit_price;
                                 $sub = $price * $item->quantity;
                                 $originalSubtotal += $sub;
@@ -166,24 +169,35 @@
                                 $disc_total = $disc_nom * $item->quantity;
                                 $totalDiscount += $disc_total;
                             @endphp
-                            <tr class="hover:bg-surface-container-low transition-colors text-on-surface">
-                                <td class="px-1.5 py-2 text-on-surface-variant align-top whitespace-nowrap">{{ $index + 1 }}</td>
-                                <td class="px-1.5 py-2 font-medium align-top">
-                                    {{ $item->name }}
+                            <tr class="hover:bg-surface-container-low transition-colors text-on-surface {{ $isBundleItem ? 'bg-surface-gray/50' : '' }}">
+                                <td class="px-1.5 py-2 text-on-surface-variant align-top whitespace-nowrap">
+                                    @if(!$isBundleItem)
+                                        {{ $runningNo++ }}
+                                    @endif
                                 </td>
-                                <td class="px-1.5 py-2 text-on-surface-variant align-top">
+                                <td class="px-1.5 py-2 font-medium align-top {{ $isBundleItem ? 'pl-6 text-on-surface-variant' : '' }}">
+                                    @if($isBundleItem)
+                                        <div class="flex items-start gap-1.5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mt-0.5 text-outline opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                                            <span class="text-[10px]">{{ ltrim($item->name, ' -') }}</span>
+                                        </div>
+                                    @else
+                                        {{ $item->name }}
+                                    @endif
+                                </td>
+                                <td class="px-1.5 py-2 text-on-surface-variant align-top {{ $isBundleItem ? 'text-[10px]' : '' }}">
                                     {{ $item->variant->variant_name ?? '-' }}
                                     <div class="opacity-70 mt-0.5" style="font-size: 10px;">
                                         {{ $item->variant->sku ?? $item->product->code ?? '-' }}
                                     </div>
                                 </td>
-                                <td class="px-1.5 py-2 text-right font-medium align-top whitespace-nowrap">{{ $item->quantity }}</td>
-                                <td class="px-1.5 py-2 text-on-surface-variant align-top whitespace-nowrap">Pcs</td>
-                                <td class="px-1.5 py-2 text-right align-top whitespace-nowrap">{{ number_format($price, 0, ',', '.') }}</td>
-                                <td class="px-1.5 py-2 text-right align-top whitespace-nowrap">{{ number_format($sub, 0, ',', '.') }}</td>
-                                <td class="px-1.5 py-2 text-right text-danger align-top whitespace-nowrap">{{ $disc_pct > 0 ? $disc_pct . '%' : '-' }}</td>
-                                <td class="px-1.5 py-2 text-right text-danger align-top whitespace-nowrap">{{ number_format($disc_total, 0, ',', '.') }}</td>
-                                <td class="px-1.5 py-2 text-right font-medium align-top whitespace-nowrap">{{ number_format($item->total, 0, ',', '.') }}</td>
+                                <td class="px-1.5 py-2 text-right font-medium align-top whitespace-nowrap {{ $isBundleItem ? 'text-[10px]' : '' }}">{{ $item->quantity }}</td>
+                                <td class="px-1.5 py-2 text-on-surface-variant align-top whitespace-nowrap {{ $isBundleItem ? 'text-[10px]' : '' }}">Pcs</td>
+                                <td class="px-1.5 py-2 text-right align-top whitespace-nowrap {{ $isBundleItem ? 'opacity-40 text-[10px]' : '' }}">{{ number_format($price, 0, ',', '.') }}</td>
+                                <td class="px-1.5 py-2 text-right align-top whitespace-nowrap {{ $isBundleItem ? 'opacity-40 text-[10px]' : '' }}">{{ number_format($sub, 0, ',', '.') }}</td>
+                                <td class="px-1.5 py-2 text-right text-danger align-top whitespace-nowrap {{ $isBundleItem ? 'opacity-40 text-[10px]' : '' }}">{{ $disc_pct > 0 ? $disc_pct . '%' : '-' }}</td>
+                                <td class="px-1.5 py-2 text-right text-danger align-top whitespace-nowrap {{ $isBundleItem ? 'opacity-40 text-[10px]' : '' }}">{{ number_format($disc_total, 0, ',', '.') }}</td>
+                                <td class="px-1.5 py-2 text-right font-medium align-top whitespace-nowrap {{ $isBundleItem ? 'opacity-40 text-[10px]' : '' }}">{{ number_format($item->total, 0, ',', '.') }}</td>
                             </tr>
                             @endforeach
                         </tbody>
