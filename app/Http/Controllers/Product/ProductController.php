@@ -60,7 +60,7 @@ class ProductController extends Controller
             $variantsData = json_decode($request->variants, true);
             if (is_array($variantsData)) {
                 foreach ($variantsData as &$vData) {
-                    foreach (['width', 'length', 'height', 'weight', 'price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
+                    foreach (['price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
                         if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
                             $vData[$field] = null;
                         }
@@ -97,10 +97,7 @@ class ProductController extends Controller
             'variants' => 'nullable|array',
             'variants.*.sku' => 'nullable|string|max:255',
             'variants.*.variant_name' => 'nullable|string|max:255',
-            'variants.*.width' => 'nullable|numeric|min:0',
-            'variants.*.length' => 'nullable|numeric|min:0',
-            'variants.*.height' => 'nullable|numeric|min:0',
-            'variants.*.weight' => 'nullable|numeric|min:0',
+            'variants.*.attributes' => 'nullable|array',
             'variants.*.price' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
@@ -149,7 +146,7 @@ class ProductController extends Controller
             $variantsData = json_decode($request->variants, true);
             if (is_array($variantsData)) {
                 foreach ($variantsData as &$vData) {
-                    foreach (['width', 'length', 'height', 'weight', 'price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
+                    foreach (['price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
                         if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
                             $vData[$field] = null;
                         }
@@ -190,10 +187,7 @@ class ProductController extends Controller
             'variants.*.id' => 'nullable|string|exists:product_variants,id',
             'variants.*.sku' => 'nullable|string|max:255',
             'variants.*.variant_name' => 'nullable|string|max:255',
-            'variants.*.width' => 'nullable|numeric|min:0',
-            'variants.*.length' => 'nullable|numeric|min:0',
-            'variants.*.height' => 'nullable|numeric|min:0',
-            'variants.*.weight' => 'nullable|numeric|min:0',
+            'variants.*.attributes' => 'nullable|array',
             'variants.*.price' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
@@ -460,13 +454,12 @@ class ProductController extends Controller
         $variantSheet = $spreadsheet->createSheet();
         $variantSheet->setTitle('product_variants');
         $variantHeaders = [
-            'product_id', 'sku', 'variant_name', 'width', 'length', 'height', 
-            'weight', 'price', 'stock_qty', 'min_order_qty', 'sort_order', 'status', 'creator', 'editor'
+            'product_id', 'sku', 'variant_name', 
+            'price', 'stock_qty', 'min_order_qty', 'sort_order', 'status', 'creator', 'editor'
         ];
         $variantSheet->fromArray($variantHeaders, null, 'A1');
         $sampleVariant = [
-            'Samsung Galaxy S24', 'SM-S921-256GB', '256GB / 8GB RAM', '7.06', '14.7', '0.76', 
-            '167', '15000000', '50', '1', '1', '1', '', ''
+            'product_id_here', 'VAR-001', 'King Size', '5000000', '10', '1', '1', '1', 'admin', 'admin'
         ];
         $variantSheet->fromArray($sampleVariant, null, 'A2');
 
@@ -664,10 +657,6 @@ class ProductController extends Controller
             $variantData = [
                 'sku' => $variant['sku'] ?? null,
                 'variant_name' => $variant['variant_name'] ?? null,
-                'width' => $this->toDecimal($variant['width'] ?? null),
-                'length' => $this->toDecimal($variant['length'] ?? null),
-                'height' => $this->toDecimal($variant['height'] ?? null),
-                'weight' => $this->toDecimal($variant['weight'] ?? null),
                 'price' => $this->toDecimal($variant['price'] ?? null),
                 'stock_qty' => $this->toInteger($variant['stock_qty'] ?? null),
                 'min_order_qty' => $this->toInteger($variant['min_order_qty'] ?? null),

@@ -22,10 +22,7 @@ class Variant extends Model
         'product_id',
         'sku',
         'variant_name',
-        'width',
-        'length',
-        'height',
-        'weight',
+        'attributes',
         'price',
         'stock_quantity',
         'min_order_qty',
@@ -39,10 +36,7 @@ class Variant extends Model
     protected function casts(): array
     {
         return [
-            'width' => 'decimal:2',
-            'length' => 'decimal:2',
-            'height' => 'decimal:2',
-            'weight' => 'decimal:2',
+            'attributes' => 'array',
             'price' => 'decimal:2',
             'stock_quantity' => 'integer',
             'min_order_qty' => 'integer',

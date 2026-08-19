@@ -143,10 +143,7 @@ class ProductController extends ApiController
             'variants.*.id' => 'nullable|string|exists:product_variants,id',
             'variants.*.sku' => 'nullable|string|max:255',
             'variants.*.variant_name' => 'nullable|string|max:255',
-            'variants.*.width' => 'nullable|numeric|min:0',
-            'variants.*.length' => 'nullable|numeric|min:0',
-            'variants.*.height' => 'nullable|numeric|min:0',
-            'variants.*.weight' => 'nullable|numeric|min:0',
+            'variants.*.attributes' => 'nullable|array',
             'variants.*.price' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
@@ -262,17 +259,14 @@ class ProductController extends ApiController
         $request->validate([
             'sku' => 'nullable|string|max:255',
             'variant_name' => 'nullable|string|max:255',
-            'width' => 'nullable|numeric|min:0',
-            'length' => 'nullable|numeric|min:0',
-            'height' => 'nullable|numeric|min:0',
-            'weight' => 'nullable|numeric|min:0',
+            'attributes' => 'nullable|array',
             'price' => 'nullable|numeric|min:0',
             'stock_qty' => 'nullable|integer|min:0',
             'min_order_qty' => 'nullable|integer|min:0',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
         ]);
-        $data = $request->only(['sku', 'variant_name', 'width', 'length', 'height', 'weight', 'price', 'min_order_qty', 'sort_order', 'status']);
+        $data = $request->only(['sku', 'variant_name', 'attributes', 'price', 'min_order_qty', 'sort_order', 'status']);
         if ($request->has('stock_qty')) {
             $data['stock_quantity'] = $request->stock_qty;
         }
@@ -292,17 +286,14 @@ class ProductController extends ApiController
         $request->validate([
             'sku' => 'nullable|string|max:255',
             'variant_name' => 'nullable|string|max:255',
-            'width' => 'nullable|numeric|min:0',
-            'length' => 'nullable|numeric|min:0',
-            'height' => 'nullable|numeric|min:0',
-            'weight' => 'nullable|numeric|min:0',
+            'attributes' => 'nullable|array',
             'price' => 'nullable|numeric|min:0',
             'stock_qty' => 'nullable|integer|min:0',
             'min_order_qty' => 'nullable|integer|min:0',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
         ]);
-        $data = $request->only(['sku', 'variant_name', 'width', 'length', 'height', 'weight', 'price', 'min_order_qty', 'sort_order', 'status']);
+        $data = $request->only(['sku', 'variant_name', 'attributes', 'price', 'min_order_qty', 'sort_order', 'status']);
         if ($request->has('stock_qty')) {
             $data['stock_quantity'] = $request->stock_qty;
         }

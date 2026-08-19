@@ -2,6 +2,28 @@
 
 @section('title', isset($product) ? 'Edit Product' : 'Create Product')
 
+@push('styles')
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<style>
+    .ql-editor {
+        min-height: 250px;
+        font-family: inherit;
+        font-size: 1rem;
+    }
+    .ql-toolbar.ql-snow {
+        border-color: var(--color-outline-variant, #cbd5e1);
+        border-top-left-radius: 0.5rem;
+        border-top-right-radius: 0.5rem;
+        background-color: #f8fafc;
+    }
+    .ql-container.ql-snow {
+        border-color: var(--color-outline-variant, #cbd5e1);
+        border-bottom-left-radius: 0.5rem;
+        border-bottom-right-radius: 0.5rem;
+    }
+</style>
+@endpush
+
 @section('content')
 @php
     $productId = $product->id ?? null;
@@ -147,7 +169,10 @@
                         </div>
                         <div class="md:col-span-2 space-y-1.5">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Description <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Deskripsi lengkap produk untuk customer</span></span></label>
-                            <textarea name="description" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" rows="4" placeholder="Enter product description">{{ $product->description ?? '' }}</textarea>
+                            <div class="border border-outline-variant rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary/20">
+                                <div id="quill-editor" style="height: 300px;">{!! $product->description ?? '' !!}</div>
+                            </div>
+                            <input type="hidden" name="description" id="description-input" value="{{ $product->description ?? '' }}">
                         </div>
                         <div class="md:col-span-2 space-y-1.5">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Durasi Garansi <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Tuliskan durasi garansi jika ada (contoh: 15 Tahun). Kosongkan jika tidak ada.</span></span></label>
@@ -190,21 +215,13 @@
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Variant Name</label>
                                 <input type="text" id="vName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red / Large">
                             </div>
-                            <div class="space-y-1.5 hidden">
-                                <label class="block text-label-sm font-medium text-on-surface-variant">Width</label>
-                                <input type="number" step="0.01" id="vWidth" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm" value="0">
-                            </div>
-                            <div class="space-y-1.5 hidden">
-                                <label class="block text-label-sm font-medium text-on-surface-variant">Length</label>
-                                <input type="number" step="0.01" id="vLength" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm" value="0">
-                            </div>
-                            <div class="space-y-1.5">
-                                <label class="block text-label-sm font-medium text-on-surface-variant">Height</label>
-                                <input type="number" step="0.01" id="vHeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
-                            </div>
-                            <div class="space-y-1.5">
-                                <label class="block text-label-sm font-medium text-on-surface-variant">Weight</label>
-                                <input type="number" step="0.01" id="vWeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="kg">
+                            <div class="col-span-1 md:col-span-2 space-y-1.5 bg-surface-container/30 p-3 rounded-lg border border-outline-variant/30">
+                                <label class="block text-label-sm font-medium text-on-surface-variant flex justify-between items-center">
+                                    <span>Attributes (e.g., Size: 180x200, Type: Fullset)</span>
+                                    <button type="button" onclick="addVAttributeRow()" class="text-primary hover:underline font-normal">+ Add Attribute</button>
+                                </label>
+                                <div id="vAttributesContainer" class="space-y-2">
+                                </div>
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Price (Rp)</label>
@@ -262,7 +279,7 @@
                                         </div>
                                     </div>
                                     <div class="flex justify-end mt-3 pt-3 border-t border-outline-variant/20">
-                                        <button type="button" onclick="editVariant('{{ $v->id }}', {{ json_encode(['sku' => $v->sku, 'variant_name' => $v->variant_name, 'width' => $v->width, 'length' => $v->length, 'height' => $v->height, 'weight' => $v->weight, 'price' => $v->price, 'stock_qty' => $v->stock_qty, 'min_order_qty' => $v->min_order_qty, 'status' => $v->status]) }})" class="text-primary hover:opacity-80 text-label-sm flex items-center gap-1 mr-3">
+                                        <button type="button" onclick="editVariant('{{ $v->id }}', {{ json_encode(['sku' => $v->sku, 'variant_name' => $v->variant_name, 'price' => $v->price, 'stock_qty' => $v->stock_qty, 'min_order_qty' => $v->min_order_qty, 'status' => $v->status]) }})" class="text-primary hover:opacity-80 text-label-sm flex items-center gap-1 mr-3">
                                             <span class="material-symbols-outlined text-[16px]">edit</span> Edit
                                         </button>
                                         <button type="button" onclick="deleteVariant('{{ $v->id }}')" class="text-danger hover:opacity-80 text-label-sm flex items-center gap-1">
@@ -321,21 +338,13 @@
                                     <label class="block text-label-sm font-medium text-on-surface-variant">Variant Name</label>
                                     <input type="text" id="mvName" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Red / Large">
                                 </div>
-                                <div class="space-y-1.5 hidden">
-                                    <label class="block text-label-sm font-medium text-on-surface-variant">Width</label>
-                                    <input type="number" step="0.01" id="mvWidth" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm" value="0">
-                                </div>
-                                <div class="space-y-1.5 hidden">
-                                    <label class="block text-label-sm font-medium text-on-surface-variant">Length</label>
-                                    <input type="number" step="0.01" id="mvLength" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm" value="0">
-                                </div>
-                                <div class="space-y-1.5">
-                                    <label class="block text-label-sm font-medium text-on-surface-variant">Height</label>
-                                    <input type="number" step="0.01" id="mvHeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="cm">
-                                </div>
-                                <div class="space-y-1.5">
-                                    <label class="block text-label-sm font-medium text-on-surface-variant">Weight</label>
-                                    <input type="number" step="0.01" id="mvWeight" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="kg">
+                                <div class="col-span-1 md:col-span-2 space-y-1.5 bg-surface-container/30 p-3 rounded-lg border border-outline-variant/30">
+                                    <label class="block text-label-sm font-medium text-on-surface-variant flex justify-between items-center">
+                                        <span>Attributes</span>
+                                        <button type="button" onclick="addMvAttributeRow()" class="text-primary hover:underline font-normal">+ Add Attribute</button>
+                                    </label>
+                                    <div id="mvAttributesContainer" class="space-y-2">
+                                    </div>
                                 </div>
                                 <div class="space-y-1.5">
                                     <label class="block text-label-sm font-medium text-on-surface-variant">Price (Rp)</label>
@@ -430,6 +439,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
 function switchTab(tab) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
@@ -451,10 +461,17 @@ let localImages = [];
             'id' => $v->id,
             'sku' => $v->sku ?? '',
             'variant_name' => $v->variant_name ?? '',
-            'width' => $v->width ?? 0,
-            'length' => $v->length ?? 0,
-            'height' => $v->height ?? 0,
-            'weight' => $v->weight ?? 0,
+            'attributes' => (function() use ($v) {
+                $raw = $v->getRawOriginal('attributes');
+                if (!$raw) return null;
+                $parsed = is_string($raw) ? json_decode($raw, true) : $raw;
+                if (is_array($parsed)) {
+                    foreach (['width', 'length', 'height', 'weight'] as $ik) {
+                        unset($parsed[$ik]);
+                    }
+                }
+                return $parsed;
+            })(),
             'price' => $v->price ?? 0,
             'stock_qty' => $v->stock_quantity ?? 0,
             'min_order_qty' => $v->min_order_qty ?? 1,
@@ -564,6 +581,14 @@ function renderVariants() {
                     <span class="w-1.5 h-1.5 rounded-full bg-current"></span> ${v.status == 1 ? 'Active' : 'Inactive'}
                 </span>
             </div>
+            ${v.attributes && typeof v.attributes === 'object' && Object.keys(v.attributes).length > 0 ? `
+                <div class="mb-3">
+                    <p class="text-on-surface-variant text-label-sm mb-1">Attributes:</p>
+                    <div class="flex flex-wrap gap-1">
+                        ${Object.entries(v.attributes).map(([k, val]) => `<span class="bg-surface-variant/50 text-on-surface px-2 py-0.5 rounded text-[11px]">${k}: ${val}</span>`).join('')}
+                    </div>
+                </div>
+            ` : ''}
             <div class="grid grid-cols-2 gap-3 text-body-sm">
                 <div>
                     <p class="text-on-surface-variant">Price</p>
@@ -572,14 +597,6 @@ function renderVariants() {
                 <div>
                     <p class="text-on-surface-variant">Stock</p>
                     <p class="font-medium text-on-surface">${v.stock_qty || 0}</p>
-                </div>
-                <div>
-                    <p class="text-on-surface-variant">Height</p>
-                    <p class="font-medium text-on-surface">${v.height || 0} cm</p>
-                </div>
-                <div>
-                    <p class="text-on-surface-variant">Weight</p>
-                    <p class="font-medium text-on-surface">${v.weight || 0} kg</p>
                 </div>
             </div>
             <div class="flex justify-end mt-3 pt-3 border-t border-outline-variant/20">
@@ -734,6 +751,49 @@ async function deleteColor(id) {
     }
 }
 
+function createAttributeRow(key = '', val = '') {
+    const div = document.createElement('div');
+    div.className = 'flex gap-2 items-center attribute-row';
+    div.innerHTML = `
+        <input type="text" class="attr-key w-1/3 px-3 py-1.5 text-sm border border-outline-variant rounded-md focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Type" value="${key}">
+        <input type="text" class="attr-val flex-1 px-3 py-1.5 text-sm border border-outline-variant rounded-md focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Fullset" value="${val}">
+        <button type="button" onclick="this.parentElement.remove()" class="text-danger hover:opacity-80 material-symbols-outlined text-[18px]">close</button>
+    `;
+    return div;
+}
+
+function addVAttributeRow(key = '', val = '') {
+    document.getElementById('vAttributesContainer').appendChild(createAttributeRow(key, val));
+}
+
+function addMvAttributeRow(key = '', val = '') {
+    document.getElementById('mvAttributesContainer').appendChild(createAttributeRow(key, val));
+}
+
+function getAttributesFromContainer(containerId) {
+    const container = document.getElementById(containerId);
+    const rows = container.querySelectorAll('.attribute-row');
+    const attrs = {};
+    rows.forEach(r => {
+        const key = r.querySelector('.attr-key').value.trim();
+        const val = r.querySelector('.attr-val').value.trim();
+        if (key && val) {
+            attrs[key] = val;
+        }
+    });
+    return Object.keys(attrs).length > 0 ? attrs : null;
+}
+
+function renderAttributesToContainer(containerId, attrs) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    if (attrs && typeof attrs === 'object') {
+        for (const [key, val] of Object.entries(attrs)) {
+            container.appendChild(createAttributeRow(key, val));
+        }
+    }
+}
+
 function addVariant() {
     const sku = document.getElementById('vSku').value.trim();
     const name = document.getElementById('vName').value.trim();
@@ -758,10 +818,7 @@ function addVariant() {
     const payload = {
         sku: sku,
         variant_name: name,
-        width: document.getElementById('vWidth').value,
-        length: document.getElementById('vLength').value,
-        height: document.getElementById('vHeight').value,
-        weight: document.getElementById('vWeight').value,
+        attributes: getAttributesFromContainer('vAttributesContainer'),
         price: price,
         stock_qty: stock,
         min_order_qty: document.getElementById('vMinOrder').value || 1,
@@ -771,10 +828,7 @@ function addVariant() {
     renderVariants();
     document.getElementById('vSku').value = '';
     document.getElementById('vName').value = '';
-    document.getElementById('vWidth').value = '';
-    document.getElementById('vLength').value = '';
-    document.getElementById('vHeight').value = '';
-    document.getElementById('vWeight').value = '';
+    document.getElementById('vAttributesContainer').innerHTML = '';
     document.getElementById('vPrice').value = '';
     document.getElementById('vStock').value = '';
     document.getElementById('vMinOrder').value = '';
@@ -792,14 +846,11 @@ async function editVariant(id, data) {
     currentEditVariantId = id;
     document.getElementById('mvSku').value = data.sku || '';
     document.getElementById('mvName').value = data.variant_name || '';
-    document.getElementById('mvWidth').value = data.width || '';
-    document.getElementById('mvLength').value = data.length || '';
-    document.getElementById('mvHeight').value = data.height || '';
-    document.getElementById('mvWeight').value = data.weight || '';
     document.getElementById('mvPrice').value = data.price || '';
     document.getElementById('mvStock').value = data.stock_qty || '';
     document.getElementById('mvMinOrder').value = data.min_order_qty || '';
     document.getElementById('mvStatus').value = data.status == 1 ? '1' : '0';
+    renderAttributesToContainer('mvAttributesContainer', data.attributes);
     openVariantModal();
 }
 
@@ -808,10 +859,7 @@ async function editLocalVariant(index) {
     currentEditLocalIndex = index;
     document.getElementById('vSku').value = v.sku || '';
     document.getElementById('vName').value = v.variant_name || '';
-    document.getElementById('vWidth').value = v.width || '';
-    document.getElementById('vLength').value = v.length || '';
-    document.getElementById('vHeight').value = v.height || '';
-    document.getElementById('vWeight').value = v.weight || '';
+    renderAttributesToContainer('vAttributesContainer', v.attributes);
     document.getElementById('vPrice').value = v.price || '';
     document.getElementById('vStock').value = v.stock_qty || '';
     document.getElementById('vMinOrder').value = v.min_order_qty || '';
@@ -828,10 +876,7 @@ function cancelEditVariant() {
     document.getElementById('cancelVariantBtn').classList.add('hidden');
     document.getElementById('vSku').value = '';
     document.getElementById('vName').value = '';
-    document.getElementById('vWidth').value = '';
-    document.getElementById('vLength').value = '';
-    document.getElementById('vHeight').value = '';
-    document.getElementById('vWeight').value = '';
+    document.getElementById('vAttributesContainer').innerHTML = '';
     document.getElementById('vPrice').value = '';
     document.getElementById('vStock').value = '';
     document.getElementById('vMinOrder').value = '';
@@ -865,10 +910,7 @@ function updateLocalVariant() {
         ...localVariants[currentEditLocalIndex],
         sku: sku,
         variant_name: name,
-        width: document.getElementById('vWidth').value,
-        length: document.getElementById('vLength').value,
-        height: document.getElementById('vHeight').value,
-        weight: document.getElementById('vWeight').value,
+        attributes: getAttributesFromContainer('vAttributesContainer'),
         price: price,
         stock_qty: stock,
         min_order_qty: document.getElementById('vMinOrder').value || 1,
@@ -924,10 +966,7 @@ async function saveVariantFromModal() {
     const payload = {
         sku: sku,
         variant_name: name,
-        width: document.getElementById('mvWidth').value,
-        length: document.getElementById('mvLength').value,
-        height: document.getElementById('mvHeight').value,
-        weight: document.getElementById('mvWeight').value,
+        attributes: getAttributesFromContainer('mvAttributesContainer'),
         price: price,
         stock_qty: stock,
         min_order_qty: document.getElementById('mvMinOrder').value || 1,
@@ -981,12 +1020,33 @@ async function deleteVariant(id) {
 document.getElementById('productForm').addEventListener('submit', function(e) {
     document.getElementById('variantsInput').value = JSON.stringify(localVariants);
     document.getElementById('colorsInput').value = JSON.stringify(localColors);
+    
+    // Get Quill content
+    var quillHtml = quill.root.innerHTML;
+    // If empty (only contains <p><br></p>), set it to empty string
+    if (quillHtml === '<p><br></p>') {
+        quillHtml = '';
+    }
+    document.getElementById('description-input').value = quillHtml;
 });
 
 renderVariants();
 renderColors();
 
 $(document).ready(function() {
+    // Initialize Quill
+    window.quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'clean']
+            ]
+        }
+    });
+
     $('#categorySelect').select2({
         placeholder: 'Select Category',
         allowClear: true,
