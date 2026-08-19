@@ -124,6 +124,19 @@ class ProductController extends Controller
             }
         }
 
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $path = $file->store('product_images', 'public');
+                \App\Models\Product\Image::create([
+                    'product_id' => $product->id,
+                    'image' => $path,
+                    'alt_text' => $file->getClientOriginalName(),
+                    'sort_order' => 0,
+                    'status' => 1,
+                ]);
+            }
+        }
+
         return redirect()->route('products.index')->with('success', 'Product created successfully');
     }
 
@@ -709,5 +722,32 @@ class ProductController extends Controller
         }
 
         $product->tags()->sync($tagIds);
+    }
+
+    public function storeImage(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+        $request->validate([
+            'image' => 'required|file|image|max:2048',
+        ]);
+        $path = $request->file('image')->store('product_images', 'public');
+        $image = \App\Models\Product\Image::create([
+            'product_id' => $product->id,
+            'image' => $path,
+            'alt_text' => $request->alt_text,
+            'sort_order' => $request->sort_order ?? 0,
+            'status' => $request->status ?? 1,
+        ]);
+        return response()->json(['success' => true, 'data' => ['id' => $image->id, 'url' => $image->url]]);
+    }
+
+    public function destroyImage($id)
+    {
+        $image = \App\Models\Product\Image::findOrFail($id);
+        if ($image->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($image->image)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($image->image);
+        }
+        $image->delete();
+        return response()->json(['success' => true]);
     }
 }

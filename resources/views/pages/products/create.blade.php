@@ -69,7 +69,7 @@
                 <button onclick="switchTab('colors')" id="tab-colors" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md">Colors</button>
             </div>
 
-            <form id="productForm" method="POST" action="{{ $product->id ? route('products.update', $product->id) : route('products.store') }}">
+            <form id="productForm" method="POST" action="{{ $product->id ? route('products.update', $product->id) : route('products.store') }}" enctype="multipart/form-data">
                 @csrf
                 @if($product) @method('PUT') @endif
                 <input type="hidden" name="variants" id="variantsInput" value="">
@@ -503,7 +503,7 @@ async function handleMediaUpload(input) {
             formData.append('sort_order', 0);
             formData.append('status', 1);
             try {
-                const res = await fetch('/api/v1/products/' + productId + '/images', {
+                const res = await fetch('/products/' + productId + '/images', {
                     method: 'POST',
                     headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'},
                     body: formData
@@ -553,7 +553,7 @@ function removeLocalImage(index) {
 async function deleteMedia(id) {
     if (!confirm('Delete this image?')) return;
     try {
-        const res = await fetch('/api/v1/products/images/' + id, {
+        const res = await fetch('/products/images/' + id, {
             method: 'DELETE',
             headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
         });
@@ -1028,6 +1028,25 @@ document.getElementById('productForm').addEventListener('submit', function(e) {
         quillHtml = '';
     }
     document.getElementById('description-input').value = quillHtml;
+
+    // Append local images
+    if (localImages.length > 0) {
+        const dt = new DataTransfer();
+        localImages.forEach(img => {
+            dt.items.add(img.file);
+        });
+        let imgInput = document.getElementById('hiddenImagesInput');
+        if (!imgInput) {
+            imgInput = document.createElement('input');
+            imgInput.type = 'file';
+            imgInput.name = 'images[]';
+            imgInput.multiple = true;
+            imgInput.style.display = 'none';
+            imgInput.id = 'hiddenImagesInput';
+            this.appendChild(imgInput);
+        }
+        imgInput.files = dt.files;
+    }
 });
 
 renderVariants();
