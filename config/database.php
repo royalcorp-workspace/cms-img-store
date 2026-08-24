@@ -101,11 +101,11 @@ return [
 
         'dev' => [
             'driver' => env('DB_CONNECTION_DEV', 'pgsql'),
-            'host' => env('DB_HOST__DEV', '127.0.0.1'),
-            'port' => env('DB_PORT__DEV', '5432'),
-            'database' => env('DB_DATABASE__DEV', 'forge'),
-            'username' => env('DB_USERNAME__DEV', 'forge'),
-            'password' => env('DB_PASSWORD__DEV', ''),
+            'host' => env('DB_HOST_DEV', '192.215.215.77'),
+            'port' => env('DB_PORT_DEV', '5432'),
+            'database' => env('DB_DATABASE_DEV', 'img_store_dev'),
+            'username' => env('DB_USERNAME_DEV', 'postgres'),
+            'password' => env('DB_PASSWORD_DEV', 'XLzJ3h5C6kT2idfG'),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
