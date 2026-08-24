@@ -99,6 +99,20 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        'dev' => [
+            'driver' => env('DB_CONNECTION_DEV', 'pgsql'),
+            'host' => env('DB_HOST__DEV', '127.0.0.1'),
+            'port' => env('DB_PORT__DEV', '5432'),
+            'database' => env('DB_DATABASE__DEV', 'forge'),
+            'username' => env('DB_USERNAME__DEV', 'forge'),
+            'password' => env('DB_PASSWORD__DEV', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
