@@ -558,6 +558,325 @@ async function deleteMedia(id) {
     // Legacy function, replaced by removeLocalImage for all images
 }
 
+
+function renderVariants() {
+    const container = document.getElementById('variantsList');
+    container.innerHTML = '';
+    localVariants.forEach(function(v, index) {
+        const isSaved = !!v.id;
+        const div = document.createElement('div');
+        div.className = 'border border-outline-variant rounded-lg p-4';
+        div.innerHTML = `
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="font-body-md text-body-md text-on-surface font-semibold">${v.variant_name || v.sku || 'Variant'}</p>
+                    <p class="text-label-sm text-on-surface-variant">SKU: ${v.sku || '-'}</p>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm ${v.status == 1 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span> ${v.status == 1 ? 'Active' : 'Inactive'}
+                </span>
+            </div>
+            ${v.attributes && typeof v.attributes === 'object' && Object.keys(v.attributes).length > 0 ? `
+                <div class="mb-3">
+                    <p class="text-on-surface-variant text-label-sm mb-1">Attributes:</p>
+                    <div class="flex flex-wrap gap-1">
+                        ${Object.entries(v.attributes).map(([k, val]) => `<span class="px-2 py-0.5 bg-surface-container-high rounded text-body-xs text-on-surface">${k}: ${val}</span>`).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            <div class="flex justify-between items-center bg-surface-container/50 rounded p-2 mb-3">
+                <div class="text-center">
+                    <p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Base Price</p>
+                    <p class="font-body-sm font-semibold text-on-surface">Rp ${parseFloat(v.base_price||0).toLocaleString('id-ID')}</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Sell Price</p>
+                    <p class="font-body-sm font-semibold text-primary">Rp ${parseFloat(v.sell_price||0).toLocaleString('id-ID')}</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Stock</p>
+                    <p class="font-body-sm font-semibold text-on-surface">${v.stock_qty||0}</p>
+                </div>
+            </div>
+            <div class="flex justify-end mt-3 pt-3 border-t border-outline-variant/20">
+                <button type="button" onclick="editLocalVariant(${index})" class="text-primary hover:opacity-80 text-label-sm flex items-center gap-1 mr-3">
+                    <span class="material-symbols-outlined text-[16px]">edit</span> Edit
+                </button>
+                <button type="button" onclick="removeLocalVariant(${index})" class="text-danger hover:opacity-80 text-label-sm flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">delete</span> Delete
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+    document.getElementById('variantsInput').value = JSON.stringify(localVariants);
+}
+
+function renderColors() {
+    const container = document.getElementById('colorsList');
+    container.innerHTML = '';
+    localColors.forEach(function(c, index) {
+        const isSaved = !!c.id;
+        const div = document.createElement('div');
+        div.className = 'border border-outline-variant rounded-lg p-4';
+        div.innerHTML = `
+            <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full border border-outline-variant" style="background-color: ${c.color_code}"></div>
+                    <div>
+                        <p class="font-body-md text-body-md text-on-surface font-semibold">${c.color_name || 'Unnamed Color'}</p>
+                        <p class="text-label-sm text-on-surface-variant font-mono">${c.color_code}</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm ${c.status == 1 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger' }">
+                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span> ${c.status == 1 ? 'Active' : 'Inactive'}
+                </span>
+            </div>
+            <div class="flex justify-end mt-3 pt-3 border-t border-outline-variant/20">
+                ${isSaved ? '<button type="button" class="text-primary hover:opacity-80 text-label-sm flex items-center gap-1 mr-3"><span class="material-symbols-outlined text-[16px]">edit</span> Edit</button>' : ''}
+                <button type="button" onclick="removeColor(${index})" class="text-danger hover:opacity-80 text-label-sm flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">delete</span> Delete
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+    document.getElementById('colorsInput').value = JSON.stringify(localColors);
+}
+
+function addColor() {
+    const name = document.getElementById('cName').value.trim();
+    const code = document.getElementById('cCode').value.trim();
+
+    if (!code) {
+        showWarningModal('Please select a color code.');
+        return;
+    }
+
+    const payload = {
+        color_name: name,
+        color_code: code,
+        status: document.getElementById('cStatus').value == '1' ? 1 : 0,
+    };
+    localColors.push(payload);
+    renderColors();
+    document.getElementById('cName').value = '';
+    document.getElementById('cCode').value = '#FF0000';
+    document.getElementById('cColorPicker').value = '#FF0000';
+    document.getElementById('cStatus').value = '1';
+}
+
+function removeColor(index) {
+    localColors.splice(index, 1);
+    renderColors();
+}
+
+async function editColor(id, data) {
+    currentEditColorId = id;
+    document.getElementById('cName').value = data.color_name || '';
+    document.getElementById('cCode').value = data.color_code || '#FF0000';
+    document.getElementById('cColorPicker').value = data.color_code || '#FF0000';
+    document.getElementById('cStatus').value = data.status == 1 ? '1' : '0';
+    openColorModal();
+}
+
+function openColorModal() {
+    document.getElementById('colorModal').classList.remove('hidden');
+    document.getElementById('colorModal').classList.add('flex');
+}
+
+function closeColorModal() {
+    document.getElementById('colorModal').classList.add('hidden');
+    document.getElementById('colorModal').classList.remove('flex');
+    currentEditColorId = null;
+}
+
+async function saveColorFromModal() {
+    const name = document.getElementById('mcName').value.trim();
+    const code = document.getElementById('mcCode').value.trim();
+
+    if (!code) {
+        showWarningModal('Please select a color code.');
+        return;
+    }
+
+    const payload = {
+        color_name: name,
+        color_code: code,
+        status: document.getElementById('mcStatus').value == '1' ? 1 : 0,
+    };
+    try {
+        let res;
+        if (currentEditColorId) {
+            res = await fetch('/api/v1/products/colors/' + currentEditColorId, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(payload)
+            });
+        } else {
+            res = await fetch('/api/v1/products/' + productId + '/colors', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(payload)
+            });
+        }
+        if (res.ok) {
+            closeColorModal();
+            location.reload();
+        }
+    } catch (e) {
+        console.error(e);
+        showWarningModal('Failed to save color');
+    }
+}
+
+async function deleteColor(id) {
+    if (!confirm('Delete this color?')) return;
+    try {
+        const res = await fetch('/api/v1/products/colors/' + id, {
+            method: 'DELETE',
+            headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
+        });
+        if (res.ok) location.reload();
+    } catch (e) {
+        console.error(e);
+        alert('Failed to delete color');
+    }
+}
+
+const predefinedAttributes = {
+    'Ukuran': ['90x200', '100x200', '120x200', '140x200', '160x200', '180x200', '200x200', 'Lainnya'],
+    'Kelengkapan': ['Mattress Only', 'Full Set', 'Bed Set', 'Headboard Only', 'Lainnya'],
+    'Warna/Motif': ['Sage', 'Blue', 'White', 'Black', 'Grey', 'Brown', 'Lainnya'],
+    'Tinggi Kasur': ['T10', 'T15', 'T20', 'T25', 'T30', 'T35', 'T40', 'Lainnya'],
+    'Feel': ['Plush', 'Medium', 'Firm', 'Extra Firm', 'Lainnya']
+};
+
+function createAttributeRow(key = '', val = '') {
+    const div = document.createElement('div');
+    div.className = 'flex gap-2 items-center attribute-row mv-attr-row';
+    
+    const predefinedKeys = Object.keys(predefinedAttributes);
+    const isCustomKey = key !== '' && !predefinedKeys.includes(key);
+    const selectKeyVal = isCustomKey ? 'Lainnya' : key;
+    
+    // For values
+    let options = [];
+    if (predefinedAttributes[key]) {
+        options = predefinedAttributes[key];
+    }
+    const isCustomVal = val !== '' && options.length > 0 && !options.includes(val);
+    const selectValVal = isCustomVal ? 'Lainnya' : val;
+    const isValueDropdownHidden = options.length === 0;
+
+    div.innerHTML = `
+        <div class="w-1/3 flex gap-2">
+            <select class="w-full px-3 py-1.5 text-sm border border-outline-variant rounded-md focus:ring-2 focus:ring-primary/20 focus:outline-none" onchange="toggleAttrKey(this)">
+                <option value="">Pilih Level / Atribut</option>
+                ${predefinedKeys.map(k => `<option value="${k}" ${selectKeyVal === k ? 'selected' : ''}>${k}</option>`).join('')}
+                <option value="Lainnya" ${selectKeyVal === 'Lainnya' ? 'selected' : ''}>Lainnya...</option>
+            </select>
+            <input type="text" class="attr-key mv-attr-name ${isCustomKey ? '' : 'hidden'} w-full px-3 py-1.5 text-sm border border-outline-variant rounded-md focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Nama Level" value="${key}">
+        </div>
+        <div class="flex-1 flex gap-2">
+            <select class="attr-val-select ${isValueDropdownHidden ? 'hidden' : ''} w-full px-3 py-1.5 text-sm border border-outline-variant rounded-md focus:ring-2 focus:ring-primary/20 focus:outline-none" onchange="toggleAttrVal(this)">
+                <option value="">Pilih Nilai</option>
+                ${options.map(o => `<option value="${o}" ${selectValVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                ${options.includes('Lainnya') ? '' : `<option value="Lainnya" ${selectValVal === 'Lainnya' ? 'selected' : ''}>Lainnya...</option>`}
+            </select>
+            <input type="text" class="attr-val mv-attr-val ${(!isValueDropdownHidden && !isCustomVal) ? 'hidden' : ''} w-full px-3 py-1.5 text-sm border border-outline-variant rounded-md focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Isi Nilai" value="${val}">
+        </div>
+        <button type="button" onclick="this.parentElement.remove()" class="text-danger hover:opacity-80 material-symbols-outlined text-[18px]">close</button>
+    `;
+    return div;
+}
+
+function toggleAttrKey(selectObj) {
+    const keyInput = selectObj.nextElementSibling;
+    const row = selectObj.closest('.attribute-row');
+    const valSelect = row.querySelector('.attr-val-select');
+    const valInput = row.querySelector('.attr-val');
+    
+    if (selectObj.value === 'Lainnya') {
+        keyInput.classList.remove('hidden');
+        keyInput.value = '';
+        keyInput.focus();
+        
+        // Hide value dropdown, show text input
+        valSelect.classList.add('hidden');
+        valSelect.innerHTML = '<option value="">Pilih Nilai</option>';
+        valInput.classList.remove('hidden');
+        valInput.value = '';
+    } else {
+        keyInput.classList.add('hidden');
+        keyInput.value = selectObj.value;
+        
+        // Populate value dropdown
+        const options = predefinedAttributes[selectObj.value];
+        if (options && options.length > 0) {
+            valSelect.classList.remove('hidden');
+            valSelect.innerHTML = '<option value="">Pilih Nilai</option>' + options.map(o => `<option value="${o}">${o}</option>`).join('');
+            valInput.classList.add('hidden');
+            valInput.value = '';
+        } else {
+            valSelect.classList.add('hidden');
+            valSelect.innerHTML = '<option value="">Pilih Nilai</option>';
+            valInput.classList.remove('hidden');
+            valInput.value = '';
+        }
+    }
+}
+
+function toggleAttrVal(selectObj) {
+    const valInput = selectObj.nextElementSibling;
+    if (selectObj.value === 'Lainnya') {
+        valInput.classList.remove('hidden');
+        valInput.value = '';
+        valInput.focus();
+    } else {
+        valInput.classList.add('hidden');
+        valInput.value = selectObj.value;
+    }
+}
+
+function addVAttributeRow(key = '', val = '') {
+    document.getElementById('vAttributesContainer').appendChild(createAttributeRow(key, val));
+}
+
+function addMvAttributeRow(key = '', val = '') {
+    document.getElementById('mvAttributesContainer').appendChild(createAttributeRow(key, val));
+}
+
+function getAttributesFromContainer(containerId) {
+    const container = document.getElementById(containerId);
+    const rows = container.querySelectorAll('.attribute-row');
+    const attrs = {};
+    rows.forEach(r => {
+        const key = r.querySelector('.attr-key').value.trim();
+        const val = r.querySelector('.attr-val').value.trim();
+        if (key && val) {
+            attrs[key] = val;
+        }
+    });
+    return Object.keys(attrs).length > 0 ? attrs : null;
+}
+
+function renderAttributesToContainer(containerId, attrs) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    if (attrs && typeof attrs === 'object') {
+        for (const [key, val] of Object.entries(attrs)) {
+            container.appendChild(createAttributeRow(key, val));
+        }
+    }
+}
+
 function addVariant() {
     const sku = document.getElementById('vSku').value.trim();
     const name = document.getElementById('vName').value.trim();
@@ -716,19 +1035,10 @@ async function saveVariantFromModal() {
     const sort = document.getElementById('mvSort').value;
     const status = document.getElementById('mvStatus').value;
 
-    const attrs = [];
-    document.querySelectorAll('.mv-attr-row').forEach(row => {
-        const k = row.querySelector('.mv-attr-name').value;
-        const v = row.querySelector('.mv-attr-val').value;
-        if (k && v) {
-            attrs.push({name: k, value: v});
-        }
-    });
-
     const payload = {
         sku: sku,
         variant_name: name,
-        attributes: attrs,
+        attributes: getAttributesFromContainer('mvAttributesContainer'),
         base_price: parseFloat(basePrice) || 0,
         sell_price: parseFloat(sellPrice) || 0,
         stock_qty: parseInt(stock) || 0,
