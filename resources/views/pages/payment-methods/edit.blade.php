@@ -21,7 +21,7 @@
 
     @include('layouts.partials.shipping-payment-submenu')
 
-    <form method="POST" action="{{ route('payment-methods.update', $paymentMethod->id) }}" class="space-y-6">
+    <form method="POST" action="{{ route('payment-methods.update', $paymentMethod->id) }}" class="space-y-6" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6">
@@ -60,8 +60,13 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Image URL</label>
-                    <input type="text" name="image" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="https://..." value="{{ old('image', $paymentMethod->image) }}">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Image (Logo)</label>
+                    @if($paymentMethod->image)
+                        <div class="mb-2">
+                            <img src="{{ asset('storage/' . $paymentMethod->image) }}" class="h-10 object-contain border rounded bg-white">
+                        </div>
+                    @endif
+                    <input type="file" name="image" accept="image/*" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
                     @error('image')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
                 <div class="space-y-1.5">
@@ -131,15 +136,15 @@
                         <div class="bank-row grid grid-cols-1 md:grid-cols-12 gap-4 items-end border-b md:border-0 pb-4 md:pb-0">
                             <div class="md:col-span-3 space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Bank Name</label>
-                                <input type="text" name="banks[{{ $index }}][bank_name]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., BCA, Mandiri" value="{{ $bank['bank_name'] ?? '' }}" required>
+                                <input type="text" name="banks[{{ $index }}][bank_name]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., BCA, Mandiri" value="{{ $bank['bank_name'] ?? '' }}">
                             </div>
                             <div class="md:col-span-4 space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Account Number</label>
-                                <input type="text" name="banks[{{ $index }}][account_number]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., 123-456-7890" value="{{ $bank['account_number'] ?? '' }}" required>
+                                <input type="text" name="banks[{{ $index }}][account_number]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., 123-456-7890" value="{{ $bank['account_number'] ?? '' }}">
                             </div>
                             <div class="md:col-span-4 space-y-1.5">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Account Holder Name</label>
-                                <input type="text" name="banks[{{ $index }}][account_holder]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., PT POS Dealer Indonesia" value="{{ $bank['account_holder'] ?? '' }}" required>
+                                <input type="text" name="banks[{{ $index }}][account_holder]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., PT POS Dealer Indonesia" value="{{ $bank['account_holder'] ?? '' }}">
                             </div>
                             <div class="md:col-span-1 text-right">
                                 <button type="button" class="remove-bank-btn p-2 bg-danger-container text-danger hover:bg-danger/10 rounded-lg flex items-center justify-center w-full md:w-auto" title="Remove Bank">
@@ -189,15 +194,15 @@ document.addEventListener('DOMContentLoaded', function() {
             newRow.innerHTML = `
                 <div class="md:col-span-3 space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Bank Name</label>
-                    <input type="text" name="banks[${index}][bank_name]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., BCA, Mandiri" required>
+                    <input type="text" name="banks[${index}][bank_name]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., BCA, Mandiri">
                 </div>
                 <div class="md:col-span-4 space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Account Number</label>
-                    <input type="text" name="banks[${index}][account_number]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., 123-456-7890" required>
+                    <input type="text" name="banks[${index}][account_number]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., 123-456-7890">
                 </div>
                 <div class="md:col-span-4 space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Account Holder Name</label>
-                    <input type="text" name="banks[${index}][account_holder]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., PT POS Dealer Indonesia" required>
+                    <input type="text" name="banks[${index}][account_holder]" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" placeholder="e.g., PT POS Dealer Indonesia">
                 </div>
                 <div class="md:col-span-1 text-right">
                     <button type="button" class="remove-bank-btn p-2 bg-danger-container text-danger hover:bg-danger/10 rounded-lg flex items-center justify-center w-full md:w-auto" title="Remove Bank">

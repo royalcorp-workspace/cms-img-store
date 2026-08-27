@@ -13,9 +13,12 @@ class Category extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    protected $appends = ["banner_web_url", "banner_mobile_url"];
+
     protected $fillable = [
         'parent_id',
         'name',
+        'tagline',
         'slug',
         'description',
         'banner_web',
@@ -47,6 +50,17 @@ class Category extends Model
     public function setStatusAttribute($value)
     {
         $this->attributes['is_active'] = $value;
+    }
+
+    
+    public function getBannerWebUrlAttribute(): ?string
+    {
+        return $this->banner_web ? asset("storage/" . $this->banner_web) : null;
+    }
+
+    public function getBannerMobileUrlAttribute(): ?string
+    {
+        return $this->banner_mobile ? asset("storage/" . $this->banner_mobile) : null;
     }
 
     public function parent(): BelongsTo

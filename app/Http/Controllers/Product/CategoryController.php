@@ -71,6 +71,7 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'tagline' => 'nullable|string|max:255',
             'slug' => 'nullable|string|max:255|unique:product_category,slug',
             'description' => 'nullable|string',
             'banner_web' => 'nullable|image|max:2048',
@@ -113,6 +114,7 @@ class CategoryController extends Controller
         $category = Category::findOrFail($id);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'tagline' => 'nullable|string|max:255',
             'slug' => 'nullable|string|max:255|unique:product_category,slug,' . $id,
             'description' => 'nullable|string',
             'banner_web' => 'nullable|image|max:2048',

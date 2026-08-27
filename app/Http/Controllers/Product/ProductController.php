@@ -60,7 +60,7 @@ class ProductController extends Controller
             $variantsData = json_decode($request->variants, true);
             if (is_array($variantsData)) {
                 foreach ($variantsData as &$vData) {
-                    foreach (['price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
+                    foreach (['base_price', 'sell_price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
                         if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
                             $vData[$field] = null;
                         }
@@ -81,7 +81,7 @@ class ProductController extends Controller
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
             'warranty_duration' => 'nullable|string|max:255',
-            'base_price' => 'nullable|numeric|min:0',
+            
             'segments' => 'nullable|array',
             'segments.*' => 'nullable|string|max:255',
             'best_seller' => 'boolean',
@@ -98,14 +98,33 @@ class ProductController extends Controller
             'variants.*.sku' => 'nullable|string|max:255',
             'variants.*.variant_name' => 'nullable|string|max:255',
             'variants.*.attributes' => 'nullable|array',
-            'variants.*.price' => 'nullable|numeric|min:0',
+            'variants.*.base_price' => 'nullable|numeric|min:0',
+            'variants.*.sell_price' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
             'variants.*.sort_order' => 'nullable|integer|min:0',
             'variants.*.status' => 'boolean',
         ]);
 
+        if ($request->hasFile('thumbnail_file')) {
+            $path = $request->file('thumbnail_file')->store('product_images', 'public');
+            $validated['thumbnail'] = $path;
+        }
+
         $product = Product::create($validated);
+
+        if ($request->hasFile('new_images')) {
+            $newOrders = $request->input('new_image_orders');
+            foreach ($request->file('new_images') as $index => $file) {
+                $path = $file->store('product_images', 'public');
+                \App\Models\Product\Image::create([
+                    'product_id' => $product->id,
+                    'image' => $path,
+                    'sort_order' => $newOrders[$index] ?? $index,
+                    'status' => true,
+                ]);
+            }
+        }
 
         if (isset($validated['colors']) && is_array($validated['colors'])) {
             foreach ($validated['colors'] as $colorData) {
@@ -146,7 +165,7 @@ class ProductController extends Controller
             $variantsData = json_decode($request->variants, true);
             if (is_array($variantsData)) {
                 foreach ($variantsData as &$vData) {
-                    foreach (['price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
+                    foreach (['base_price', 'sell_price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
                         if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
                             $vData[$field] = null;
                         }
@@ -169,7 +188,7 @@ class ProductController extends Controller
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
             'warranty_duration' => 'nullable|string|max:255',
-            'base_price' => 'nullable|numeric|min:0',
+            
             'segments' => 'nullable|array',
             'segments.*' => 'nullable|string|max:255',
             'best_seller' => 'boolean',
@@ -188,14 +207,49 @@ class ProductController extends Controller
             'variants.*.sku' => 'nullable|string|max:255',
             'variants.*.variant_name' => 'nullable|string|max:255',
             'variants.*.attributes' => 'nullable|array',
-            'variants.*.price' => 'nullable|numeric|min:0',
+            'variants.*.base_price' => 'nullable|numeric|min:0',
+            'variants.*.sell_price' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
             'variants.*.sort_order' => 'nullable|integer|min:0',
             'variants.*.status' => 'boolean',
         ]);
 
+        if ($request->hasFile('thumbnail_file')) {
+            $path = $request->file('thumbnail_file')->store('product_images', 'public');
+            $validated['thumbnail'] = $path;
+        }
+
         $product->update($validated);
+
+        // Handle Images
+        if ($request->has('existing_images')) {
+            $existingImages = $request->input('existing_images');
+            $existingOrders = $request->input('existing_image_orders');
+            foreach ($existingImages as $index => $imageId) {
+                \App\Models\Product\Image::where('id', $imageId)
+                    ->where('product_id', $product->id)
+                    ->update(['sort_order' => $existingOrders[$index] ?? $index]);
+            }
+            \App\Models\Product\Image::where('product_id', $product->id)
+                ->whereNotIn('id', $existingImages)
+                ->delete();
+        } else {
+            \App\Models\Product\Image::where('product_id', $product->id)->delete();
+        }
+
+        if ($request->hasFile('new_images')) {
+            $newOrders = $request->input('new_image_orders');
+            foreach ($request->file('new_images') as $index => $file) {
+                $path = $file->store('product_images', 'public');
+                \App\Models\Product\Image::create([
+                    'product_id' => $product->id,
+                    'image' => $path,
+                    'sort_order' => $newOrders[$index] ?? $index,
+                    'status' => true,
+                ]);
+            }
+        }
 
         if (isset($validated['colors']) && is_array($validated['colors'])) {
             $submittedColorIds = [];

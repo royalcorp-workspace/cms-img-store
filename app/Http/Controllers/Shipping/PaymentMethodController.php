@@ -53,7 +53,7 @@ class PaymentMethodController extends Controller
             'name' => 'required|string|max:150',
             'type' => 'required|integer|in:1,2,3,4,5,6,7,8',
             'provider' => 'nullable|string|max:100',
-            'image' => 'nullable|string|max:255',
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'has_charge' => 'boolean',
             'charge_type' => 'nullable|integer|in:1,2',
             'charge_value' => 'nullable|numeric|min:0',
@@ -70,10 +70,16 @@ class PaymentMethodController extends Controller
         $validated['id'] = (string) \Illuminate\Support\Str::uuid();
         $validated['creator'] = auth()->user()->name ?? 'admin';
         $validated['editor'] = auth()->user()->name ?? 'admin';
+        
+
         $validated['status'] = 1;
         $validated['has_charge'] = $request->boolean('has_charge', false);
         $validated['deleted'] = false;
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('payment-methods', 'public');
+        }
 
         if (!$validated['has_charge']) {
             $validated['charge_type'] = null;
@@ -118,7 +124,7 @@ class PaymentMethodController extends Controller
             'name' => 'required|string|max:150',
             'type' => 'required|integer|in:1,2,3,4,5,6,7,8',
             'provider' => 'nullable|string|max:100',
-            'image' => 'nullable|string|max:255',
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'has_charge' => 'boolean',
             'charge_type' => 'nullable|integer|in:1,2',
             'charge_value' => 'nullable|numeric|min:0',
@@ -133,8 +139,19 @@ class PaymentMethodController extends Controller
         ]);
 
         $validated['editor'] = auth()->user()->name ?? 'admin';
+        
+
         $validated['has_charge'] = $request->boolean('has_charge', false);
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
+
+        if ($request->hasFile('image')) {
+            if ($paymentMethod->image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($paymentMethod->image);
+            }
+            $validated['image'] = $request->file('image')->store('payment-methods', 'public');
+        } else {
+            unset($validated['image']);
+        }
 
         if (!$validated['has_charge']) {
             $validated['charge_type'] = null;

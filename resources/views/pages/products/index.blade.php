@@ -99,7 +99,17 @@
                             </td>
                             <td class="px-6 py-4 text-body-md text-on-surface font-mono text-sm">{{ $product->code ?? '-' }}</td>
                             <td class="px-6 py-4 text-body-md text-secondary font-medium">{{ $product->category->name ?? '-' }}</td>
-                            <td class="px-6 py-4 font-headline-md text-[14px] font-bold text-on-surface">Rp{{ number_format($product->price ?? 0, 2) }}</td>
+                            <td class="px-6 py-4 font-headline-md text-[14px] font-bold text-on-surface">
+                                @php
+                                    $minPrice = $product->variants->min('sell_price') ?? 0;
+                                    $maxPrice = $product->variants->max('sell_price') ?? 0;
+                                @endphp
+                                @if($minPrice == $maxPrice)
+                                    Rp{{ number_format($minPrice, 2, ',', '.') }}
+                                @else
+                                    Rp{{ number_format($minPrice, 2, ',', '.') }} - Rp{{ number_format($maxPrice, 2, ',', '.') }}
+                                @endif
+                            </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-2">
                                     <div class="flex-1 h-1.5 bg-surface-container rounded-full overflow-hidden max-w-[80px]">

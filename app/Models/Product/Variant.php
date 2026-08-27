@@ -23,7 +23,8 @@ class Variant extends Model
         'sku',
         'variant_name',
         'attributes',
-        'price',
+        'base_price',
+        'sell_price',
         'stock_quantity',
         'min_order_qty',
         'sort_order',
@@ -37,7 +38,8 @@ class Variant extends Model
     {
         return [
             'attributes' => 'array',
-            'price' => 'decimal:2',
+            'base_price' => 'decimal:2',
+            'sell_price' => 'decimal:2',
             'stock_quantity' => 'integer',
             'min_order_qty' => 'integer',
             'sort_order' => 'integer',
@@ -93,7 +95,7 @@ class Variant extends Model
         }
 
         return $this->priceProductSettings->map(function ($setting) {
-            $price = (float) ($this->price ?? 0);
+            $price = (float) ($this->sell_price ?? $this->base_price ?? 0);
             $discountType = $setting->pivot->discount_type ?? $setting->discount_type;
             $discountValue = (float) ($setting->pivot->discount_value ?? $setting->discount_value);
             $finalPrice = match ((int) $discountType) {
@@ -124,7 +126,7 @@ class Variant extends Model
     {
         $discounts = $this->discounts;
         if (empty($discounts)) {
-            return (float) ($this->price ?? 0);
+            return (float) ($this->sell_price ?? $this->base_price ?? 0);
         }
         $prices = array_column($discounts, 'final_price');
         return min($prices);

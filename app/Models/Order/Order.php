@@ -120,9 +120,9 @@ class Order extends Model
     {
         return [
             self::STATUS_DRAFT => 'Draft',
-            self::STATUS_PENDING_APPROVAL => 'Pending Approval',
+            self::STATUS_PENDING_APPROVAL => 'Ordered',
             self::STATUS_CONFIRMED => 'Confirmed',
-            self::STATUS_PROCESSING => 'Processing',
+            self::STATUS_PROCESSING => 'Pesanan Diproses',
             self::STATUS_SHIPPED => 'Shipped',
             self::STATUS_DELIVERED => 'Delivered',
             self::STATUS_CANCELLED => 'Cancelled',

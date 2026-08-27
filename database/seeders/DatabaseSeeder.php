@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RoleHasPermissionsSeeder::class,
             MenuSeeder::class,
+            HomepageSectionSeeder::class,
             // DashboardSeeder::class,
             UserAdminSeeder::class,
             LocationSeeder::class,

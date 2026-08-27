@@ -87,7 +87,7 @@
                         <td class="px-gutter py-4">
                             <div class="flex items-center gap-2">
                                 @if($method->image)
-                                    <img src="{{ $method->image }}" class="w-8 h-8 rounded object-cover" alt="">
+                                    <img src="{{ asset('storage/' . $method->image) }}" class="w-8 h-8 rounded object-cover" alt="">
                                 @endif
                                 <span class="font-body-md text-body-md text-on-surface">{{ $method->name }}</span>
                             </div>

@@ -79,7 +79,6 @@ class Product extends Model
         'short_description',
         'description',
         'warranty_duration',
-        'base_price',
         'segments',
         'best_seller',
         'is_new',
@@ -93,7 +92,6 @@ class Product extends Model
     protected function casts(): array
     {
         return [
-            'base_price' => 'decimal:2',
             'segments' => 'array',
             'best_seller' => 'boolean',
             'is_new' => 'boolean',
@@ -135,7 +133,7 @@ class Product extends Model
         }
 
         return $this->priceProductSettings->map(function ($setting) {
-            $price = (float) ($this->base_price ?? 0);
+            $price = 0; // base_price removed, product discounts should be applied to variants or handled differently.
             $discountType = $setting->pivot->discount_type ?? $setting->discount_type;
             $discountValue = (float) ($setting->pivot->discount_value ?? $setting->discount_value);
             $finalPrice = match ((int) $discountType) {
@@ -164,12 +162,7 @@ class Product extends Model
 
     public function getFinalPriceAttribute(): float
     {
-        $discounts = $this->discounts;
-        if (empty($discounts)) {
-            return (float) ($this->base_price ?? 0);
-        }
-        $prices = array_column($discounts, 'final_price');
-        return min($prices);
+        return 0; // base_price removed
     }
 
     public function brand(): BelongsTo

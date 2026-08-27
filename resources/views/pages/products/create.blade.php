@@ -66,7 +66,7 @@
                 <button onclick="switchTab('details')" id="tab-details" class="tab-btn px-4 py-2 text-on-surface border-b-2 border-primary text-label-md font-label-md font-medium">Details</button>
                 <button onclick="switchTab('media')" id="tab-media" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md">Media</button>
                 <button onclick="switchTab('variations')" id="tab-variations" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md">Variations</button>
-                <button onclick="switchTab('colors')" id="tab-colors" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md">Colors</button>
+                <button onclick="switchTab('colors')" id="tab-colors" class="tab-btn px-4 py-2 text-on-surface-variant hover:text-on-surface text-label-md font-label-md hidden">Colors</button>
             </div>
 
             <form id="productForm" method="POST" action="{{ $product->id ? route('products.update', $product->id) : route('products.store') }}">
@@ -108,10 +108,17 @@
                             </select>
                         </div>
                         <div class="space-y-1.5 md:col-span-2">
+                            <label class="block text-label-sm font-medium text-on-surface-variant">Thumbnail <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Gambar utama produk yang muncul di katalog depan</span></span></label>
+                            <div id="thumbnailPreviewContainer" class="mb-2 {{ (isset($product) && $product->thumbnail) ? '' : 'hidden' }}">
+                                <img id="thumbnailPreview" src="{{ (isset($product) && $product->thumbnail) ? asset('storage/' . $product->thumbnail) : '' }}" alt="Thumbnail" class="h-32 rounded-lg border border-outline-variant object-cover">
+                            </div>
+                            <input type="file" name="thumbnail_file" id="thumbnailInput" accept="image/*" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" onchange="previewThumbnail(this)">
+                        </div>
+                        <div class="space-y-1.5 md:col-span-2">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Price (Rp) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Harga dasar produk dalam Rupiah</span></span></label>
                             <input type="number" name="base_price" step="0.01" value="{{ $product->base_price ?? '' }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter base price">
                         </div>
-                        <div class="md:col-span-2 space-y-2">
+                        <div class="md:col-span-2 space-y-2 hidden">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Segments</label>
                             <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
                                 @for($i = 1; $i <= 10; $i++)
@@ -190,16 +197,7 @@
                             </label>
                             <p class="text-body-sm text-on-surface-variant mt-2">Select multiple images to upload (max 2MB each)</p>
                         </div>
-                        <div id="mediaPreview" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            @foreach($images as $img)
-                            <div class="relative group border border-outline-variant rounded-lg overflow-hidden">
-                                <img src="{{ $img->url }}" alt="{{ $img->alt_text ?? '' }}" class="w-full h-32 object-cover">
-                                <button type="button" onclick="deleteMedia('{{ $img->id }}')" class="absolute top-1 right-1 bg-danger text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <span class="material-symbols-outlined text-[16px]">close</span>
-                                </button>
-                            </div>
-                            @endforeach
-                            <div id="localPreviewContainer"></div>
+                        <div id="localPreviewContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         </div>
                     </div>
                 </div>
@@ -231,7 +229,7 @@
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Stock Qty</label>
                                 <input type="number" id="vStock" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0">
                             </div>
-                            <div class="space-y-1.5">
+                            <div class="space-y-1.5 hidden">
                                 <label class="block text-label-sm font-medium text-on-surface-variant">Min Order Qty</label>
                                 <input type="number" id="vMinOrder" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="1">
                             </div>
@@ -354,8 +352,8 @@
                                     <label class="block text-label-sm font-medium text-on-surface-variant">Stock Qty</label>
                                     <input type="number" id="mvStock" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0">
                                 </div>
-                                <div class="space-y-1.5">
-                                    <label class="block text-label-sm font-medium text-on-surface-variant">Min Order Qty</label>
+                                <div class="space-y-1.5 hidden">
+                                <label class="block text-label-sm font-medium text-on-surface-variant">Min Order Qty</label>
                                     <input type="number" id="mvMinOrder" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="1">
                                 </div>
                                 <div class="space-y-1.5">
@@ -440,6 +438,7 @@
 
 @push('scripts')
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
 function switchTab(tab) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
@@ -455,6 +454,9 @@ function switchTab(tab) {
 
 const productId = '{{ $productId }}';
 let localImages = [];
+@foreach($images as $img)
+localImages.push({ id: '{{ $img->id }}', url: '{{ $img->url }}' });
+@endforeach
 @php
     $variantData = $variants->map(function ($v) {
         return [
@@ -492,46 +494,32 @@ let localVariants = @json($variantData);
 let localColors = @json($colorData);
 
 async function handleMediaUpload(input) {
-    if (!input.files || !input.files.length) return;
-    const files = Array.from(input.files);
-
-    if (productId) {
-        for (const file of files) {
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append('alt_text', file.name);
-            formData.append('sort_order', 0);
-            formData.append('status', 1);
-            try {
-                const res = await fetch('/api/v1/products/' + productId + '/images', {
-                    method: 'POST',
-                    headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'},
-                    body: formData
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    const container = document.getElementById('mediaPreview');
-                    const div = document.createElement('div');
-                    div.className = 'relative group border border-outline-variant rounded-lg overflow-hidden';
-                    div.innerHTML = '<img src="' + data.data.url + '" alt="" class="w-full h-32 object-cover"><button type="button" onclick="deleteMedia(\'' + data.data.id + '\')" class="absolute top-1 right-1 bg-danger text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-[16px]">close</span></button>';
-                    container.insertBefore(div, document.getElementById('localPreviewContainer'));
-                }
-            } catch (e) {
-                console.error(e);
-                alert('Failed to upload image: ' + file.name);
-            }
-        }
-    } else {
-        for (const file of files) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                localImages.push({ file: file, url: e.target.result });
-                renderLocalPreviews();
-            };
-            reader.readAsDataURL(file);
-        }
+    const files = input.files;
+    if (files.length === 0) return;
+    
+    for (const file of files) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            localImages.push({ id: null, file: file, url: e.target.result });
+            renderLocalPreviews();
+        };
+        reader.readAsDataURL(file);
     }
     input.value = '';
+}
+
+function previewThumbnail(input) {
+    const container = document.getElementById('thumbnailPreviewContainer');
+    const preview = document.getElementById('thumbnailPreview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            container.classList.remove('hidden');
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
 }
 
 function renderLocalPreviews() {
@@ -539,9 +527,25 @@ function renderLocalPreviews() {
     container.innerHTML = '';
     localImages.forEach(function(img, index) {
         const div = document.createElement('div');
-        div.className = 'relative group border border-outline-variant rounded-lg overflow-hidden';
+        div.className = 'relative group border border-outline-variant rounded-lg overflow-hidden cursor-move';
+        div.setAttribute('data-index', index);
         div.innerHTML = '<img src="' + img.url + '" alt="" class="w-full h-32 object-cover"><button type="button" onclick="removeLocalImage(' + index + ')" class="absolute top-1 right-1 bg-danger text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-[16px]">close</span></button>';
         container.appendChild(div);
+    });
+    
+    if (window.sortableMedia) {
+        window.sortableMedia.destroy();
+    }
+    window.sortableMedia = new Sortable(container, {
+        animation: 150,
+        onEnd: function (evt) {
+            const itemEl = evt.item;
+            const newIndex = evt.newIndex;
+            const oldIndex = evt.oldIndex;
+            const element = localImages.splice(oldIndex, 1)[0];
+            localImages.splice(newIndex, 0, element);
+            renderLocalPreviews();
+        },
     });
 }
 
@@ -551,247 +555,7 @@ function removeLocalImage(index) {
 }
 
 async function deleteMedia(id) {
-    if (!confirm('Delete this image?')) return;
-    try {
-        const res = await fetch('/api/v1/products/images/' + id, {
-            method: 'DELETE',
-            headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
-        });
-        if (res.ok) location.reload();
-    } catch (e) {
-        console.error(e);
-        alert('Failed to delete image');
-    }
-}
-
-function renderVariants() {
-    const container = document.getElementById('variantsList');
-    container.innerHTML = '';
-    localVariants.forEach(function(v, index) {
-        const isSaved = !!v.id;
-        const div = document.createElement('div');
-        div.className = 'border border-outline-variant rounded-lg p-4';
-        div.innerHTML = `
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="font-body-md text-body-md text-on-surface font-semibold">${v.variant_name || v.sku || 'Variant'}</p>
-                    <p class="text-label-sm text-on-surface-variant">SKU: ${v.sku || '-'}</p>
-                </div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm ${v.status == 1 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}">
-                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span> ${v.status == 1 ? 'Active' : 'Inactive'}
-                </span>
-            </div>
-            ${v.attributes && typeof v.attributes === 'object' && Object.keys(v.attributes).length > 0 ? `
-                <div class="mb-3">
-                    <p class="text-on-surface-variant text-label-sm mb-1">Attributes:</p>
-                    <div class="flex flex-wrap gap-1">
-                        ${Object.entries(v.attributes).map(([k, val]) => `<span class="bg-surface-variant/50 text-on-surface px-2 py-0.5 rounded text-[11px]">${k}: ${val}</span>`).join('')}
-                    </div>
-                </div>
-            ` : ''}
-            <div class="grid grid-cols-2 gap-3 text-body-sm">
-                <div>
-                    <p class="text-on-surface-variant">Price</p>
-                    <p class="font-medium text-on-surface">Rp${Number(v.price).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                </div>
-                <div>
-                    <p class="text-on-surface-variant">Stock</p>
-                    <p class="font-medium text-on-surface">${v.stock_qty || 0}</p>
-                </div>
-            </div>
-            <div class="flex justify-end mt-3 pt-3 border-t border-outline-variant/20">
-                <button type="button" onclick="editLocalVariant(${index})" class="text-primary hover:opacity-80 text-label-sm flex items-center gap-1 mr-3">
-                    <span class="material-symbols-outlined text-[16px]">edit</span> Edit
-                </button>
-                <button type="button" onclick="removeLocalVariant(${index})" class="text-danger hover:opacity-80 text-label-sm flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[16px]">delete</span> Delete
-                </button>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-    document.getElementById('variantsInput').value = JSON.stringify(localVariants);
-}
-
-function renderColors() {
-    const container = document.getElementById('colorsList');
-    container.innerHTML = '';
-    localColors.forEach(function(c, index) {
-        const isSaved = !!c.id;
-        const div = document.createElement('div');
-        div.className = 'border border-outline-variant rounded-lg p-4';
-        div.innerHTML = `
-            <div class="flex items-start justify-between mb-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full border border-outline-variant" style="background-color: ${c.color_code}"></div>
-                    <div>
-                        <p class="font-body-md text-body-md text-on-surface font-semibold">${c.color_name || 'Unnamed Color'}</p>
-                        <p class="text-label-sm text-on-surface-variant font-mono">${c.color_code}</p>
-                    </div>
-                </div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm ${c.status == 1 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger' }">
-                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span> ${c.status == 1 ? 'Active' : 'Inactive'}
-                </span>
-            </div>
-            <div class="flex justify-end mt-3 pt-3 border-t border-outline-variant/20">
-                ${isSaved ? '<button type="button" class="text-primary hover:opacity-80 text-label-sm flex items-center gap-1 mr-3"><span class="material-symbols-outlined text-[16px]">edit</span> Edit</button>' : ''}
-                <button type="button" onclick="removeColor(${index})" class="text-danger hover:opacity-80 text-label-sm flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[16px]">delete</span> Delete
-                </button>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-    document.getElementById('colorsInput').value = JSON.stringify(localColors);
-}
-
-function addColor() {
-    const name = document.getElementById('cName').value.trim();
-    const code = document.getElementById('cCode').value.trim();
-
-    if (!code) {
-        showWarningModal('Please select a color code.');
-        return;
-    }
-
-    const payload = {
-        color_name: name,
-        color_code: code,
-        status: document.getElementById('cStatus').value == '1' ? 1 : 0,
-    };
-    localColors.push(payload);
-    renderColors();
-    document.getElementById('cName').value = '';
-    document.getElementById('cCode').value = '#FF0000';
-    document.getElementById('cColorPicker').value = '#FF0000';
-    document.getElementById('cStatus').value = '1';
-}
-
-function removeColor(index) {
-    localColors.splice(index, 1);
-    renderColors();
-}
-
-async function editColor(id, data) {
-    currentEditColorId = id;
-    document.getElementById('cName').value = data.color_name || '';
-    document.getElementById('cCode').value = data.color_code || '#FF0000';
-    document.getElementById('cColorPicker').value = data.color_code || '#FF0000';
-    document.getElementById('cStatus').value = data.status == 1 ? '1' : '0';
-    openColorModal();
-}
-
-function openColorModal() {
-    document.getElementById('colorModal').classList.remove('hidden');
-    document.getElementById('colorModal').classList.add('flex');
-}
-
-function closeColorModal() {
-    document.getElementById('colorModal').classList.add('hidden');
-    document.getElementById('colorModal').classList.remove('flex');
-    currentEditColorId = null;
-}
-
-async function saveColorFromModal() {
-    const name = document.getElementById('mcName').value.trim();
-    const code = document.getElementById('mcCode').value.trim();
-
-    if (!code) {
-        showWarningModal('Please select a color code.');
-        return;
-    }
-
-    const payload = {
-        color_name: name,
-        color_code: code,
-        status: document.getElementById('mcStatus').value == '1' ? 1 : 0,
-    };
-    try {
-        let res;
-        if (currentEditColorId) {
-            res = await fetch('/api/v1/products/colors/' + currentEditColorId, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify(payload)
-            });
-        } else {
-            res = await fetch('/api/v1/products/' + productId + '/colors', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify(payload)
-            });
-        }
-        if (res.ok) {
-            closeColorModal();
-            location.reload();
-        }
-    } catch (e) {
-        console.error(e);
-        showWarningModal('Failed to save color');
-    }
-}
-
-async function deleteColor(id) {
-    if (!confirm('Delete this color?')) return;
-    try {
-        const res = await fetch('/api/v1/products/colors/' + id, {
-            method: 'DELETE',
-            headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
-        });
-        if (res.ok) location.reload();
-    } catch (e) {
-        console.error(e);
-        alert('Failed to delete color');
-    }
-}
-
-function createAttributeRow(key = '', val = '') {
-    const div = document.createElement('div');
-    div.className = 'flex gap-2 items-center attribute-row';
-    div.innerHTML = `
-        <input type="text" class="attr-key w-1/3 px-3 py-1.5 text-sm border border-outline-variant rounded-md focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Type" value="${key}">
-        <input type="text" class="attr-val flex-1 px-3 py-1.5 text-sm border border-outline-variant rounded-md focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Fullset" value="${val}">
-        <button type="button" onclick="this.parentElement.remove()" class="text-danger hover:opacity-80 material-symbols-outlined text-[18px]">close</button>
-    `;
-    return div;
-}
-
-function addVAttributeRow(key = '', val = '') {
-    document.getElementById('vAttributesContainer').appendChild(createAttributeRow(key, val));
-}
-
-function addMvAttributeRow(key = '', val = '') {
-    document.getElementById('mvAttributesContainer').appendChild(createAttributeRow(key, val));
-}
-
-function getAttributesFromContainer(containerId) {
-    const container = document.getElementById(containerId);
-    const rows = container.querySelectorAll('.attribute-row');
-    const attrs = {};
-    rows.forEach(r => {
-        const key = r.querySelector('.attr-key').value.trim();
-        const val = r.querySelector('.attr-val').value.trim();
-        if (key && val) {
-            attrs[key] = val;
-        }
-    });
-    return Object.keys(attrs).length > 0 ? attrs : null;
-}
-
-function renderAttributesToContainer(containerId, attrs) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = '';
-    if (attrs && typeof attrs === 'object') {
-        for (const [key, val] of Object.entries(attrs)) {
-            container.appendChild(createAttributeRow(key, val));
-        }
-    }
+    // Legacy function, replaced by removeLocalImage for all images
 }
 
 function addVariant() {
@@ -945,62 +709,42 @@ function closeVariantModal() {
 async function saveVariantFromModal() {
     const sku = document.getElementById('mvSku').value.trim();
     const name = document.getElementById('mvName').value.trim();
-    const price = document.getElementById('mvPrice').value;
+    const basePrice = document.getElementById('mvBasePrice').value;
+    const sellPrice = document.getElementById('mvSellPrice').value;
     const stock = document.getElementById('mvStock').value;
+    const minOrder = document.getElementById('mvMinOrder').value;
+    const sort = document.getElementById('mvSort').value;
+    const status = document.getElementById('mvStatus').value;
 
-    if (!sku && !name) {
-        showWarningModal('Please fill in at least SKU or Variant Name.');
-        return;
-    }
-    if (!price || parseFloat(price) < 0) {
-        showWarningModal('Please enter a valid Price.');
-        document.getElementById('mvPrice').focus();
-        return;
-    }
-    if (stock === '' || parseInt(stock) < 0) {
-        showWarningModal('Please enter a valid Stock Qty.');
-        document.getElementById('mvStock').focus();
-        return;
-    }
+    const attrs = [];
+    document.querySelectorAll('.mv-attr-row').forEach(row => {
+        const k = row.querySelector('.mv-attr-name').value;
+        const v = row.querySelector('.mv-attr-val').value;
+        if (k && v) {
+            attrs.push({name: k, value: v});
+        }
+    });
 
     const payload = {
         sku: sku,
         variant_name: name,
-        attributes: getAttributesFromContainer('mvAttributesContainer'),
-        price: price,
-        stock_qty: stock,
-        min_order_qty: document.getElementById('mvMinOrder').value || 1,
-        status: document.getElementById('mvStatus').value == '1' ? 1 : 0,
+        attributes: attrs,
+        base_price: parseFloat(basePrice) || 0,
+        sell_price: parseFloat(sellPrice) || 0,
+        stock_qty: parseInt(stock) || 0,
+        min_order_qty: parseInt(minOrder) || 1,
+        sort_order: parseInt(sort) || 0,
+        status: parseInt(status) || 0
     };
-    try {
-        let res;
-        if (currentEditVariantId) {
-            res = await fetch('/api/v1/products/variants/' + currentEditVariantId, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify(payload)
-            });
-        } else {
-            res = await fetch('/api/v1/products/' + productId + '/variants', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify(payload)
-            });
-        }
-        if (res.ok) {
-            closeVariantModal();
-            location.reload();
-        }
-    } catch (e) {
-        console.error(e);
-        showWarningModal('Failed to save variant');
+
+    if (currentEditVariantIndex !== null) {
+        payload.id = localVariants[currentEditVariantIndex].id || null;
+        localVariants[currentEditVariantIndex] = payload;
+    } else {
+        localVariants.push(payload);
     }
+    renderVariants();
+    closeVariantModal();
 }
 
 async function deleteVariant(id) {
@@ -1017,7 +761,8 @@ async function deleteVariant(id) {
     }
 }
 
-document.getElementById('productForm').addEventListener('submit', function(e) {
+document.getElementById('productForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
     document.getElementById('variantsInput').value = JSON.stringify(localVariants);
     document.getElementById('colorsInput').value = JSON.stringify(localColors);
     
@@ -1028,8 +773,53 @@ document.getElementById('productForm').addEventListener('submit', function(e) {
         quillHtml = '';
     }
     document.getElementById('description-input').value = quillHtml;
+
+    let formData = new FormData(this);
+    
+    // Process localImages for existing vs new
+    localImages.forEach((img, i) => {
+        if(img.file) {
+            formData.append('new_images[]', img.file);
+            formData.append('new_image_orders[]', i);
+        } else if (img.id) {
+            formData.append('existing_images[]', img.id);
+            formData.append('existing_image_orders[]', i);
+        }
+    });
+
+    try {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = 'Saving...';
+        submitBtn.disabled = true;
+
+        let res = await fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        if (res.ok) {
+            window.location.href = '{{ route("products.index") }}';
+        } else {
+            const errData = await res.json();
+            console.error(errData);
+            alert(errData.message || 'Failed to save product');
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+        }
+    } catch(err) {
+        console.error(err);
+        alert('Error saving product');
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerText = '{{ $product ? "Update Product" : "Create Product" }}';
+        submitBtn.disabled = false;
+    }
 });
 
+renderLocalPreviews();
 renderVariants();
 renderColors();
 

@@ -17,6 +17,7 @@ class Image extends Model
 
     protected $fillable = [
         'product_id',
+        'variant_id',
         'image',
         'alt_text',
         'sort_order',
@@ -50,5 +51,10 @@ class Image extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(Variant::class, 'variant_id');
     }
 }

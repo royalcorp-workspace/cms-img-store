@@ -54,7 +54,7 @@
                     <div>
                         <h2 class="font-headline-md text-headline-md text-on-surface mb-1">{{ $product->name ?? 'Product Name' }}</h2>
                         <div class="flex items-center gap-2 text-body-md text-on-surface-variant">
-                            <span>#SKU-{{ $product->sku ?? $product->id }}</span>
+                            <span>#{{ $product->code }}</span>
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-success/10 text-success rounded-full text-label-sm font-label-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-success"></span> {{ $product->status ?? 'Active' }}
                             </span>

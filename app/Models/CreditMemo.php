@@ -4,13 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Payment extends Model
+class CreditMemo extends Model
 {
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
-        'id', 'payment_number', 'order_id', 'gateway', 'transaction_id', 'amount', 'status', 'payload', 'paid_at'
+        'id', 'credit_memo_number', 'order_id', 'gateway', 'transaction_id', 'amount', 'status', 'payload', 'paid_at'
     ];
 
     protected $casts = [

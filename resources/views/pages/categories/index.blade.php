@@ -141,10 +141,16 @@
                 <div class="grid grid-cols-2 gap-4 border-t border-outline-variant pt-4 mt-2">
                     <div class="space-y-1.5">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Banner Desktop (Web)</label>
+                        <div id="previewBannerWeb" class="hidden mb-2">
+                            <img src="" alt="Banner Web" class="h-20 object-cover rounded-lg border border-outline-variant">
+                        </div>
                         <input type="file" id="categoryBannerWeb" name="banner_web" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Banner Mobile</label>
+                        <div id="previewBannerMobile" class="hidden mb-2">
+                            <img src="" alt="Banner Mobile" class="h-20 object-cover rounded-lg border border-outline-variant">
+                        </div>
                         <input type="file" id="categoryBannerMobile" name="banner_mobile" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
                     </div>
                 </div>
@@ -170,6 +176,10 @@ function createCategory(parentName = null, parentId = null) {
     $('#categoryStatus').val(1);
     $('#categoryWarranty').val(1);
     $('#categoryParent').val(parentId || '');
+    $('#previewBannerWeb').addClass('hidden').find('img').attr('src', '');
+    $('#previewBannerMobile').addClass('hidden').find('img').attr('src', '');
+    $('#categoryBannerWeb').val('');
+    $('#categoryBannerMobile').val('');
     $('#modalTitle').text('Create Category');
     openModal();
 }
@@ -185,6 +195,19 @@ function editCategory(id) {
         $('#categoryStatus').val(cat.status ? 1 : 0);
         $('#categoryWarranty').val(cat.has_warranty ? 1 : 0);
         $('#categoryParent').val(cat.parent_id || '');
+        
+        if (cat.banner_web_url) {
+            $('#previewBannerWeb').removeClass('hidden').find('img').attr('src', cat.banner_web_url);
+        } else {
+            $('#previewBannerWeb').addClass('hidden').find('img').attr('src', '');
+        }
+        
+        if (cat.banner_mobile_url) {
+            $('#previewBannerMobile').removeClass('hidden').find('img').attr('src', cat.banner_mobile_url);
+        } else {
+            $('#previewBannerMobile').addClass('hidden').find('img').attr('src', '');
+        }
+
         $('#modalTitle').text('Edit Category');
         openModal();
     });
