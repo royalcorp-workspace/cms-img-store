@@ -78,7 +78,7 @@
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 bg-surface-gray rounded-md overflow-hidden flex-shrink-0 border border-outline-variant/20">
-                                        <img class="w-full h-full object-cover" src="{{ $product->images->first()?->url ?? '' }}" alt="{{ $product->name }}">
+                                        <img class="w-full h-full object-cover" src="{{ $product->thumbnail_url ?: ($product->images->first()?->url ?? '') }}" alt="{{ $product->name }}">
                                     </div>
                                     <div>
                                         <a href="{{ route('products.show', $product->id) }}" class="font-headline-md text-[14px] font-semibold text-on-surface hover:text-primary transition-colors">{{ $product->name }}</a>

@@ -48,7 +48,7 @@
                                 <div class="flex items-center gap-3 justify-center">
                                     <div class="w-16 h-10 bg-surface-gray rounded overflow-hidden flex-shrink-0 border border-outline-variant/20 flex items-center justify-center bg-white">
                                         @if($banner->content_type == 1 && $banner->image_web_url)
-                                            <img class="w-full h-full object-cover" src="{{ asset('storage/' . $banner->image_web_url) }}" alt="{{ $banner->title }}">
+                                            <img class="w-full h-full object-cover" src="{{ media_url($banner->image_web_url) }}" alt="{{ $banner->title }}">
                                         @else
                                             <span class="text-[10px] font-bold text-primary font-mono">&lt;/&gt; Embed</span>
                                         @endif

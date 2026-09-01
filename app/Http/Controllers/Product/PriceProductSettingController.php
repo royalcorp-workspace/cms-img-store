@@ -59,9 +59,9 @@ class PriceProductSettingController extends Controller
     public function create()
     {
         $productsQuery = \App\Models\Product\Product::where('deleted', false)
-            ->select(['id', 'name', 'category_id', 'base_price'])
+            ->select(['id', 'name', 'category_id'])
             ->with(['variants' => function ($q) {
-                $q->select(['id', 'product_id', 'variant_name', 'sku', 'price', 'stock_quantity'])
+                $q->select(['id', 'product_id', 'variant_name', 'sku', 'sell_price', 'stock_quantity'])
                   ->orderBy('variant_name');
             }, 'category' => function ($q) {
                 $q->select(['id', 'name', 'slug']);
@@ -118,9 +118,9 @@ class PriceProductSettingController extends Controller
         $setting = PriceProductSetting::withoutGlobalScope('active')->findOrFail($id);
         
         $productsQuery = \App\Models\Product\Product::where('deleted', false)
-            ->select(['id', 'name', 'category_id', 'base_price'])
+            ->select(['id', 'name', 'category_id'])
             ->with(['variants' => function ($q) {
-                $q->select(['id', 'product_id', 'variant_name', 'sku', 'price', 'stock_quantity'])
+                $q->select(['id', 'product_id', 'variant_name', 'sku', 'sell_price', 'stock_quantity'])
                   ->orderBy('variant_name');
             }, 'category' => function ($q) {
                 $q->select(['id', 'name', 'slug']);

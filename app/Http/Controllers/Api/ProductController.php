@@ -18,7 +18,7 @@ class ProductController extends ApiController
 
         // HANYA TAMPILKAN PRODUK YANG MEMILIKI VARIAN DENGAN HARGA > 0
         $query->whereHas('variants', function ($q) {
-            $q->where('price', '>', 0);
+            $q->where('sell_price', '>', 0);
         });
 
         // VALIDASI STOCK SOLD OUT DI-HIDE SEMENTARA (KARENA NANTI AKAN DIBUKA LAGI)
@@ -221,12 +221,18 @@ class ProductController extends ApiController
             return $this->errorResponse('Product not found', 404);
         }
         $request->validate([
-            'image' => 'required|file|image|max:2048',
+            'image' => 'required',
             'alt_text' => 'nullable|string|max:255',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
         ]);
-        $path = $request->file('image')->store('product_images', 'public');
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('product_images', 's3');
+        } else {
+            $path = $request->input('image');
+        }
+
         $image = Image::create([
             'product_id' => $product->id,
             'image' => $path,
@@ -234,6 +240,13 @@ class ProductController extends ApiController
             'sort_order' => $request->sort_order ?? 0,
             'status' => $request->status ?? true,
         ]);
+
+        \Illuminate\Support\Facades\Log::channel('media')->info('API Product image saved to S3 path', [
+            'product_id' => $product->id,
+            'image_id'   => $image->id,
+            'image_path' => $path,
+        ]);
+
         return $this->successResponse($image, 'Image uploaded', 201);
     }
 
@@ -243,9 +256,17 @@ class ProductController extends ApiController
         if (!$image) {
             return $this->errorResponse('Image not found', 404);
         }
-        if ($image->image && Storage::disk('public')->exists($image->image)) {
-            Storage::disk('public')->delete($image->image);
+
+        if ($image->image) {
+            if (Storage::disk('s3')->exists($image->image)) {
+                Storage::disk('s3')->delete($image->image);
+                \Illuminate\Support\Facades\Log::channel('media')->info('API Product image deleted from S3: ' . $image->image);
+            } elseif (Storage::disk('public')->exists($image->image)) {
+                Storage::disk('public')->delete($image->image);
+                \Illuminate\Support\Facades\Log::channel('media')->info('API Product image deleted from local public: ' . $image->image);
+            }
         }
+
         $image->delete();
         return $this->successResponse(null, 'Image deleted', 204);
     }

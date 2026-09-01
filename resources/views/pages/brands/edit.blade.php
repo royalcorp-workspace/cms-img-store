@@ -49,7 +49,7 @@
                     <label class="block text-label-sm font-medium text-on-surface-variant">Brand Logo</label>
                     @if($brand->logo)
                         <div class="mb-2 w-20 h-20 bg-surface-container rounded-md overflow-hidden border border-outline-variant/30 p-1 flex items-center justify-center bg-white">
-                            <img class="max-w-full max-h-full object-contain" src="{{ asset('storage/' . $brand->logo) }}" alt="Logo">
+                            <img class="max-w-full max-h-full object-contain" src="{{ media_url($brand->logo) }}" alt="Logo">
                         </div>
                     @endif
                     <input type="file" name="logo" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
@@ -76,7 +76,7 @@
                             <label class="block text-label-sm font-medium text-on-surface-variant">Banner Web (Upload)</label>
                             @if($brand->banner_web)
                                 <div class="mb-2 w-32 h-16 bg-surface-container rounded-md overflow-hidden border border-outline-variant/30 flex items-center justify-center bg-white">
-                                    <img class="w-full h-full object-cover" src="{{ asset('storage/' . $brand->banner_web) }}" alt="Web Banner">
+                                    <img class="w-full h-full object-cover" src="{{ media_url($brand->banner_web) }}" alt="Web Banner">
                                 </div>
                             @endif
                             <input type="file" name="banner_web" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
@@ -87,7 +87,7 @@
                             <label class="block text-label-sm font-medium text-on-surface-variant">Banner Mobile (Upload)</label>
                             @if($brand->banner_mobile)
                                 <div class="mb-2 w-20 h-20 bg-surface-container rounded-md overflow-hidden border border-outline-variant/30 flex items-center justify-center bg-white">
-                                    <img class="w-full h-full object-cover" src="{{ asset('storage/' . $brand->banner_mobile) }}" alt="Mobile Banner">
+                                    <img class="w-full h-full object-cover" src="{{ media_url($brand->banner_mobile) }}" alt="Mobile Banner">
                                 </div>
                             @endif
                             <input type="file" name="banner_mobile" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">

@@ -10,9 +10,12 @@ class InventoryController extends ApiController
 {
     public function index(): JsonResponse
     {
-        $inventory = Product::select('id', 'name', 'price', 'created_at')
+        $inventory = Product::select('id', 'name', 'created_at')
+            ->with(['variants' => function ($q) {
+                $q->select('id', 'product_id', 'variant_name', 'sku', 'stock_quantity');
+            }])
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(request('per_page', 15));
         return $this->successResponse($inventory);
     }
 

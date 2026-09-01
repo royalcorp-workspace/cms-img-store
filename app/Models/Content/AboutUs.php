@@ -14,6 +14,18 @@ class AboutUs extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    protected $appends = ['logo_url', 'cover_image_url'];
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return media_url($this->logo);
+    }
+
+    public function getCoverImageUrlAttribute(): ?string
+    {
+        return media_url($this->cover_image);
+    }
+
     protected $fillable = [
         'id',
         'company_name',

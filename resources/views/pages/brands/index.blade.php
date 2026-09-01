@@ -47,7 +47,7 @@
                                 <div class="flex items-center gap-3">
                                     <div class="w-12 h-12 bg-surface-gray rounded-md overflow-hidden flex-shrink-0 border border-outline-variant/20 flex items-center justify-center p-1 bg-white">
                                         @if($brand->logo)
-                                            <img class="max-w-full max-h-full object-contain" src="{{ asset('storage/' . $brand->logo) }}" alt="{{ $brand->name }}">
+                                            <img class="max-w-full max-h-full object-contain" src="{{ media_url($brand->logo) }}" alt="{{ $brand->name }}">
                                         @else
                                             <span class="text-[10px] font-bold text-on-surface-variant uppercase">{{ substr($brand->name, 0, 2) }}</span>
                                         @endif

@@ -27,11 +27,22 @@ use App\Http\Controllers\Api\Content\TermsAndConditionController;
 use App\Http\Controllers\Api\Content\PrivacyPolicyController;
 use App\Http\Controllers\Api\Content\WarrantyClaimController;
 use App\Http\Controllers\Api\BufferController;
+use App\Http\Controllers\MediaController;
+
+// Direct Upload Flow (accessible both at /api/media/upload-url and /api/v1/media/upload-url)
+Route::post('media/upload-url', [MediaController::class, 'getUploadUrl']);
+Route::post('media/upload', [MediaController::class, 'upload']);
+Route::delete('media/{id}', [MediaController::class, 'destroy']);
 
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('mock-login', [AuthController::class, 'mockLogin']);
     Route::get('mock-login', [AuthController::class, 'getMockLogin']);
+
+    // Direct Upload Flow & Fallback
+    Route::post('media/upload-url', [MediaController::class, 'getUploadUrl']);
+    Route::post('media/upload', [MediaController::class, 'upload']);
+    Route::delete('media/{id}', [MediaController::class, 'destroy']);
 
     Route::middleware('jwt')->group(function () {
         Route::get('menus', [MenuController::class, 'index']);

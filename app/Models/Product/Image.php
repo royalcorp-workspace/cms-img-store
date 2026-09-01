@@ -37,15 +37,7 @@ class Image extends Model
 
     public function getUrlAttribute(): ?string
     {
-        if (!$this->image) {
-            return null;
-        }
-
-        if (filter_var($this->image, FILTER_VALIDATE_URL)) {
-            return $this->image;
-        }
-
-        return asset('storage/' . ltrim($this->image, '/'));
+        return media_url($this->image);
     }
 
     public function product(): BelongsTo

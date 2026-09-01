@@ -10,10 +10,13 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        require_once app_path('helpers.php');
     }
 
     public function boot(): void
     {
+        date_default_timezone_set(config('app.timezone', 'Asia/Jakarta'));
+
         if (app()->environment('production') || env('FORCE_HTTPS', false)) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
