@@ -14,6 +14,18 @@ class Banner extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    protected $appends = ['image_web_full_url', 'image_mobile_full_url'];
+
+    public function getImageWebFullUrlAttribute(): ?string
+    {
+        return media_url($this->image_web_url);
+    }
+
+    public function getImageMobileFullUrlAttribute(): ?string
+    {
+        return media_url($this->image_mobile_url);
+    }
+
     protected $fillable = [
         'title',
         'link_url',

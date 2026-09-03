@@ -76,7 +76,7 @@
                         <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Main Image (Square)</label>
                         @if($bundling->image_url)
                             <div class="mb-2 w-20 h-20 bg-surface-container rounded overflow-hidden border border-outline-variant/20 flex items-center justify-center bg-white p-1">
-                                <img class="max-w-full max-h-full object-contain" src="{{ asset('storage/' . $bundling->image_url) }}" alt="Bundle image">
+                                <img class="max-w-full max-h-full object-contain" src="{{ media_url($bundling->image_url) }}" alt="Bundle image">
                             </div>
                         @endif
                         <input type="file" name="image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
@@ -85,7 +85,7 @@
                         <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Banner Image (Landscape)</label>
                         @if($bundling->banner_image)
                             <div class="mb-2 w-32 h-16 bg-surface-container rounded overflow-hidden border border-outline-variant/20 flex items-center justify-center bg-white p-1">
-                                <img class="max-w-full max-h-full object-contain" src="{{ asset('storage/' . $bundling->banner_image) }}" alt="Bundle banner">
+                                <img class="max-w-full max-h-full object-contain" src="{{ media_url($bundling->banner_image) }}" alt="Bundle banner">
                             </div>
                         @endif
                         <input type="file" name="banner_image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">

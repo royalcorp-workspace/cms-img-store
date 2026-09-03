@@ -59,7 +59,7 @@
                     <label class="block text-label-sm font-medium text-on-surface-variant">Event Banner Image</label>
                     @if(isset($event->banner_image) && $event->banner_image)
                         <div class="mb-2 w-32 h-20 bg-surface-container rounded overflow-hidden border border-outline-variant/20 flex items-center justify-center bg-white p-1">
-                            <img class="max-w-full max-h-full object-contain" src="{{ asset('storage/' . $event->banner_image) }}" alt="Banner">
+                            <img class="max-w-full max-h-full object-contain" src="{{ media_url($event->banner_image) }}" alt="Banner">
                         </div>
                     @endif
                     <input type="file" name="banner_image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
@@ -136,7 +136,7 @@
                     <label class="block text-label-sm font-medium text-on-surface-variant">Popup Banner Image</label>
                     @if(isset($event->popup) && $event->popup->image_url)
                         <div class="mb-2 w-32 h-32 bg-surface-container rounded overflow-hidden border border-outline-variant/20 flex items-center justify-center bg-white p-1">
-                            <img class="max-w-full max-h-full object-contain" src="{{ asset('storage/' . $event->popup->image_url) }}" alt="Popup Image">
+                            <img class="max-w-full max-h-full object-contain" src="{{ media_url($event->popup->image_url) }}" alt="Popup Image">
                         </div>
                     @endif
                     <input type="file" name="popup_image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">

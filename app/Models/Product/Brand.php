@@ -15,6 +15,23 @@ class Brand extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    protected $appends = ['logo_url', 'banner_web_url', 'banner_mobile_url'];
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return media_url($this->logo);
+    }
+
+    public function getBannerWebUrlAttribute(): ?string
+    {
+        return media_url($this->banner_web);
+    }
+
+    public function getBannerMobileUrlAttribute(): ?string
+    {
+        return media_url($this->banner_mobile);
+    }
+
     protected static function boot(): void
     {
         parent::boot();

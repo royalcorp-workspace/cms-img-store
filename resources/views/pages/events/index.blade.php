@@ -61,7 +61,7 @@
                                     <div class="flex items-center gap-2 justify-center">
                                         @if($popup->image_url)
                                             <div class="w-10 h-10 rounded overflow-hidden border border-outline-variant/20 flex-shrink-0">
-                                                <img class="w-full h-full object-cover" src="{{ asset('storage/' . $popup->image_url) }}" alt="Popup">
+                                                <img class="w-full h-full object-cover" src="{{ media_url($popup->image_url) }}" alt="Popup">
                                             </div>
                                         @endif
                                         <div>

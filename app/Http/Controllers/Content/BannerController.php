@@ -35,9 +35,9 @@ class BannerController extends Controller
             'placement_size'=> 'required|integer|in:1,2,3',
             'sort_order'    => 'nullable|integer|min:0',
             'is_active'     => 'boolean',
-            'images_web.*'          => 'nullable|image|max:5120',
+            'images_web.*'          => 'nullable|string',
             'images_web_url_text.*' => 'nullable|string|max:1000',
-            'images_mobile.*'       => 'nullable|image|max:5120',
+            'images_mobile.*'       => 'nullable|string',
             'image_links.*'         => 'nullable|string|max:500',
         ]);
 
@@ -106,9 +106,9 @@ class BannerController extends Controller
             'placement_size'  => 'required|integer|in:1,2,3',
             'sort_order'      => 'nullable|integer|min:0',
             'is_active'       => 'boolean',
-            'images_web.*'          => 'nullable|image|max:5120',
+            'images_web.*'          => 'nullable|string',
             'images_web_url_text.*' => 'nullable|string|max:1000',
-            'images_mobile.*'       => 'nullable|image|max:5120',
+            'images_mobile.*'       => 'nullable|string',
             'image_links.*'         => 'nullable|string|max:500',
         ]);
 
@@ -158,8 +158,8 @@ class BannerController extends Controller
         foreach ($deleteIds as $imgId) {
             $img = BannerImage::find($imgId);
             if ($img && $img->banner_id === $banner->id) {
-                if ($img->image_web_url) Storage::disk('public')->delete($img->image_web_url);
-                if ($img->image_mobile_url) Storage::disk('public')->delete($img->image_mobile_url);
+                if ($img->image_web_url) unlink_media($img->image_web_url);
+                if ($img->image_mobile_url) unlink_media($img->image_mobile_url);
                 $img->delete();
             }
         }
@@ -172,13 +172,13 @@ class BannerController extends Controller
         $banner = Banner::with('images')->findOrFail($id);
 
         foreach ($banner->images as $img) {
-            if ($img->image_web_url) Storage::disk('public')->delete($img->image_web_url);
-            if ($img->image_mobile_url) Storage::disk('public')->delete($img->image_mobile_url);
+            if ($img->image_web_url) unlink_media($img->image_web_url);
+            if ($img->image_mobile_url) unlink_media($img->image_mobile_url);
             $img->delete();
         }
 
-        if ($banner->image_web_url) Storage::disk('public')->delete($banner->image_web_url);
-        if ($banner->image_mobile_url) Storage::disk('public')->delete($banner->image_mobile_url);
+        if ($banner->image_web_url) unlink_media($banner->image_web_url);
+        if ($banner->image_mobile_url) unlink_media($banner->image_mobile_url);
         $banner->delete();
 
         return redirect()->route('content.banners.index')->with('success', 'Banner deleted successfully.');

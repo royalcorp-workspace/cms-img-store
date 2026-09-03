@@ -113,10 +113,7 @@ class Product extends Model
     public function getThumbnailUrlAttribute(): ?string
     {
         if ($this->thumbnail) {
-            if (filter_var($this->thumbnail, FILTER_VALIDATE_URL)) {
-                return $this->thumbnail;
-            }
-            return asset('storage/' . ltrim($this->thumbnail, '/'));
+            return media_url($this->thumbnail);
         }
 
         if ($this->relationLoaded('images') && $this->images->isNotEmpty()) {

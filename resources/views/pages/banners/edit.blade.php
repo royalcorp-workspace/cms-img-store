@@ -90,7 +90,7 @@
                     @foreach($banner->images as $img)
                     <div class="relative group rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container/20">
                         @php
-                            $imgSrc = Str::startsWith($img->image_web_url, ['http://', 'https://']) ? $img->image_web_url : asset('storage/' . $img->image_web_url);
+                            $imgSrc = media_url($img->image_web_url);
                         @endphp
                         <img src="{{ $imgSrc }}" alt="Banner Image"
                             class="w-full h-32 object-cover bg-surface-gray">

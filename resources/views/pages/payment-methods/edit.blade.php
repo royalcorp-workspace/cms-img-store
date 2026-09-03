@@ -63,7 +63,7 @@
                     <label class="block text-label-sm font-medium text-on-surface-variant">Image (Logo)</label>
                     @if($paymentMethod->image)
                         <div class="mb-2">
-                            <img src="{{ asset('storage/' . $paymentMethod->image) }}" class="h-10 object-contain border rounded bg-white">
+                            <img src="{{ media_url($paymentMethod->image) }}" class="h-10 object-contain border rounded bg-white">
                         </div>
                     @endif
                     <input type="file" name="image" accept="image/*" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">

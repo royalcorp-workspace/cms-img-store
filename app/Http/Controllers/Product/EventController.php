@@ -33,7 +33,7 @@ class EventController extends Controller
             // Event Details
             'title' => 'required|string|max:255',
             'event_type' => 'required|string',
-            'banner_image' => 'nullable|image|max:2048',
+            'banner_image' => 'nullable|string',
             'slug' => 'nullable|string|max:255|unique:events,slug',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
@@ -44,7 +44,7 @@ class EventController extends Controller
 
             // Popup Details
             'popup_title' => 'nullable|string|max:255',
-            'popup_image' => 'nullable|image|max:2048',
+            'popup_image' => 'nullable|string',
             'popup_link' => 'nullable|string|max:500',
             'popup_button_text' => 'nullable|string|max:100',
             'popup_active' => 'boolean',
@@ -56,7 +56,7 @@ class EventController extends Controller
 
         $bannerPath = null;
         if ($request->file('banner_image')) {
-            $bannerPath = $request->file('banner_image')->store('events', 'public');
+            $bannerPath = $request->hasFile('banner_image') ? $request->file('banner_image')->store('events', 's3') : $request->input('banner_image');
         }
 
         // 1. Create Event
@@ -114,7 +114,7 @@ class EventController extends Controller
             // Event Details
             'title' => 'required|string|max:255',
             'event_type' => 'required|string',
-            'banner_image' => 'nullable|image|max:2048',
+            'banner_image' => 'nullable|string',
             'slug' => 'nullable|string|max:255|unique:events,slug,' . $id,
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
@@ -125,7 +125,7 @@ class EventController extends Controller
 
             // Popup Details
             'popup_title' => 'nullable|string|max:255',
-            'popup_image' => 'nullable|image|max:2048',
+            'popup_image' => 'nullable|string',
             'popup_link' => 'nullable|string|max:500',
             'popup_button_text' => 'nullable|string|max:100',
             'popup_active' => 'boolean',

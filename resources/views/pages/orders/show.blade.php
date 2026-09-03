@@ -100,7 +100,7 @@
                     <span class="material-symbols-outlined text-[18px]">gavel</span> Manual Verification
                 </h2>
                 @if($order->meta['payment_proof'] ?? false)
-                    <a href="{{ env('FRONTEND_URL', 'http://127.0.0.1:81') }}/storage/{{ $order->meta['payment_proof'] }}" target="_blank" class="block text-center w-full bg-surface-container-highest border border-outline-variant py-2 rounded-lg text-xs font-medium mb-3">View Payment Proof</a>
+                    <a href="{{ media_url($order->meta['payment_proof']) }}" target="_blank" class="block text-center w-full bg-surface-container-highest border border-outline-variant py-2 rounded-lg text-xs font-medium mb-3">View Payment Proof</a>
                 @endif
                 <form method="POST" action="{{ route('orders.verify-payment', $order->id) }}" class="space-y-3 border-t border-primary/20 pt-3">
                     @csrf

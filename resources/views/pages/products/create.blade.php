@@ -110,7 +110,7 @@
                         <div class="space-y-1.5 md:col-span-2">
                             <label class="block text-label-sm font-medium text-on-surface-variant">Thumbnail <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Gambar utama produk yang muncul di katalog depan</span></span></label>
                             <div id="thumbnailPreviewContainer" class="mb-2 {{ (isset($product) && $product->thumbnail) ? '' : 'hidden' }}">
-                                <img id="thumbnailPreview" src="{{ (isset($product) && $product->thumbnail) ? asset('storage/' . $product->thumbnail) : '' }}" alt="Thumbnail" class="h-32 rounded-lg border border-outline-variant object-cover">
+                                <img id="thumbnailPreview" src="{{ (isset($product) && $product->thumbnail_url) ? $product->thumbnail_url : '' }}" alt="Thumbnail" class="h-32 rounded-lg border border-outline-variant object-cover">
                             </div>
                             <input type="file" name="thumbnail_file" id="thumbnailInput" accept="image/*" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" onchange="previewThumbnail(this)">
                         </div>
@@ -1071,6 +1071,72 @@ async function deleteVariant(id) {
     }
 }
 
+async function uploadProductImage(file) {
+    const extension = file.name.split('.').pop().toLowerCase();
+    let mimeType = file.type;
+    if (!mimeType) {
+        if (extension === 'png') mimeType = 'image/png';
+        else if (extension === 'webp') mimeType = 'image/webp';
+        else if (extension === 'gif') mimeType = 'image/gif';
+        else if (extension === 'svg') mimeType = 'image/svg+xml';
+        else mimeType = 'image/jpeg';
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+
+    // 1. Coba Direct Upload via S3 Pre-Signed URL terlebih dahulu
+    try {
+        const authRes = await fetch('/api/v1/media/upload-url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({ mime_type: mimeType, extension: extension })
+        });
+
+        if (authRes.ok) {
+            const { upload_url, file_path } = await authRes.json();
+
+            const uploadRes = await fetch(upload_url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': mimeType
+                },
+                body: file
+            });
+
+            if (uploadRes.ok) {
+                return file_path;
+            }
+        }
+    } catch (directErr) {
+        console.warn('Direct S3 upload could not connect from browser, falling back to server upload...', directErr);
+    }
+
+    // 2. Fallback jika Direct Upload dari browser tidak dapat menjangkau endpoint (misal mixed content / network)
+    const fallbackData = new FormData();
+    fallbackData.append('file', file);
+
+    const fallbackRes = await fetch('/api/v1/media/upload', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: fallbackData
+    });
+
+    if (!fallbackRes.ok) {
+        let errData = await fallbackRes.json().catch(() => ({}));
+        throw new Error(errData.message || 'Gagal mengunggah file ke Object Storage (HTTP ' + fallbackRes.status + ')');
+    }
+
+    const resJson = await fallbackRes.json();
+    return resJson.file_path;
+}
+
 document.getElementById('productForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     document.getElementById('variantsInput').value = JSON.stringify(localVariants);
@@ -1085,23 +1151,36 @@ document.getElementById('productForm').addEventListener('submit', async function
     document.getElementById('description-input').value = quillHtml;
 
     let formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerText;
     
-    // Process localImages for existing vs new
-    localImages.forEach((img, i) => {
-        if(img.file) {
-            formData.append('new_images[]', img.file);
-            formData.append('new_image_orders[]', i);
-        } else if (img.id) {
-            formData.append('existing_images[]', img.id);
-            formData.append('existing_image_orders[]', i);
-        }
-    });
-
     try {
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerText;
-        submitBtn.innerText = 'Saving...';
+        submitBtn.innerText = 'Uploading Media...';
         submitBtn.disabled = true;
+
+        // Direct upload thumbnail if selected
+        const thumbnailInput = document.getElementById('thumbnailInput');
+        formData.delete('thumbnail_file');
+        if (thumbnailInput.files.length > 0) {
+            const uploadedPath = await uploadProductImage(thumbnailInput.files[0]);
+            formData.append('thumbnail_file', uploadedPath);
+        }
+        
+        // Direct upload new_images
+        for (let i = 0; i < localImages.length; i++) {
+            let img = localImages[i];
+            if (img.file) {
+                submitBtn.innerText = `Uploading Image ${i+1}...`;
+                const uploadedPath = await uploadProductImage(img.file);
+                formData.append('new_images[]', uploadedPath);
+                formData.append('new_image_orders[]', i);
+            } else if (img.id) {
+                formData.append('existing_images[]', img.id);
+                formData.append('existing_image_orders[]', i);
+            }
+        }
+
+        submitBtn.innerText = 'Saving...';
 
         let res = await fetch(this.action, {
             method: 'POST',
@@ -1114,7 +1193,7 @@ document.getElementById('productForm').addEventListener('submit', async function
         if (res.ok) {
             window.location.href = '{{ route("products.index") }}';
         } else {
-            const errData = await res.json();
+            const errData = await res.json().catch(() => ({ message: 'Server error (' + res.status + ')' }));
             console.error(errData);
             alert(errData.message || 'Failed to save product');
             submitBtn.innerText = originalText;
@@ -1122,7 +1201,7 @@ document.getElementById('productForm').addEventListener('submit', async function
         }
     } catch(err) {
         console.error(err);
-        alert('Error saving product');
+        alert('Error saving product: ' + err.message);
         const submitBtn = this.querySelector('button[type="submit"]');
         submitBtn.innerText = '{{ $product ? "Update Product" : "Create Product" }}';
         submitBtn.disabled = false;

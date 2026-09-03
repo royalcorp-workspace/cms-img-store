@@ -106,44 +106,99 @@ class ProductController extends Controller
             'variants.*.status' => 'boolean',
         ]);
 
-        if ($request->hasFile('thumbnail_file')) {
-            $path = $request->file('thumbnail_file')->store('product_images', 'public');
-            $validated['thumbnail'] = $path;
-        }
+        try {
+            if ($request->hasFile('thumbnail_file')) {
+                $path = $request->file('thumbnail_file')->store('product_images', 's3');
+                if (!$path) {
+                    throw new \Exception("Gagal mengupload thumbnail ke S3.");
+                }
+                $validated['thumbnail'] = $path;
+            } elseif ($request->filled('thumbnail_file')) {
+                $validated['thumbnail'] = $request->input('thumbnail_file');
+            }
 
-        $product = Product::create($validated);
+            $product = Product::create($validated);
 
-        if ($request->hasFile('new_images')) {
-            $newOrders = $request->input('new_image_orders');
-            foreach ($request->file('new_images') as $index => $file) {
-                $path = $file->store('product_images', 'public');
-                \App\Models\Product\Image::create([
+            if (!empty($validated['thumbnail'])) {
+                \Illuminate\Support\Facades\Log::channel('media')->info('Product thumbnail saved to S3 path', [
                     'product_id' => $product->id,
-                    'image' => $path,
-                    'sort_order' => $newOrders[$index] ?? $index,
-                    'status' => true,
+                    'thumbnail'  => $validated['thumbnail'],
+                    'upload_mode' => $request->hasFile('thumbnail_file') ? 'server_s3_upload' : 'direct_s3_upload',
                 ]);
             }
-        }
 
-        if (isset($validated['colors']) && is_array($validated['colors'])) {
-            foreach ($validated['colors'] as $colorData) {
-                Color::create(array_merge(['product_id' => $product->id], $colorData));
-            }
-        }
+            if ($request->has('new_images')) {
+                $newOrders = $request->input('new_image_orders');
+                $newImages = $request->input('new_images', []) ?: $request->file('new_images', []);
+                
+                foreach ($newImages as $index => $fileOrPath) {
+                    if ($fileOrPath instanceof \Illuminate\Http\UploadedFile) {
+                        $path = $fileOrPath->store('product_images', 's3');
+                        if (!$path) {
+                            throw new \Exception("Gagal mengupload gambar tambahan ke S3.");
+                        }
+                    } else {
+                        $path = $fileOrPath;
+                    }
+                    
+                    if ($path) {
+                        \App\Models\Product\Image::create([
+                            'product_id' => $product->id,
+                            'image' => $path,
+                            'sort_order' => $newOrders[$index] ?? $index,
+                            'status' => true,
+                        ]);
 
-        if (isset($validated['variants']) && is_array($validated['variants'])) {
-            foreach ($validated['variants'] as $variantData) {
-                // Map stock_qty from frontend to stock_quantity for database
-                if (array_key_exists('stock_qty', $variantData)) {
-                    $variantData['stock_quantity'] = $variantData['stock_qty'];
-                    unset($variantData['stock_qty']);
+                        \Illuminate\Support\Facades\Log::channel('media')->info('Product gallery image saved to S3 path', [
+                            'product_id'  => $product->id,
+                            'image_path'  => $path,
+                            'sort_order'  => $newOrders[$index] ?? $index,
+                            'upload_mode' => ($fileOrPath instanceof \Illuminate\Http\UploadedFile) ? 'server_s3_upload' : 'direct_s3_upload',
+                        ]);
+                    }
                 }
-                \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
             }
-        }
 
-        return redirect()->route('products.index')->with('success', 'Product created successfully');
+            if (isset($validated['colors']) && is_array($validated['colors'])) {
+                foreach ($validated['colors'] as $colorData) {
+                    Color::create(array_merge(['product_id' => $product->id], $colorData));
+                }
+            }
+
+            if (isset($validated['variants']) && is_array($validated['variants'])) {
+                foreach ($validated['variants'] as $variantData) {
+                    // Map stock_qty from frontend to stock_quantity for database
+                    if (array_key_exists('stock_qty', $variantData)) {
+                        $variantData['stock_quantity'] = $variantData['stock_qty'];
+                        unset($variantData['stock_qty']);
+                    }
+                    \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
+                }
+            }
+
+            \Log::channel('product')->info("Product created successfully: " . $product->id);
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product created successfully',
+                    'redirect_url' => route('products.index'),
+                ]);
+            }
+
+            return redirect()->route('products.index')->with('success', 'Product created successfully');
+        } catch (\Exception $e) {
+            \Log::channel('product')->error("Create Product Error: " . $e->getMessage());
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan produk: ' . $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->withInput()->with('error', 'Gagal menyimpan produk: ' . $e->getMessage());
+        }
     }
 
     public function show($id)
@@ -215,101 +270,183 @@ class ProductController extends Controller
             'variants.*.status' => 'boolean',
         ]);
 
-        if ($request->hasFile('thumbnail_file')) {
-            $path = $request->file('thumbnail_file')->store('product_images', 'public');
-            $validated['thumbnail'] = $path;
-        }
+        try {
+            $oldThumbnail = $product->thumbnail;
 
-        $product->update($validated);
-
-        // Handle Images
-        if ($request->has('existing_images')) {
-            $existingImages = $request->input('existing_images');
-            $existingOrders = $request->input('existing_image_orders');
-            foreach ($existingImages as $index => $imageId) {
-                \App\Models\Product\Image::where('id', $imageId)
-                    ->where('product_id', $product->id)
-                    ->update(['sort_order' => $existingOrders[$index] ?? $index]);
+            if ($request->hasFile('thumbnail_file')) {
+                $path = $request->file('thumbnail_file')->store('product_images', 's3');
+                if (!$path) {
+                    throw new \Exception("Gagal mengupload thumbnail ke S3.");
+                }
+                $validated['thumbnail'] = $path;
+            } elseif ($request->filled('thumbnail_file')) {
+                $validated['thumbnail'] = $request->input('thumbnail_file');
             }
-            \App\Models\Product\Image::where('product_id', $product->id)
-                ->whereNotIn('id', $existingImages)
-                ->delete();
-        } else {
-            \App\Models\Product\Image::where('product_id', $product->id)->delete();
-        }
 
-        if ($request->hasFile('new_images')) {
-            $newOrders = $request->input('new_image_orders');
-            foreach ($request->file('new_images') as $index => $file) {
-                $path = $file->store('product_images', 'public');
-                \App\Models\Product\Image::create([
+            // Unlink previous thumbnail from S3 if replaced
+            if (!empty($validated['thumbnail']) && $oldThumbnail && $oldThumbnail !== $validated['thumbnail']) {
+                unlink_media($oldThumbnail);
+            }
+
+            $product->update($validated);
+
+            if (!empty($validated['thumbnail'])) {
+                \Illuminate\Support\Facades\Log::channel('media')->info('Product thumbnail updated to S3 path', [
                     'product_id' => $product->id,
-                    'image' => $path,
-                    'sort_order' => $newOrders[$index] ?? $index,
-                    'status' => true,
+                    'thumbnail'  => $validated['thumbnail'],
+                    'upload_mode' => $request->hasFile('thumbnail_file') ? 'server_s3_upload' : 'direct_s3_upload',
                 ]);
             }
-        }
 
-        if (isset($validated['colors']) && is_array($validated['colors'])) {
-            $submittedColorIds = [];
-            foreach ($validated['colors'] as $colorData) {
-                if (isset($colorData['id'])) {
-                    $submittedColorIds[] = $colorData['id'];
-                    $color = Color::find($colorData['id']);
-                    if ($color) {
-                        $color->update($colorData);
-                    }
-                } else {
-                    Color::create(array_merge(['product_id' => $product->id], $colorData));
+            // Handle Images
+            if ($request->has('existing_images')) {
+                $existingImages = $request->input('existing_images');
+                $existingOrders = $request->input('existing_image_orders');
+                foreach ($existingImages as $index => $imageId) {
+                    \App\Models\Product\Image::where('id', $imageId)
+                        ->where('product_id', $product->id)
+                        ->update(['sort_order' => $existingOrders[$index] ?? $index]);
+                }
+                $removedImages = \App\Models\Product\Image::where('product_id', $product->id)
+                    ->whereNotIn('id', $existingImages)
+                    ->get();
+                foreach ($removedImages as $removedImg) {
+                    unlink_media($removedImg->image);
+                    $removedImg->delete();
+                }
+            } else {
+                $removedImages = \App\Models\Product\Image::where('product_id', $product->id)->get();
+                foreach ($removedImages as $removedImg) {
+                    unlink_media($removedImg->image);
+                    $removedImg->delete();
                 }
             }
 
-            if (!empty($submittedColorIds)) {
-                $product->colors()->whereNotIn('id', $submittedColorIds)->delete();
+            if ($request->has('new_images')) {
+                $newOrders = $request->input('new_image_orders');
+                $newImages = $request->input('new_images', []) ?: $request->file('new_images', []);
+                
+                foreach ($newImages as $index => $fileOrPath) {
+                    if ($fileOrPath instanceof \Illuminate\Http\UploadedFile) {
+                        $path = $fileOrPath->store('product_images', 's3');
+                        if (!$path) {
+                            throw new \Exception("Gagal mengupload gambar tambahan ke S3.");
+                        }
+                    } else {
+                        $path = $fileOrPath;
+                    }
+                    
+                    if ($path) {
+                        \App\Models\Product\Image::create([
+                            'product_id' => $product->id,
+                            'image' => $path,
+                            'sort_order' => $newOrders[$index] ?? $index,
+                            'status' => true,
+                        ]);
+
+                        \Illuminate\Support\Facades\Log::channel('media')->info('Product gallery image added to S3 path', [
+                            'product_id'  => $product->id,
+                            'image_path'  => $path,
+                            'sort_order'  => $newOrders[$index] ?? $index,
+                            'upload_mode' => ($fileOrPath instanceof \Illuminate\Http\UploadedFile) ? 'server_s3_upload' : 'direct_s3_upload',
+                        ]);
+                    }
+                }
+            }
+
+            if (isset($validated['colors']) && is_array($validated['colors'])) {
+                $submittedColorIds = [];
+                foreach ($validated['colors'] as $colorData) {
+                    if (isset($colorData['id'])) {
+                        $submittedColorIds[] = $colorData['id'];
+                        $color = Color::find($colorData['id']);
+                        if ($color) {
+                            $color->update($colorData);
+                        }
+                    } else {
+                        Color::create(array_merge(['product_id' => $product->id], $colorData));
+                    }
+                }
+
+                if (!empty($submittedColorIds)) {
+                    $product->colors()->whereNotIn('id', $submittedColorIds)->delete();
+                } else {
+                    $product->colors()->delete();
+                }
             } else {
                 $product->colors()->delete();
             }
-        } else {
-            $product->colors()->delete();
-        }
 
-        if (isset($validated['variants']) && is_array($validated['variants'])) {
-            $submittedVariantIds = [];
-            foreach ($validated['variants'] as $variantData) {
-                // Map stock_qty from frontend to stock_quantity for database
-                if (array_key_exists('stock_qty', $variantData)) {
-                    $variantData['stock_quantity'] = $variantData['stock_qty'];
-                    unset($variantData['stock_qty']);
-                }
-                
-                if (isset($variantData['id'])) {
-                    $submittedVariantIds[] = $variantData['id'];
-                    $variant = \App\Models\Product\Variant::find($variantData['id']);
-                    if ($variant) {
-                        $variant->update($variantData);
+            if (isset($validated['variants']) && is_array($validated['variants'])) {
+                $submittedVariantIds = [];
+                foreach ($validated['variants'] as $variantData) {
+                    // Map stock_qty from frontend to stock_quantity for database
+                    if (array_key_exists('stock_qty', $variantData)) {
+                        $variantData['stock_quantity'] = $variantData['stock_qty'];
+                        unset($variantData['stock_qty']);
                     }
-                } else {
-                    \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
+                    
+                    if (isset($variantData['id'])) {
+                        $submittedVariantIds[] = $variantData['id'];
+                        $variant = \App\Models\Product\Variant::find($variantData['id']);
+                        if ($variant) {
+                            $variant->update($variantData);
+                        }
+                    } else {
+                        \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
+                    }
                 }
+
+                // Delete removed variants
+                \App\Models\Product\Variant::where('product_id', $product->id)
+                    ->whereNotIn('id', $submittedVariantIds)
+                    ->delete();
+            } else {
+                \App\Models\Product\Variant::where('product_id', $product->id)->delete();
             }
 
-            // Delete removed variants
-            \App\Models\Product\Variant::where('product_id', $product->id)
-                ->whereNotIn('id', $submittedVariantIds)
-                ->delete();
-        } else {
-            \App\Models\Product\Variant::where('product_id', $product->id)->delete();
-        }
+            \Log::channel('product')->info("Product updated successfully: " . $product->id);
 
-        return redirect()->route('products.index')->with('success', 'Product updated successfully');
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product updated successfully',
+                    'redirect_url' => route('products.index'),
+                ]);
+            }
+
+            return redirect()->route('products.index')->with('success', 'Product updated successfully');
+        } catch (\Exception $e) {
+            \Log::channel('product')->error("Update Product Error: " . $e->getMessage());
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengupdate produk: ' . $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->withInput()->with('error', 'Gagal mengupdate produk: ' . $e->getMessage());
+        }
     }
 
     public function destroy($id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::with('images')->findOrFail($id);
+        
+        if ($product->thumbnail) {
+            unlink_media($product->thumbnail);
+        }
+
+        foreach ($product->images as $img) {
+            if ($img->image) {
+                unlink_media($img->image);
+            }
+        }
+
         $product->delete();
-        return redirect()->route('products.index');
+        \Log::channel('product')->info("Product deleted successfully: " . $id);
+        return redirect()->route('products.index')->with('success', 'Product deleted successfully');
     }
 
     public function importForm()

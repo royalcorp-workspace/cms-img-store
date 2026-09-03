@@ -15,6 +15,18 @@ class ProductBundling extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    protected $appends = ['image_full_url', 'banner_image_full_url'];
+
+    public function getImageFullUrlAttribute(): ?string
+    {
+        return media_url($this->image_url);
+    }
+
+    public function getBannerImageFullUrlAttribute(): ?string
+    {
+        return media_url($this->banner_image);
+    }
+
     protected $fillable = [
         'name',
         'slug',

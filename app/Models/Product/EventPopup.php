@@ -15,6 +15,13 @@ class EventPopup extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    protected $appends = ['image_full_url'];
+
+    public function getImageFullUrlAttribute(): ?string
+    {
+        return media_url($this->image_url);
+    }
+
     protected $fillable = [
         'event_id',
         'title',

@@ -74,8 +74,8 @@ class CategoryController extends Controller
             'tagline' => 'nullable|string|max:255',
             'slug' => 'nullable|string|max:255|unique:product_category,slug',
             'description' => 'nullable|string',
-            'banner_web' => 'nullable|image|max:2048',
-            'banner_mobile' => 'nullable|image|max:2048',
+            'banner_web' => 'nullable|string',
+            'banner_mobile' => 'nullable|string',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'has_warranty' => 'boolean',
@@ -83,10 +83,14 @@ class CategoryController extends Controller
         ]);
         
         if ($request->hasFile('banner_web')) {
-            $validated['banner_web'] = $request->file('banner_web')->store('categories', 'public');
+            $validated['banner_web'] = $request->file('banner_web')->store('categories', 's3');
+        } elseif ($request->filled('banner_web')) {
+            $validated['banner_web'] = $request->input('banner_web');
         }
         if ($request->hasFile('banner_mobile')) {
-            $validated['banner_mobile'] = $request->file('banner_mobile')->store('categories', 'public');
+            $validated['banner_mobile'] = $request->file('banner_mobile')->store('categories', 's3');
+        } elseif ($request->filled('banner_mobile')) {
+            $validated['banner_mobile'] = $request->input('banner_mobile');
         }
         
         $category = Category::create($validated);
@@ -117,25 +121,40 @@ class CategoryController extends Controller
             'tagline' => 'nullable|string|max:255',
             'slug' => 'nullable|string|max:255|unique:product_category,slug,' . $id,
             'description' => 'nullable|string',
-            'banner_web' => 'nullable|image|max:2048',
-            'banner_mobile' => 'nullable|image|max:2048',
+            'banner_web' => 'nullable|string',
+            'banner_mobile' => 'nullable|string',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'has_warranty' => 'boolean',
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
 
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+
         if ($request->hasFile('banner_web')) {
             if ($category->banner_web) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($category->banner_web);
+                unlink_media($category->banner_web);
             }
-            $validated['banner_web'] = $request->file('banner_web')->store('categories', 'public');
+            $validated['banner_web'] = $request->file('banner_web')->store('categories', $uploadDisk);
+        } elseif ($request->filled('banner_web')) {
+            $newBannerWeb = $request->input('banner_web');
+            if ($category->banner_web && $category->banner_web !== $newBannerWeb) {
+                unlink_media($category->banner_web);
+            }
+            $validated['banner_web'] = $newBannerWeb;
         }
+
         if ($request->hasFile('banner_mobile')) {
             if ($category->banner_mobile) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($category->banner_mobile);
+                unlink_media($category->banner_mobile);
             }
-            $validated['banner_mobile'] = $request->file('banner_mobile')->store('categories', 'public');
+            $validated['banner_mobile'] = $request->file('banner_mobile')->store('categories', $uploadDisk);
+        } elseif ($request->filled('banner_mobile')) {
+            $newBannerMobile = $request->input('banner_mobile');
+            if ($category->banner_mobile && $category->banner_mobile !== $newBannerMobile) {
+                unlink_media($category->banner_mobile);
+            }
+            $validated['banner_mobile'] = $newBannerMobile;
         }
 
         $category->update($validated);
@@ -150,6 +169,12 @@ class CategoryController extends Controller
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
+        if ($category->banner_web) {
+            unlink_media($category->banner_web);
+        }
+        if ($category->banner_mobile) {
+            unlink_media($category->banner_mobile);
+        }
         $category->delete();
         return response()->json([
             'success' => true,

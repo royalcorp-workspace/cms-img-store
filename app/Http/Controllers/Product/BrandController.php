@@ -27,13 +27,13 @@ class BrandController extends Controller
             'name' => 'required|string|max:255|unique:brands,name',
             'slug' => 'nullable|string|max:255|unique:brands,slug',
             'description' => 'nullable|string',
-            'logo' => 'nullable|image|max:2048',
+            'logo' => 'nullable|string',
             'banner_type' => 'required|in:1,2',
             'embed_web' => 'nullable|string',
             'embed_mobile' => 'nullable|string',
             'banner_link' => 'nullable|string|max:1000',
-            'banner_web' => 'nullable|image|max:2048',
-            'banner_mobile' => 'nullable|image|max:2048',
+            'banner_web' => 'nullable|string',
+            'banner_mobile' => 'nullable|string',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'is_featured' => 'boolean',
@@ -45,13 +45,19 @@ class BrandController extends Controller
         $validated['is_featured'] = $request->has('is_featured');
 
         if ($request->hasFile('logo')) {
-            $validated['logo'] = $request->file('logo')->store('brands', 'public');
+            $validated['logo'] = $request->file('logo')->store('brands', 's3');
+        } elseif ($request->filled('logo')) {
+            $validated['logo'] = $request->input('logo');
         }
         if ($request->hasFile('banner_web')) {
-            $validated['banner_web'] = $request->file('banner_web')->store('brands', 'public');
+            $validated['banner_web'] = $request->file('banner_web')->store('brands', 's3');
+        } elseif ($request->filled('banner_web')) {
+            $validated['banner_web'] = $request->input('banner_web');
         }
         if ($request->hasFile('banner_mobile')) {
-            $validated['banner_mobile'] = $request->file('banner_mobile')->store('brands', 'public');
+            $validated['banner_mobile'] = $request->file('banner_mobile')->store('brands', 's3');
+        } elseif ($request->filled('banner_mobile')) {
+            $validated['banner_mobile'] = $request->input('banner_mobile');
         }
 
         Brand::create($validated);
@@ -73,13 +79,13 @@ class BrandController extends Controller
             'name' => 'required|string|max:255|unique:brands,name,' . $id,
             'slug' => 'nullable|string|max:255|unique:brands,slug,' . $id,
             'description' => 'nullable|string',
-            'logo' => 'nullable|image|max:2048',
+            'logo' => 'nullable|string',
             'banner_type' => 'required|in:1,2',
             'embed_web' => 'nullable|string',
             'embed_mobile' => 'nullable|string',
             'banner_link' => 'nullable|string|max:1000',
-            'banner_web' => 'nullable|image|max:2048',
-            'banner_mobile' => 'nullable|image|max:2048',
+            'banner_web' => 'nullable|string',
+            'banner_mobile' => 'nullable|string',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'is_featured' => 'boolean',
@@ -89,23 +95,25 @@ class BrandController extends Controller
         $validated['status'] = $request->has('status');
         $validated['is_featured'] = $request->has('is_featured');
 
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+
         if ($request->hasFile('logo')) {
             if ($brand->logo) {
-                Storage::disk('public')->delete($brand->logo);
+                unlink_media($brand->logo);
             }
-            $validated['logo'] = $request->file('logo')->store('brands', 'public');
+            $validated['logo'] = $request->file('logo')->store('brands', $uploadDisk);
         }
         if ($request->hasFile('banner_web')) {
             if ($brand->banner_web) {
-                Storage::disk('public')->delete($brand->banner_web);
+                unlink_media($brand->banner_web);
             }
-            $validated['banner_web'] = $request->file('banner_web')->store('brands', 'public');
+            $validated['banner_web'] = $request->file('banner_web')->store('brands', $uploadDisk);
         }
         if ($request->hasFile('banner_mobile')) {
             if ($brand->banner_mobile) {
-                Storage::disk('public')->delete($brand->banner_mobile);
+                unlink_media($brand->banner_mobile);
             }
-            $validated['banner_mobile'] = $request->file('banner_mobile')->store('brands', 'public');
+            $validated['banner_mobile'] = $request->file('banner_mobile')->store('brands', $uploadDisk);
         }
 
         $brand->update($validated);
