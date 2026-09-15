@@ -27,11 +27,11 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div>
                 <p class="text-label-sm text-on-surface-variant mb-1">Order</p>
-                <p class="font-headline-md text-headline-md text-on-surface">#{{ substr($packingSlip->order->id, 0, 8) }}</p>
+                <p class="font-headline-md text-headline-md text-on-surface">#{{ $packingSlip->order ? substr($packingSlip->order->id, 0, 8) : '-' }}</p>
             </div>
             <div>
                 <p class="text-label-sm text-on-surface-variant mb-1">Customer</p>
-                <p class="font-body-md text-body-md text-on-surface">{{ $packingSlip->order->customer->name ?? 'N/A' }}</p>
+                <p class="font-body-md text-body-md text-on-surface">{{ $packingSlip->order?->customer?->name ?? 'N/A' }}</p>
             </div>
             <div>
                 <p class="text-label-sm text-on-surface-variant mb-1">Status</p>

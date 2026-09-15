@@ -8,9 +8,13 @@ use Illuminate\Http\Request;
 
 class VoucherController extends ApiController
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $vouchers = Voucher::all();
+        $query = Voucher::with(['customers', 'categories']);
+        if ($request->has('show_on_web')) {
+            $query->where('show_on_web', $request->boolean('show_on_web'));
+        }
+        $vouchers = $query->get();
         return $this->successResponse($vouchers);
     }
 
@@ -23,6 +27,7 @@ class VoucherController extends ApiController
             'type' => 'required|integer|in:1,2,3,4',
             'scope' => 'required|integer|in:1,2,3',
             'allow_stacking' => 'boolean',
+            'show_on_web' => 'boolean',
             'value' => 'required|numeric|min:0',
             'min_purchase' => 'nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
@@ -32,45 +37,44 @@ class VoucherController extends ApiController
             'end_date' => 'nullable|date',
             'valid_for_new_customer' => 'boolean',
             'is_active' => 'boolean',
-            'product_ids' => 'nullable|array',
-            'product_ids.*' => 'exists:products,id',
+            'customer_ids' => 'nullable|array',
+            'customer_ids.*' => 'exists:customers,id',
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'exists:product_category,id',
         ]);
 
-        $validated['allow_stacking'] = $request->boolean('allow_stacking');
+        $validated['allow_stacking'] = ((int) $request->input('type') === 3) && $request->boolean('allow_stacking');
+        $validated['show_on_web'] = $request->boolean('show_on_web');
         $validated['valid_for_new_customer'] = $request->boolean('valid_for_new_customer');
         $validated['is_active'] = $request->boolean('is_active');
 
-        $productIds = $request->input('product_ids', []);
+        $customerIds = $request->input('customer_ids', []);
         $categoryIds = $request->input('category_ids', []);
 
-        unset($validated['product_ids'], $validated['category_ids']);
+        unset($validated['customer_ids'], $validated['category_ids']);
 
         $voucher = Voucher::create($validated);
 
-        if ((int)$voucher->type === 4) {
-            if (!empty($productIds)) {
-                $voucher->products()->attach($productIds);
+        if ((int)$voucher->scope === 2 && !empty($customerIds)) {
+            $syncCustomers = [];
+            foreach ($customerIds as $cId) {
+                $syncCustomers[$cId] = ['id' => (string) \Illuminate\Support\Str::uuid()];
             }
-            if ((int)$voucher->scope === 3 && !empty($categoryIds)) {
-                $voucher->categories()->attach($categoryIds);
+            $voucher->customers()->attach($syncCustomers);
+        } elseif ((int)$voucher->scope === 3 && !empty($categoryIds)) {
+            $syncCats = [];
+            foreach ($categoryIds as $catId) {
+                $syncCats[$catId] = ['id' => (string) \Illuminate\Support\Str::uuid()];
             }
-        } else {
-            if ((int)$voucher->scope === 2 && !empty($productIds)) {
-                $voucher->products()->attach($productIds);
-            }
-            if ((int)$voucher->scope === 3 && !empty($categoryIds)) {
-                $voucher->categories()->attach($categoryIds);
-            }
+            $voucher->categories()->attach($syncCats);
         }
 
-        return $this->successResponse($voucher, 'Voucher created', 201);
+        return $this->successResponse($voucher->load(['customers', 'categories']), 'Voucher created', 201);
     }
 
     public function show(string $id): JsonResponse
     {
-        $voucher = Voucher::find($id);
+        $voucher = Voucher::with(['customers', 'categories'])->find($id);
         if (!$voucher) {
             return $this->errorResponse('Voucher not found', 404);
         }
@@ -83,8 +87,62 @@ class VoucherController extends ApiController
         if (!$voucher) {
             return $this->errorResponse('Voucher not found', 404);
         }
-        $voucher->update($request->all());
-        return $this->successResponse($voucher, 'Voucher updated');
+
+        $validated = $request->validate([
+            'code' => 'required|string|max:255|unique:vouchers,code,' . $id,
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'type' => 'required|integer|in:1,2,3,4',
+            'scope' => 'required|integer|in:1,2,3',
+            'allow_stacking' => 'boolean',
+            'show_on_web' => 'boolean',
+            'value' => 'required|numeric|min:0',
+            'min_purchase' => 'nullable|numeric|min:0',
+            'max_discount' => 'nullable|numeric|min:0',
+            'usage_limit' => 'nullable|integer|min:0',
+            'usage_limit_per_user' => 'nullable|integer|min:0',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'valid_for_new_customer' => 'boolean',
+            'is_active' => 'boolean',
+            'customer_ids' => 'nullable|array',
+            'customer_ids.*' => 'exists:customers,id',
+            'category_ids' => 'nullable|array',
+            'category_ids.*' => 'exists:product_category,id',
+        ]);
+
+        $validated['allow_stacking'] = ((int) $request->input('type') === 3) && $request->boolean('allow_stacking');
+        $validated['show_on_web'] = $request->boolean('show_on_web');
+        $validated['valid_for_new_customer'] = $request->boolean('valid_for_new_customer');
+        $validated['is_active'] = $request->boolean('is_active');
+
+        $customerIds = $request->input('customer_ids', []);
+        $categoryIds = $request->input('category_ids', []);
+
+        unset($validated['customer_ids'], $validated['category_ids']);
+
+        $voucher->update($validated);
+
+        if ((int)$voucher->scope === 2) {
+            $syncCustomers = [];
+            foreach ($customerIds as $cId) {
+                $syncCustomers[$cId] = ['id' => (string) \Illuminate\Support\Str::uuid()];
+            }
+            $voucher->customers()->sync($syncCustomers);
+            $voucher->categories()->detach();
+        } elseif ((int)$voucher->scope === 3) {
+            $syncCats = [];
+            foreach ($categoryIds as $catId) {
+                $syncCats[$catId] = ['id' => (string) \Illuminate\Support\Str::uuid()];
+            }
+            $voucher->categories()->sync($syncCats);
+            $voucher->customers()->detach();
+        } else {
+            $voucher->customers()->detach();
+            $voucher->categories()->detach();
+        }
+
+        return $this->successResponse($voucher->load(['customers', 'categories']), 'Voucher updated');
     }
 
     public function destroy(string $id): JsonResponse

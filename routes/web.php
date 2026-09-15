@@ -19,6 +19,7 @@ Route::middleware(['auth:admin', 'admin'])->group(function () {
    
     require __DIR__ . '/web/admin.php';
     require __DIR__ . '/web/product.php';
+    require __DIR__ . '/web/inventory.php';
     require __DIR__ . '/web/store.php';
     require __DIR__ . '/web/content.php';
     require __DIR__ . '/web/order.php';

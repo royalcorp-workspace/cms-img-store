@@ -12,9 +12,29 @@ use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $events = Event::with(['popup', 'priceProductSettings'])->orderBy('created_at', 'desc')->get();
+        $query = Event::with(['popup', 'priceProductSettings'])->orderBy('created_at', 'desc');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%")
+                  ->orWhere('event_type', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+
+        $events = $query->paginate(15)->withQueryString();
+
         return view('pages.events.index', compact('events'));
     }
 

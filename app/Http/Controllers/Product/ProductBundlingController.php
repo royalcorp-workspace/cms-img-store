@@ -12,9 +12,19 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductBundlingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $bundlings = ProductBundling::with('items.product')->orderBy('created_at', 'desc')->get();
+        $query = ProductBundling::with('items.product');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%");
+            });
+        }
+
+        $bundlings = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
         return view('pages.bundling.index', compact('bundlings'));
     }
 

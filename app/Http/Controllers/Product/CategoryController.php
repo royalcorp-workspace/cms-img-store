@@ -79,8 +79,17 @@ class CategoryController extends Controller
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'has_warranty' => 'boolean',
+            'courier_setting_type' => 'nullable|string|in:global,detail',
+            'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
+            'shipping_scheme' => 'nullable|string|in:dimension,fixed',
+            'shipping_cost' => 'nullable|numeric|min:0',
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
+
+        $validated['courier_setting_type'] = $validated['courier_setting_type'] ?? 'detail';
+        $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
+        $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
+        $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
         
         if ($request->hasFile('banner_web')) {
             $validated['banner_web'] = $request->file('banner_web')->store('categories', 's3');
@@ -126,8 +135,17 @@ class CategoryController extends Controller
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'has_warranty' => 'boolean',
+            'courier_setting_type' => 'nullable|string|in:global,detail',
+            'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
+            'shipping_scheme' => 'nullable|string|in:dimension,fixed',
+            'shipping_cost' => 'nullable|numeric|min:0',
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
+
+        $validated['courier_setting_type'] = $validated['courier_setting_type'] ?? 'detail';
+        $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
+        $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
+        $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
 
         $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
 

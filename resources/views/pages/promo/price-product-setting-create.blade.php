@@ -52,14 +52,14 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Discount Type <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Pilih bentuk diskon: persentase atau nominal Rupiah</span></span></label>
-                    <select name="discount_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                        <option value="1" {{ old('type', 1) == 1 ? 'selected' : '' }}>Percentage (%)</option>
-                        <option value="2" {{ old('type', 1) == 2 ? 'selected' : '' }}>Nominal</option>
+                    <select name="discount_type" id="discountTypeSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" onchange="handleDiscountTypeChange()">
+                        <option value="1" {{ old('discount_type', 1) == 1 ? 'selected' : '' }}>Percentage (%)</option>
+                        <option value="2" {{ old('discount_type', 1) == 2 ? 'selected' : '' }}>Nominal</option>
                     </select>
                 </div>
-                <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Discount Value <span class="text-danger">*</span> <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Nilai diskon: persentase 0-100 atau nominal Rupiah</span></span></label>
-                    <input type="number" name="discount_value" step="0.01" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0" required value="{{ old('discount_value') }}" id="discountValueInput">
+                <div class="space-y-1.5" id="discountValueContainer">
+                    <label class="block text-label-sm font-medium text-on-surface-variant" id="discountValueLabel">Discount Value (%) <span class="text-danger">*</span> <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Nilai diskon: persentase 0-100 atau nominal Rupiah</span></span></label>
+                    <input type="number" name="discount_value" step="any" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0-100" required value="{{ old('discount_value') }}" id="discountValueInput">
                     @error('discount_value')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
             </div>
@@ -76,7 +76,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Scope <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Jangkauan produk yang terkena diskon</span></span></label>
-                    <select name="scope" id="scopeType" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" onchange="toggleProductsEditability()">
+                    <select name="scope" id="scopeType" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" onchange="handleScopeChange()">
                         <option value="1" {{ old('scope', 1) == 1 ? 'selected' : '' }}>Global</option>
                         <option value="2" {{ old('scope', 1) == 2 ? 'selected' : '' }}>Per Produk</option>
                     </select>
@@ -234,42 +234,43 @@ document.addEventListener('click', function(e) {
 });
 
 function getDiscountConfig() {
-    const discountType = parseFloat(document.querySelector('select[name="discount_type"]')?.value) || 1;
-    const discountValue = parseFloat(document.querySelector('input[name="discount_value"]')?.value) || 0;
-    return { discountType, discountValue };
+    const discountType = document.querySelector('select[name="discount_type"]')?.value || '1';
+    const scope = document.querySelector('select[name="scope"]')?.value || '1';
+    const globalDiscountValue = parseFloat(document.getElementById('discountValueInput')?.value) || 0;
+    return { discountType, scope, globalDiscountValue };
 }
 
 function calcDiscountedPrice(originalPrice, discountType, discountValue) {
-    if (originalPrice <= 0 || discountValue <= 0) return originalPrice;
+    if (originalPrice <= 0) return 0;
+    let val = parseFloat(discountValue) || 0;
+    if (val <= 0) return originalPrice;
+    
     let discounted = originalPrice;
-    if (discountType == 1) {
-        discounted = originalPrice - (originalPrice * discountValue / 100);
-    } else if (discountType == 2) {
-        discounted = originalPrice - discountValue;
-        if (discounted < 0) discounted = 0;
+    if (discountType == '1') {
+        discounted = originalPrice - (originalPrice * val / 100);
+    } else if (discountType == '2') {
+        discounted = originalPrice - val;
     }
-    return Math.round(discounted);
-}
-
-function parsePrice(str) {
-    if (typeof str !== 'string') str = String(str);
-    if (str.includes(',')) {
-        let cleaned = str.replace(/\./g, '').replace(',', '.');
-        return parseFloat(cleaned) || 0;
-    }
-    return parseFloat(str) || 0;
+    return Math.max(0, Math.round(discounted));
 }
 
 function updateDiscountInfo(input) {
     const row = input.closest('.variant-row');
     const discountEl = row?.querySelector('.discount-info');
     if (!discountEl) return;
-    const currentPrice = parsePrice(input.value);
-    const { discountType, discountValue } = getDiscountConfig();
-    const discounted = calcDiscountedPrice(currentPrice, discountType, discountValue);
+    
+    const origPrice = parseFloat(input.dataset.originalPrice || discountEl.dataset.price) || 0;
+    const { discountType, scope, globalDiscountValue } = getDiscountConfig();
+    
+    const discountVal = (scope == '1') ? globalDiscountValue : (parseFloat(input.value) || 0);
+    const discounted = calcDiscountedPrice(origPrice, discountType, discountVal);
     const priceEl = discountEl.querySelector('.discount-text');
     if (priceEl) {
-        priceEl.textContent = '→Rp' + discounted.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (discountVal > 0) {
+            priceEl.innerHTML = `<span class="text-primary font-bold">→Rp${discounted.toLocaleString('id-ID')}</span>`;
+        } else {
+            priceEl.textContent = `→Rp${origPrice.toLocaleString('id-ID')}`;
+        }
     }
 }
 
@@ -284,8 +285,10 @@ function syncHiddenInputs() {
     if (!container) return;
     container.innerHTML = '';
     
+    const { scope, globalDiscountValue } = getDiscountConfig();
+    
     Object.keys(selectedVariants).forEach(variantId => {
-        const price = selectedVariants[variantId];
+        const val = (scope == '1') ? globalDiscountValue : (selectedVariants[variantId] !== undefined && selectedVariants[variantId] !== '' ? selectedVariants[variantId] : 0);
         
         const idInput = document.createElement('input');
         idInput.type = 'hidden';
@@ -295,7 +298,7 @@ function syncHiddenInputs() {
         const priceInput = document.createElement('input');
         priceInput.type = 'hidden';
         priceInput.name = `variant_prices[${variantId}]`;
-        priceInput.value = price;
+        priceInput.value = val;
         
         container.appendChild(idInput);
         container.appendChild(priceInput);
@@ -308,6 +311,7 @@ function syncHiddenInputs() {
 }
 
 function restoreCheckedStates() {
+    const { scope, globalDiscountValue } = getDiscountConfig();
     document.querySelectorAll('.variant-checkbox').forEach(cb => {
         const variantId = cb.value;
         const row = cb.closest('.variant-row');
@@ -316,11 +320,19 @@ function restoreCheckedStates() {
         if (selectedVariants.hasOwnProperty(variantId)) {
             cb.checked = true;
             if (priceInput) {
-                priceInput.value = selectedVariants[variantId];
+                if (scope == '1') {
+                    priceInput.value = globalDiscountValue || '';
+                } else if (selectedVariants[variantId] !== '' && selectedVariants[variantId] !== undefined) {
+                    priceInput.value = selectedVariants[variantId];
+                }
                 updateDiscountInfo(priceInput);
             }
         } else {
             cb.checked = false;
+            if (priceInput && scope == '1') {
+                priceInput.value = globalDiscountValue || '';
+                updateDiscountInfo(priceInput);
+            }
         }
         
         // Remove names from visible inputs to prevent duplicate/empty submits
@@ -336,13 +348,20 @@ function handleCheckboxChange(e) {
     const variantId = cb.value;
     const row = cb.closest('.variant-row');
     const priceInput = row?.querySelector('.variant-price-input');
+    const { scope, globalDiscountValue } = getDiscountConfig();
     
     if (cb.checked) {
-        selectedVariants[variantId] = priceInput ? priceInput.value : '';
+        if (scope == '1') {
+            selectedVariants[variantId] = globalDiscountValue;
+            if (priceInput) priceInput.value = globalDiscountValue;
+        } else {
+            selectedVariants[variantId] = priceInput ? (priceInput.value || 0) : 0;
+        }
     } else {
         delete selectedVariants[variantId];
     }
     syncHiddenInputs();
+    if (priceInput) updateDiscountInfo(priceInput);
 }
 
 function handlePriceInput(e) {
@@ -410,7 +429,8 @@ async function fetchProducts(append = false) {
         
         restoreCheckedStates();
         bindEventHandlers();
-        toggleProductsEditability();
+        handleScopeChange();
+        handleDiscountTypeChange();
         
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -487,29 +507,113 @@ document.getElementById('productSearch').addEventListener('input', function(e) {
     }, 300);
 });
 
-document.querySelectorAll('select[name="discount_type"], input[name="discount_value"]').forEach(function(el) {
-    el.addEventListener('change', recalcAllDiscounts);
-    el.addEventListener('input', recalcAllDiscounts);
-});
-
-function syncDiscountInput() {
-    const type = document.querySelector('select[name="discount_type"]').value;
-    const input = document.getElementById('discountValueInput');
-    if (type == '1') {
-        input.max = 100;
-        input.placeholder = '0-100';
-        input.step = '1';
+function handleScopeChange() {
+    const scope = document.getElementById('scopeType')?.value || '1';
+    const discountValueContainer = document.getElementById('discountValueContainer');
+    const discountValueInput = document.getElementById('discountValueInput');
+    const inputs = document.querySelectorAll('.variant-price-input');
+    
+    if (scope == '1') {
+        // Global scope: Muncul Discount Value di header
+        if (discountValueContainer) discountValueContainer.classList.remove('hidden');
+        if (discountValueInput) {
+            discountValueInput.setAttribute('required', 'required');
+        }
+        
+        const globalVal = discountValueInput ? discountValueInput.value : '';
+        inputs.forEach(input => {
+            input.readOnly = true;
+            input.classList.add('bg-surface-container-high', 'cursor-not-allowed');
+            input.classList.remove('bg-transparent', 'focus:border-brand-gold');
+            input.value = globalVal;
+            updateDiscountInfo(input);
+        });
+        
+        Object.keys(selectedVariants).forEach(vId => {
+            selectedVariants[vId] = globalVal;
+        });
     } else {
-        input.max = '';
-        input.placeholder = 'Nominal (Rp)';
-        input.step = '0.01';
+        // Per Produk scope: Discount Value di header disembunyikan
+        if (discountValueContainer) discountValueContainer.classList.add('hidden');
+        if (discountValueInput) {
+            discountValueInput.removeAttribute('required');
+        }
+        
+        inputs.forEach(input => {
+            if (!input.disabled) {
+                input.readOnly = false;
+                input.classList.remove('bg-surface-container-high', 'cursor-not-allowed');
+                input.classList.add('bg-transparent', 'focus:border-brand-gold');
+                
+                const row = input.closest('.variant-row');
+                const cb = row?.querySelector('.variant-checkbox');
+                if (cb && selectedVariants.hasOwnProperty(cb.value)) {
+                    input.value = selectedVariants[cb.value];
+                }
+                updateDiscountInfo(input);
+            }
+        });
     }
+    
+    syncHiddenInputs();
+    recalcAllDiscounts();
 }
 
-document.querySelector('select[name="discount_type"]').addEventListener('change', function() {
-    syncDiscountInput();
+function handleDiscountTypeChange() {
+    const discountType = document.querySelector('select[name="discount_type"]')?.value || '1';
+    const discountValueInput = document.getElementById('discountValueInput');
+    const discountValueLabel = document.getElementById('discountValueLabel');
+    const unitBadges = document.querySelectorAll('.variant-unit-badge');
+    const inputs = document.querySelectorAll('.variant-price-input');
+    
+    if (discountType == '1') {
+        // Persentase
+        if (discountValueLabel) {
+            discountValueLabel.innerHTML = 'Discount Value (%) <span class="text-danger">*</span> <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Nilai diskon dalam persentase (0-100%)</span></span>';
+        }
+        if (discountValueInput) {
+            discountValueInput.max = '100';
+            discountValueInput.min = '0';
+            discountValueInput.placeholder = '0-100';
+            discountValueInput.step = 'any';
+        }
+        
+        // Nominal di bawahnya auto persentase:
+        unitBadges.forEach(badge => {
+            badge.textContent = '%';
+        });
+        inputs.forEach(input => {
+            input.max = '100';
+            input.min = '0';
+            input.placeholder = '0-100';
+            input.step = 'any';
+        });
+    } else {
+        // Nominal
+        if (discountValueLabel) {
+            discountValueLabel.innerHTML = 'Discount Value (Rp) <span class="text-danger">*</span> <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Nilai diskon dalam nominal Rupiah</span></span>';
+        }
+        if (discountValueInput) {
+            discountValueInput.removeAttribute('max');
+            discountValueInput.min = '0';
+            discountValueInput.placeholder = 'e.g. 50000';
+            discountValueInput.step = '1';
+        }
+        
+        // Nominal langsung nominal:
+        unitBadges.forEach(badge => {
+            badge.textContent = 'Rp';
+        });
+        inputs.forEach(input => {
+            input.removeAttribute('max');
+            input.min = '0';
+            input.placeholder = 'Nominal (Rp)';
+            input.step = '1';
+        });
+    }
+    
     recalcAllDiscounts();
-});
+}
 
 function toggleVolumeTierSection() {
     const type = document.querySelector('select[name="type"]').value;
@@ -572,45 +676,32 @@ function toggleStoreScopeSelect() {
     }
 }
 
-function toggleProductsEditability() {
-    const scope = document.getElementById('scopeType').value;
-    const globalValue = document.getElementById('discountValueInput').value || '0';
-    const inputs = document.querySelectorAll('.variant-price-input');
-    
+// Global discount input listener
+document.getElementById('discountValueInput')?.addEventListener('input', function() {
+    const { scope } = getDiscountConfig();
     if (scope == '1') {
-        inputs.forEach(input => {
-            input.readOnly = true;
-            input.value = globalValue;
-            input.classList.add('bg-surface-container-high', 'cursor-not-allowed');
-            input.classList.remove('bg-transparent', 'focus:border-brand-gold');
-            updateDiscountInfo(input);
+        const val = this.value;
+        document.querySelectorAll('.variant-price-input').forEach(input => {
+            input.value = val;
         });
-    } else {
-        inputs.forEach(input => {
-            if (!input.disabled) {
-                input.readOnly = false;
-                input.value = input.dataset.original || globalValue;
-                input.classList.remove('bg-surface-container-high', 'cursor-not-allowed');
-                input.classList.add('bg-transparent', 'focus:border-brand-gold');
-                updateDiscountInfo(input);
-            }
+        Object.keys(selectedVariants).forEach(vId => {
+            selectedVariants[vId] = val;
         });
+        syncHiddenInputs();
     }
-}
+    recalcAllDiscounts();
+});
 
-// Ensure global discount syncs when scope is global
-document.getElementById('discountValueInput').addEventListener('input', function() {
-    const scope = document.getElementById('scopeType').value;
-    if (scope == '1') {
-        toggleProductsEditability();
-    }
+// Form submit safeguard
+document.getElementById('priceSettingForm')?.addEventListener('submit', function() {
+    syncHiddenInputs();
 });
 
 // Initial setup
-syncDiscountInput();
 toggleVolumeTierSection();
 toggleStoreScopeSelect();
-toggleProductsEditability();
+handleDiscountTypeChange();
+handleScopeChange();
 
 // Restore and bind on load
 restoreCheckedStates();

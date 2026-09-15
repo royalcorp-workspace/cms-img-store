@@ -31,24 +31,35 @@
                 'title' => 'Products',
                 'icon' => 'inventory_2',
                 'route_name' => 'products.index',
+                'active_routes' => ['products.*', 'categories.*', 'brands.*', 'product-suggestions.*'],
+                'children' => []
+            ],
+            [
+                'title' => 'Inventory',
+                'icon' => 'warehouse',
+                'route_name' => 'inventory.index',
+                'active_routes' => ['inventory.*', 'warehouses.*'],
                 'children' => []
             ],
             [
                 'title' => 'Sales',
                 'icon' => 'shopping_cart',
                 'route_name' => 'orders.index',
+                'active_routes' => ['orders.*', 'settlements.*', 'reconciliation.*'],
                 'children' => []
             ],
             [
                 'title' => 'Promotions',
                 'icon' => 'local_offer',
                 'route_name' => 'vouchers.index',
+                'active_routes' => ['vouchers.*', 'price-settings.*', 'price-product-setting-store.*', 'bundlings.*', 'events.*'],
                 'children' => []
             ],
             [
                 'title' => 'Pick & Pack',
                 'icon' => 'package',
                 'route_name' => 'picking-list.index',
+                'active_routes' => ['picking-list.*', 'packing-slip.*', 'packing-out.*', 'handover.*', 'delivery.*'],
                 'children' => []
             ],
             [
@@ -82,8 +93,18 @@
             @foreach($menuGroups as $menu)
                 @if(empty($menu['children']))
                     @php
-                        $routePrefix = \Illuminate\Support\Str::beforeLast($menu['route_name'], '.');
-                        $isActive = request()->routeIs($routePrefix . '*');
+                        $isActive = false;
+                        if (!empty($menu['active_routes'])) {
+                            foreach ($menu['active_routes'] as $pattern) {
+                                if (request()->routeIs($pattern)) {
+                                    $isActive = true;
+                                    break;
+                                }
+                            }
+                        } else {
+                            $routePrefix = \Illuminate\Support\Str::beforeLast($menu['route_name'], '.');
+                            $isActive = request()->routeIs($routePrefix . '*');
+                        }
                     @endphp
                     <a class="sidebar-link flex items-center justify-between w-full px-4 py-3 text-sidebar-text hover:bg-sidebar-active/10 hover:text-sidebar-active transition-colors duration-200 {{ $isActive ? 'bg-primary-container text-sidebar-active' : '' }}" href="{{ route($menu['route_name']) }}">
                         <div class="flex items-center gap-3">

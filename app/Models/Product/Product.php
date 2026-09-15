@@ -79,6 +79,13 @@ class Product extends Model
         'short_description',
         'description',
         'warranty_duration',
+        'courier_type',
+        'shipping_scheme',
+        'shipping_cost',
+        'length',
+        'width',
+        'height',
+        'weight',
         'segments',
         'best_seller',
         'is_new',
@@ -98,6 +105,7 @@ class Product extends Model
             'sort_order' => 'integer',
             'status' => 'boolean',
             'deleted' => 'boolean',
+            'shipping_cost' => 'decimal:2',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -108,7 +116,16 @@ class Product extends Model
         return 'slug';
     }
 
-    protected $appends = ['thumbnail_url', 'discounts', 'final_price'];
+    protected $appends = [
+        'thumbnail_url',
+        'discounts',
+        'final_price',
+        'courier_type_label',
+        'shipping_scheme_label',
+        'effective_courier_type',
+        'effective_shipping_scheme',
+        'effective_shipping_cost',
+    ];
 
     public function getThumbnailUrlAttribute(): ?string
     {
@@ -159,7 +176,54 @@ class Product extends Model
 
     public function getFinalPriceAttribute(): float
     {
-        return 0; // base_price removed
+        if ($this->relationLoaded('variants') && $this->variants->isNotEmpty()) {
+            return (float) ($this->variants->min('sell_price') ?? $this->variants->min('base_price') ?? 0);
+        }
+        $firstVariant = $this->variants()->first();
+        if ($firstVariant) {
+            return (float) ($firstVariant->sell_price ?? $firstVariant->base_price ?? 0);
+        }
+        return 0;
+    }
+
+    public function getPriceAttribute(): float
+    {
+        return $this->final_price;
+    }
+
+    public function getEffectiveCourierTypeAttribute(): string
+    {
+        if ($this->relationLoaded('category') && $this->category && ($this->category->courier_setting_type ?? 'detail') === 'global') {
+            return $this->category->courier_type ?: ($this->courier_type ?: 'keduanya');
+        }
+        return $this->courier_type ?: 'keduanya';
+    }
+
+    public function getEffectiveShippingSchemeAttribute(): string
+    {
+        return $this->shipping_scheme ?: 'dimension';
+    }
+
+    public function getEffectiveShippingCostAttribute(): float
+    {
+        return (float) ($this->shipping_cost ?? 0);
+    }
+
+    public function getCourierTypeLabelAttribute(): string
+    {
+        return match($this->effective_courier_type) {
+            'toko' => 'Pengiriman by Toko',
+            'expedisi' => 'Pengiriman by Expedisi',
+            default => 'Keduanya (Toko & Expedisi)',
+        };
+    }
+
+    public function getShippingSchemeLabelAttribute(): string
+    {
+        return match($this->effective_shipping_scheme) {
+            'fixed' => 'Ongkir Tetap (Fixed Rate)',
+            default => 'Hitung Dari Dimensi & Berat',
+        };
     }
 
     public function brand(): BelongsTo

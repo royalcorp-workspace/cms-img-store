@@ -10,10 +10,27 @@ use Illuminate\Support\Facades\Storage;
 
 class BrandController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $brands = Brand::orderBy('sort_order')->get();
+        $query = Brand::orderBy('sort_order');
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%");
+            });
+        }
+        $brands = $query->get();
         return view('pages.brands.index', compact('brands'));
+    }
+
+    public function show($id)
+    {
+        $brand = Brand::with(['products' => function ($q) {
+            $q->with('category')->latest();
+        }])->findOrFail($id);
+
+        return view('pages.brands.show', compact('brand'));
     }
 
     public function create()

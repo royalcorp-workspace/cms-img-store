@@ -60,14 +60,14 @@ return [
 
         'single' => [
             'driver' => 'single',
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('logs/laravel/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
         ],
 
         'daily' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('logs/laravel/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
@@ -124,12 +124,12 @@ return [
         ],
 
         'emergency' => [
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('logs/laravel/laravel.log'),
         ],
 
         'auth' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/auth.log'),
+            'path' => storage_path('logs/auth/auth.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
@@ -137,7 +137,7 @@ return [
 
         'media' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/media.log'),
+            'path' => storage_path('logs/media/media.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
@@ -145,7 +145,7 @@ return [
 
         's3' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/s3.log'),
+            'path' => storage_path('logs/s3/s3.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
@@ -153,7 +153,23 @@ return [
 
         'product' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/product.log'),
+            'path' => storage_path('logs/product/product.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
+        'biteship' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/biteship/biteship.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
+        'delivery' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/delivery/delivery.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,

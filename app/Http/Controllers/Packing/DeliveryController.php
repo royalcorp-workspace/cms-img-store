@@ -13,11 +13,23 @@ class DeliveryController extends Controller
     {
         $query = Delivery::with(['order.customer', 'courier', 'packingOut']);
 
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
         }
 
-        $deliveries = $query->latest()->paginate(10)->appends($request->query());
+        if ($request->filled('search')) {
+            $search = $request->query('search');
+            $query->where(function($q) use ($search) {
+                $q->where('tracking_number', 'like', "%{$search}%")
+                  ->orWhere('driver_name', 'like', "%{$search}%")
+                  ->orWhere('id', 'like', "%{$search}%")
+                  ->orWhereHas('order', function($oq) use ($search) {
+                      $oq->where('order_number', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $deliveries = $query->latest()->paginate(10)->withQueryString();
 
         return view('pages.delivery.index', compact('deliveries'));
     }
@@ -57,6 +69,27 @@ class DeliveryController extends Controller
         ]);
 
         \App\Models\Packing\PackingOut::find($request->packing_out_id)->update(['status' => 'out']);
+
+        // Record delivery log: Selesai Dikemas (ketika buat data delivery)
+        try {
+            $courier = Courier::find($request->courier_id);
+            \App\Models\Packing\DeliveryLog::create([
+                'order_id' => $delivery->order_id,
+                'delivery_id' => $delivery->id,
+                'waybill_id' => $request->tracking_number,
+                'courier_code' => $courier?->code,
+                'event' => 'delivery.created',
+                'status' => 'dikemas',
+                'location' => 'Gudang Pengirim',
+                'note' => 'Pesanan selesai dikemas dan siap dikirim (Data pengiriman dibuat)',
+                'payload' => [
+                    'delivery_id' => $delivery->id,
+                    'tracking_number' => $request->tracking_number,
+                    'courier_id' => $request->courier_id,
+                    'driver_name' => $request->driver_name,
+                ],
+            ]);
+        } catch (\Throwable $e) {}
 
         return redirect()->route('delivery.show', $delivery->id)->with('success', 'Delivery created');
     }

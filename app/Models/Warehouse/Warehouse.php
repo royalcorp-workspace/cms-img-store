@@ -21,4 +21,9 @@ class Warehouse extends Model
     {
         return $this->hasMany(WarehouseLocation::class, 'warehouse_id');
     }
+
+    public function inventories(): HasMany
+    {
+        return $this->hasMany(\App\Models\Inventory\Inventory::class, 'warehouse_id');
+    }
 }

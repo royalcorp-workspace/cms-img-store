@@ -37,13 +37,13 @@
                             <td class="px-6 py-4">
                                 <span class="font-headline-md text-headline-md text-primary font-semibold">#{{ substr($slip->id, 0, 8) }}</span>
                             </td>
-                            <td class="px-6 py-4 font-body-md text-body-md text-on-surface">{{ substr($slip->order->id, 0, 8) ?? '-' }}</td>
+                            <td class="px-6 py-4 font-body-md text-body-md text-on-surface">{{ $slip->order ? substr($slip->order->id, 0, 8) : '-' }}</td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-label-sm font-bold">
-                                        {{ strtoupper(substr($slip->order->customer->name ?? 'N/A', 0, 2)) }}
+                                        {{ strtoupper(substr($slip->order?->customer?->name ?? 'N/A', 0, 2)) }}
                                     </div>
-                                    <span class="font-body-md text-body-md text-on-surface">{{ $slip->order->customer->name ?? 'N/A' }}</span>
+                                    <span class="font-body-md text-body-md text-on-surface">{{ $slip->order?->customer?->name ?? 'N/A' }}</span>
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-center">

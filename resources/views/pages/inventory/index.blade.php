@@ -1,252 +1,328 @@
 @extends('layouts.app')
 
-@section('title', 'Warehouse Inventory')
+@section('title', 'Inventory')
 
 @section('content')
-    <div class="flex justify-between items-end">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-            <h2 class="font-headline-lg text-headline-lg text-on-surface">Warehouse Inventory</h2>
-            <p class="font-body-md text-body-md text-on-surface-variant">Real-time stock monitoring across global distribution centers.</p>
+            <h1 class="font-headline-lg text-headline-lg text-on-surface">Inventory</h1>
+            <nav class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-1 font-medium">
+                <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">eCommerce</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                <span class="text-on-surface">Inventory</span>
+            </nav>
         </div>
-        <div class="flex gap-3">
-            <button class="flex items-center gap-2 px-4 py-2 bg-surface-container-highest border border-outline-variant rounded-lg text-secondary font-label-md hover:bg-surface-container-high transition-all">
-                <span class="material-symbols-outlined text-[20px]">download</span>
-                Export Report
-            </button>
-            <a href="{{ route('inventory.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
-                <span class="material-symbols-outlined text-[20px]">add</span>
-                Add New Stock
+        <div class="flex items-center gap-3">
+            <a href="{{ route('inventory.import.form') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-lg text-sm font-medium transition-all border border-outline-variant/30">
+                <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+                Import Incoming
+            </a>
+            <a href="{{ route('inventory.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all rounded-lg shadow-sm">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Tambah Stok
             </a>
         </div>
     </div>
 
+    <!-- Standard Submenu Tabs -->
     @include('layouts.partials.inventory-submenu')
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-container-gap">
-        <div class="bg-surface-container-lowest p-card-padding rounded-xl shadow-sm border border-outline-variant/30 group hover:border-primary/30 transition-all">
-            <div class="flex justify-between items-start mb-4">
-                <div class="p-3 bg-primary-container/10 text-primary rounded-lg">
-                    <span class="material-symbols-outlined text-[28px]">inventory</span>
-                </div>
-                <div class="flex items-center gap-1 text-success bg-success/10 px-2 py-0.5 rounded-full">
-                    <span class="material-symbols-outlined text-[14px]">trending_up</span>
-                    <span class="text-[12px] font-bold">12.5%</span>
-                </div>
+    <!-- Flash Alerts -->
+    @if(session('success'))
+        <div class="mb-6 p-4 rounded-lg bg-success/10 border border-success/20 text-success flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                <span class="text-sm font-medium">{{ session('success') }}</span>
             </div>
-            <p class="text-on-surface-variant font-label-md uppercase tracking-wide">Total Stock Units</p>
-            <h3 class="font-metric-display text-[32px] text-on-surface mt-1">1,284,590</h3>
-            <p class="text-[12px] text-on-surface-variant mt-2">Across 8 global locations</p>
+            <button type="button" onclick="this.parentElement.remove()" class="text-success hover:opacity-75">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
         </div>
-        <div class="bg-surface-container-lowest p-card-padding rounded-xl shadow-sm border border-outline-variant/30 group hover:border-warning/30 transition-all">
-            <div class="flex justify-between items-start mb-4">
-                <div class="p-3 bg-warning/10 text-warning rounded-lg">
-                    <span class="material-symbols-outlined text-[28px]">priority_high</span>
-                </div>
-                <div class="flex items-center gap-1 text-danger bg-danger/10 px-2 py-0.5 rounded-full">
-                    <span class="material-symbols-outlined text-[14px]">trending_up</span>
-                    <span class="text-[12px] font-bold">4.2%</span>
-                </div>
+    @endif
+    @if(session('error'))
+        <div class="mb-6 p-4 rounded-lg bg-danger/10 border border-danger/20 text-danger flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[20px]">error</span>
+                <span class="text-sm font-medium">{{ session('error') }}</span>
             </div>
-            <p class="text-on-surface-variant font-label-md uppercase tracking-wide">Low Stock Items</p>
-            <h3 class="font-metric-display text-[32px] text-on-surface mt-1">142</h3>
-            <p class="text-[12px] text-on-surface-variant mt-2">Requires immediate attention</p>
+            <button type="button" onclick="this.parentElement.remove()" class="text-danger hover:opacity-75">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
         </div>
-        <div class="bg-surface-container-lowest p-card-padding rounded-xl shadow-sm border border-outline-variant/30 group hover:border-danger/30 transition-all">
-            <div class="flex justify-between items-start mb-4">
-                <div class="p-3 bg-danger/10 text-danger rounded-lg">
-                    <span class="material-symbols-outlined text-[28px]">block</span>
-                </div>
-                <div class="flex items-center gap-1 text-success bg-success/10 px-2 py-0.5 rounded-full">
-                    <span class="material-symbols-outlined text-[14px]">trending_down</span>
-                    <span class="text-[12px] font-bold">2.1%</span>
-                </div>
+    @endif
+
+    <!-- 5 Metric KPI Cards (On Stock, Incoming, On Order, Outgoing, Available) -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3.5 mb-6">
+        <!-- 1. On Stock -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/30">
+            <div class="flex items-center justify-between">
+                <span class="text-on-surface-variant text-[11px] font-semibold uppercase tracking-wider">On Stock</span>
+                <span class="p-1.5 rounded-lg bg-slate-500/10 text-slate-700 material-symbols-outlined text-[18px]">inventory</span>
             </div>
-            <p class="text-on-surface-variant font-label-md uppercase tracking-wide">Out of Stock</p>
-            <h3 class="font-metric-display text-[32px] text-on-surface mt-1">28</h3>
-            <p class="text-[12px] text-on-surface-variant mt-2">Critical replenishment needed</p>
+            <div class="mt-2 flex items-baseline gap-1.5">
+                <span class="text-2xl font-bold text-on-surface">{{ number_format($stats['total_on_stock'] ?? 0) }}</span>
+                <span class="text-[11px] text-on-surface-variant">unit</span>
+            </div>
+            <p class="text-[10px] text-on-surface-variant mt-1">Total stok fisik gudang</p>
+        </div>
+
+        <!-- 2. Incoming -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/30">
+            <div class="flex items-center justify-between">
+                <span class="text-on-surface-variant text-[11px] font-semibold uppercase tracking-wider">Incoming</span>
+                <span class="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 material-symbols-outlined text-[18px]">move_to_inbox</span>
+            </div>
+            <div class="mt-2 flex items-baseline gap-1.5">
+                <span class="text-2xl font-bold text-blue-700">{{ number_format($stats['total_incoming'] ?? 0) }}</span>
+                <span class="text-[11px] text-on-surface-variant">unit</span>
+            </div>
+            <p class="text-[10px] text-on-surface-variant mt-1">Stok masuk / PO supplier</p>
+        </div>
+
+        <!-- 3. On Order -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/30">
+            <div class="flex items-center justify-between">
+                <span class="text-on-surface-variant text-[11px] font-semibold uppercase tracking-wider">On Order</span>
+                <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 material-symbols-outlined text-[18px]">shopping_cart_checkout</span>
+            </div>
+            <div class="mt-2 flex items-baseline gap-1.5">
+                <span class="text-2xl font-bold text-amber-700">{{ number_format($stats['total_on_order'] ?? 0) }}</span>
+                <span class="text-[11px] text-on-surface-variant">unit</span>
+            </div>
+            <p class="text-[10px] text-on-surface-variant mt-1">Dipesan pelanggan web</p>
+        </div>
+
+        <!-- 4. Outgoing -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/30">
+            <div class="flex items-center justify-between">
+                <span class="text-on-surface-variant text-[11px] font-semibold uppercase tracking-wider">Outgoing</span>
+                <span class="p-1.5 rounded-lg bg-purple-500/10 text-purple-600 material-symbols-outlined text-[18px]">outbox</span>
+            </div>
+            <div class="mt-2 flex items-baseline gap-1.5">
+                <span class="text-2xl font-bold text-purple-700">{{ number_format($stats['total_outgoing'] ?? 0) }}</span>
+                <span class="text-[11px] text-on-surface-variant">unit</span>
+            </div>
+            <p class="text-[10px] text-on-surface-variant mt-1">Dalam proses ekspedisi</p>
+        </div>
+
+        <!-- 5. Available -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border-2 border-success/40 bg-success/5">
+            <div class="flex items-center justify-between">
+                <span class="text-success text-[11px] font-bold uppercase tracking-wider">Available</span>
+                <span class="p-1.5 rounded-lg bg-success/15 text-success material-symbols-outlined text-[18px]">verified</span>
+            </div>
+            <div class="mt-2 flex items-baseline gap-1.5">
+                <span class="text-2xl font-extrabold text-success">{{ number_format($stats['total_available'] ?? 0) }}</span>
+                <span class="text-[11px] text-success/80 font-medium">unit</span>
+            </div>
+            <p class="text-[10px] text-success/80 mt-1 font-medium">Sisa siap dijual langsung</p>
         </div>
     </div>
 
-    <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
-        <div class="p-gutter flex justify-between items-center border-b border-outline-variant/30">
-            <h3 class="font-headline-md text-headline-md text-on-surface">Inventory Details</h3>
-            <div class="flex items-center gap-4">
-                <select class="bg-surface-container-low border-outline-variant text-label-md rounded-lg py-1.5 px-4 focus:ring-primary/20">
-                    <option>All Warehouses</option>
-                    <option>North America (NA-01)</option>
-                    <option>Europe (EU-04)</option>
-                    <option>Asia Pacific (AP-09)</option>
-                </select>
-                <button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg">
-                    <span class="material-symbols-outlined">filter_list</span>
-                </button>
-            </div>
+    <!-- Inventory Table Card -->
+    <div class="bg-white rounded-lg shadow-sm border border-outline-variant/30 overflow-hidden mb-8">
+        <!-- Filter Header -->
+        <div class="p-4 border-b border-outline-variant/30 bg-surface-container-lowest">
+            <form method="GET" action="{{ route('inventory.index') }}" class="flex flex-col lg:flex-row lg:items-center gap-3">
+                <div class="flex-1 relative min-w-[240px]">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama produk, varian, atau SKU..." class="w-full h-10 pl-9 pr-3 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-sm bg-white transition-all">
+                </div>
+
+                <div class="flex flex-wrap sm:flex-nowrap items-center gap-3">
+                    <!-- Warehouse Filter -->
+                    <div class="w-full sm:w-48">
+                        <select name="warehouse_id" class="w-full h-10 px-3 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-sm bg-white text-on-surface cursor-pointer transition-all" onchange="this.form.submit()">
+                            <option value="">Semua Warehouse</option>
+                            @foreach($warehouses as $wh)
+                                <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>{{ $wh->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Store Channel Filter -->
+                    <div class="w-full sm:w-56">
+                        <select name="store_channel_id" class="w-full select2-channel" data-placeholder="Semua Channel" onchange="this.form.submit()">
+                            <option value="">Semua Channel</option>
+                            @foreach($channels as $ch)
+                                <option value="{{ $ch->id }}" 
+                                        data-store="{{ $ch->store->name ?? '-' }}" 
+                                        data-code="{{ $ch->code }}"
+                                        {{ request('store_channel_id') == $ch->id ? 'selected' : '' }}>
+                                    {{ $ch->name }} ({{ $ch->store->name ?? '-' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="w-full sm:w-44">
+                        <select name="status" class="w-full h-10 px-3 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-sm bg-white text-on-surface cursor-pointer transition-all" onchange="this.form.submit()">
+                            <option value="">Semua Status</option>
+                            <option value="available" {{ request('status') == 'available' ? 'selected' : '' }}>Tersedia (>0)</option>
+                            <option value="out_of_stock" {{ request('status') == 'out_of_stock' ? 'selected' : '' }}>Stok Habis (0)</option>
+                            <option value="on_stock" {{ request('status') == 'on_stock' ? 'selected' : '' }}>Ada On Stock</option>
+                            <option value="incoming" {{ request('status') == 'incoming' ? 'selected' : '' }}>Ada Incoming</option>
+                            <option value="on_order" {{ request('status') == 'on_order' ? 'selected' : '' }}>Ada On Order</option>
+                            <option value="outgoing" {{ request('status') == 'outgoing' ? 'selected' : '' }}>Ada Outgoing</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button type="submit" class="h-10 px-4 bg-primary text-white hover:bg-primary/90 rounded-lg text-sm font-medium transition-colors shadow-sm inline-flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[18px]">filter_list</span>
+                            <span>Filter</span>
+                        </button>
+                        @if(request()->hasAny(['search', 'warehouse_id', 'store_channel_id', 'status']))
+                            <a href="{{ route('inventory.index') }}" class="h-10 px-3 bg-danger/10 text-danger hover:bg-danger/20 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1" title="Reset Filter">
+                                <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+                                <span class="hidden sm:inline">Reset</span>
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </form>
         </div>
+
+        <!-- Table Content -->
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-surface-gray/50">
-                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Product Name</th>
-                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">SKU</th>
-                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Warehouse Location</th>
-                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Current Stock</th>
-                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Reorder Level</th>
-                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Status</th>
-                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Action</th>
+                    <tr class="bg-surface-gray/50 border-b border-outline-variant/30">
+                        <th class="px-5 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Produk & Varian</th>
+                        <th class="px-4 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Warehouse</th>
+                        <th class="px-4 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Store Channel</th>
+                        <th class="px-3 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider text-center">On Stock</th>
+                        <th class="px-3 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider text-center">Incoming</th>
+                        <th class="px-3 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider text-center">On Order</th>
+                        <th class="px-3 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider text-center">Outgoing</th>
+                        <th class="px-4 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider text-center">Available</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-outline-variant/20">
-                    <tr class="hover:bg-surface-container/30 transition-colors">
-                        <td class="px-gutter py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-surface-variant/20 flex items-center justify-center border border-outline-variant/20">
-                                    <span class="material-symbols-outlined text-primary">bed</span>
+                    @forelse($inventories as $inv)
+                        @php
+                            $variant = $inv->variant;
+                            $product = $inv->product;
+                            $image = $variant?->image ?: ($product?->thumbnail_url ?: ($product?->images->first()?->url ?? ''));
+                        @endphp
+                        <tr class="hover:bg-surface-container/30 transition-colors group">
+                            <!-- Product & Variant -->
+                            <td class="px-5 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-surface-gray rounded-lg overflow-hidden flex-shrink-0 border border-outline-variant/30">
+                                        @if($image)
+                                            <img class="w-full h-full object-cover" src="{{ $image }}" alt="{{ $product?->name ?? 'Product' }}">
+                                        @else
+                                            <div class="w-full h-full flex items-center justify-center text-on-surface-variant bg-surface-container">
+                                                <span class="material-symbols-outlined text-[22px]">inventory_2</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-sm text-on-surface">
+                                            {{ $product?->name ?? 'Unknown Product' }}
+                                        </div>
+                                        <div class="mt-1 flex items-center gap-1.5 flex-wrap">
+                                            @if($variant?->variant_name)
+                                                <span class="text-[11px] bg-primary/10 text-primary font-medium px-2 py-0.5 rounded border border-primary/20">
+                                                    {{ $variant->variant_name }}
+                                                </span>
+                                            @endif
+                                            @if($variant?->sku)
+                                                <span class="text-[10px] bg-surface-container-low text-on-surface-variant px-1.5 py-0.5 rounded border border-outline-variant/30 font-mono">
+                                                    SKU: {{ $variant->sku }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </div>
-                                <span class="font-body-md text-body-md text-on-surface font-semibold">Dreamline Latex Bed</span>
-                            </div>
-                        </td>
-                        <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">KSR-LTX-001</td>
-                        <td class="px-gutter py-4">
-                            <span class="font-body-md text-body-md text-on-surface">NA-01 (California)</span>
-                        </td>
-                        <td class="px-gutter py-4">
-                            <span class="font-body-md text-body-md text-on-surface font-bold">1,240</span>
-                        </td>
-                        <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">250</td>
-                        <td class="px-gutter py-4">
-                            <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 rounded-full bg-success"></div>
-                                <span class="text-label-md font-medium text-success">In Stock</span>
-                            </div>
-                        </td>
-                        <td class="px-gutter py-4 text-right">
-                            <button class="text-on-surface-variant hover:text-primary transition-colors">
-                                <span class="material-symbols-outlined">more_vert</span>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-surface-container/30 transition-colors">
-                        <td class="px-gutter py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-surface-variant/20 flex items-center justify-center border border-outline-variant/20">
-                                    <span class="material-symbols-outlined text-primary">king_bed</span>
+                            </td>
+
+                            <!-- Warehouse -->
+                            <td class="px-4 py-4">
+                                <div class="text-xs font-medium text-on-surface">
+                                    {{ $inv->warehouse?->name ?? 'Gudang Utama' }}
                                 </div>
-                                <span class="font-body-md text-body-md text-on-surface font-semibold">Zenith Luxury Springbed</span>
-                            </div>
-                        </td>
-                        <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">KSR-SPR-055</td>
-                        <td class="px-gutter py-4">
-                            <span class="font-body-md text-body-md text-on-surface">EU-04 (Berlin)</span>
-                        </td>
-                        <td class="px-gutter py-4">
-                            <span class="font-body-md text-body-md text-danger font-bold">42</span>
-                        </td>
-                        <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">100</td>
-                        <td class="px-gutter py-4">
-                            <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 rounded-full bg-warning animate-pulse"></div>
-                                <span class="text-label-md font-medium text-warning">Low Stock</span>
-                            </div>
-                        </td>
-                        <td class="px-gutter py-4 text-right">
-                            <button class="text-on-surface-variant hover:text-primary transition-colors">
-                                <span class="material-symbols-outlined">more_vert</span>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-surface-container/30 transition-colors">
-                        <td class="px-gutter py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-surface-variant/20 flex items-center justify-center border border-outline-variant/20">
-                                    <span class="material-symbols-outlined text-primary">single_bed</span>
+                                <div class="text-[10px] font-mono text-on-surface-variant mt-0.5">
+                                    {{ $inv->warehouse?->code ?? '-' }}
                                 </div>
-                                <span class="font-body-md text-body-md text-on-surface font-semibold">Sonic Single Comfort Bed</span>
-                            </div>
-                        </td>
-                        <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">KSR-SNG-992</td>
-                        <td class="px-gutter py-4">
-                            <span class="font-body-md text-body-md text-on-surface">AP-09 (Singapore)</span>
-                        </td>
-                        <td class="px-gutter py-4">
-                            <span class="font-body-md text-body-md text-danger font-bold">0</span>
-                        </td>
-                        <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">50</td>
-                        <td class="px-gutter py-4">
-                            <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 rounded-full bg-danger"></div>
-                                <span class="text-label-md font-medium text-danger">Out of Stock</span>
-                            </div>
-                        </td>
-                        <td class="px-gutter py-4 text-right">
-                            <button class="text-on-surface-variant hover:text-primary transition-colors">
-                                <span class="material-symbols-outlined">more_vert</span>
-                            </button>
-                        </td>
-                    </tr>
+                            </td>
+
+                            <!-- Store Channel -->
+                            <td class="px-4 py-4">
+                                <div class="text-xs font-medium text-on-surface flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[15px] text-primary">storefront</span>
+                                    <span>{{ $inv->channel?->name ?? 'Web IMG' }}</span>
+                                </div>
+                                <div class="text-[10px] text-on-surface-variant mt-0.5">
+                                    <span>Toko:</span>
+                                    <span class="font-medium text-secondary">{{ $inv->store?->name ?? 'Online Retail' }}</span>
+                                </div>
+                            </td>
+
+                            <!-- On Stock -->
+                            <td class="px-3 py-4 text-center">
+                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold text-on-surface bg-surface-container-low border border-outline-variant/30">
+                                    {{ number_format($inv->on_stock ?? 0) }}
+                                </span>
+                            </td>
+
+                            <!-- Incoming -->
+                            <td class="px-3 py-4 text-center">
+                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold {{ $inv->incoming > 0 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-on-surface-variant bg-surface-container-low' }}">
+                                    {{ number_format($inv->incoming) }}
+                                </span>
+                            </td>
+
+                            <!-- On Order -->
+                            <td class="px-3 py-4 text-center">
+                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold {{ $inv->on_order > 0 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-on-surface-variant bg-surface-container-low' }}">
+                                    {{ number_format($inv->on_order) }}
+                                </span>
+                            </td>
+
+                            <!-- Outgoing -->
+                            <td class="px-3 py-4 text-center">
+                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold {{ $inv->outgoing > 0 ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-on-surface-variant bg-surface-container-low' }}">
+                                    {{ number_format($inv->outgoing) }}
+                                </span>
+                            </td>
+
+                            <!-- Available (On Stock - On Order - Outgoing) -->
+                            <td class="px-4 py-4 text-center">
+                                @if($inv->available > 0)
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-extrabold bg-success/15 text-success border border-success/30 shadow-xs">
+                                        {{ number_format($inv->available) }}
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-danger/10 text-danger border border-danger/20">
+                                        Habis (0)
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" class="px-6 py-12 text-center text-on-surface-variant">
+                                <div class="flex flex-col items-center justify-center">
+                                    <span class="material-symbols-outlined text-[48px] text-outline-variant mb-2">inventory_2</span>
+                                    <p class="text-sm font-semibold text-on-surface">Tidak ada data inventory ditemukan</p>
+                                    <p class="text-xs text-on-surface-variant mt-1">Coba sesuaikan kata kunci pencarian atau filter.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
-        <div class="px-gutter py-4 bg-surface-container-low flex justify-between items-center">
-            <p class="text-label-md font-label-md text-on-surface-variant">Showing 4 of 28 items</p>
-            <div class="flex gap-2">
-                <button class="px-3 py-1 bg-white border border-outline-variant rounded text-label-md hover:bg-surface-gray transition-all disabled:opacity-50" disabled="">Previous</button>
-                <button class="px-3 py-1 bg-primary text-white rounded text-label-md shadow-sm">1</button>
-                <button class="px-3 py-1 bg-white border border-outline-variant rounded text-label-md hover:bg-surface-gray transition-all">2</button>
-                <button class="px-3 py-1 bg-white border border-outline-variant rounded text-label-md hover:bg-surface-gray transition-all">Next</button>
-            </div>
-        </div>
-    </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-container-gap">
-        <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden relative">
-            <div class="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md p-3 rounded-lg border border-outline-variant/30 shadow-sm">
-                <h4 class="font-headline-md text-headline-md text-on-surface">Regional Distribution</h4>
-                <p class="text-[10px] text-on-surface-variant uppercase">Global Stock Density</p>
+        <!-- Pagination -->
+        @if($inventories->hasPages())
+            <div class="p-4 border-t border-outline-variant/30 bg-surface-container-lowest">
+                {{ $inventories->links() }}
             </div>
-            <div class="w-full h-80 flex items-center justify-center" style="background:linear-gradient(135deg, #f8f9fa, #e9ecef);">
-                <div class="flex flex-col items-center">
-                    <span class="material-symbols-outlined text-primary text-[48px] animate-bounce">location_on</span>
-                    <div class="bg-white px-3 py-1 rounded-full shadow-lg border border-outline-variant font-label-md text-label-md">NA-01 Primary Hub</div>
-                </div>
-            </div>
-        </div>
-        <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 p-card-padding">
-            <h3 class="font-headline-md text-headline-md text-on-surface mb-4">Stock Movements</h3>
-            <div class="space-y-4">
-                <div class="flex gap-3 relative before:absolute before:left-[11px] before:top-6 before:bottom-0 before:w-px before:bg-outline-variant/30">
-                    <div class="w-6 h-6 rounded-full bg-success/20 flex items-center justify-center shrink-0 z-10">
-                        <span class="material-symbols-outlined text-[14px] text-success">add</span>
-                    </div>
-                    <div>
-                        <p class="text-body-md text-on-surface font-semibold">Incoming: Dreamline Latex Bed</p>
-                        <p class="text-label-md text-on-surface-variant">+500 units to NA-01 Warehouse</p>
-                        <p class="text-[10px] text-on-surface-variant uppercase mt-1">2 hours ago</p>
-                    </div>
-                </div>
-                <div class="flex gap-3 relative before:absolute before:left-[11px] before:top-6 before:bottom-0 before:w-px before:bg-outline-variant/30">
-                    <div class="w-6 h-6 rounded-full bg-danger/20 flex items-center justify-center shrink-0 z-10">
-                        <span class="material-symbols-outlined text-[14px] text-danger">remove</span>
-                    </div>
-                    <div>
-                        <p class="text-body-md text-on-surface font-semibold">Outgoing: Zenith Luxury Springbed</p>
-                        <p class="text-label-md text-on-surface-variant">-120 units from EU-04 Distribution</p>
-                        <p class="text-[10px] text-on-surface-variant uppercase mt-1">5 hours ago</p>
-                    </div>
-                </div>
-                <div class="flex gap-3">
-                    <div class="w-6 h-6 rounded-full bg-tertiary/20 flex items-center justify-center shrink-0 z-10">
-                        <span class="material-symbols-outlined text-[14px] text-tertiary">sync</span>
-                    </div>
-                    <div>
-                        <p class="text-body-md text-on-surface font-semibold">Transfer: Sonic Single Comfort Bed</p>
-                        <p class="text-label-md text-on-surface-variant">Moving 200 units AP-09 to AU-01</p>
-                        <p class="text-[10px] text-on-surface-variant uppercase mt-1">Yesterday, 14:30</p>
-                    </div>
-                </div>
-            </div>
-            <button class="w-full mt-6 py-2 bg-surface-container text-primary font-label-md rounded-lg hover:bg-primary/5 transition-all">
-                View Audit Log
-            </button>
-        </div>
+        @endif
     </div>
 @endsection

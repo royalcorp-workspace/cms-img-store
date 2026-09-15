@@ -75,6 +75,27 @@ class HandoverController extends Controller
             ]);
         }
 
+        // Record delivery log: Diserahkan ke Kurir (ketika handover)
+        try {
+            $courier = Courier::find($request->courier_id);
+            $courierTitle = $courier?->name ?? ($request->driver_name ?: 'Kurir');
+            \App\Models\Packing\DeliveryLog::create([
+                'order_id' => $handover->order_id,
+                'waybill_id' => $request->tracking_number,
+                'courier_code' => $courier?->code,
+                'event' => 'handover.created',
+                'status' => 'diserahkan_ke_kurir',
+                'location' => 'Gudang Pengirim',
+                'note' => "Paket telah diserahkan ke kurir ({$courierTitle})",
+                'payload' => [
+                    'handover_id' => $handover->id,
+                    'driver_name' => $request->driver_name,
+                    'courier_name' => $courierTitle,
+                    'tracking_number' => $request->tracking_number,
+                ],
+            ]);
+        } catch (\Throwable $e) {}
+
         return redirect()->route('handover.show', $handover->id)->with('success', 'Handover created');
     }
 }

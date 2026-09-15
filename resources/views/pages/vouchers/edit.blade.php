@@ -94,36 +94,70 @@
             </div>
 
             <div class="space-y-1.5 mt-4">
-                <label class="block text-label-sm font-medium text-on-surface-variant">Scope <span class="text-danger">*</span> <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Jenis produk yang bisa menggunakan voucher ini. Pilih 'Semua Produk' untuk voucher umum, atau batasi pada produk/kategori tertentu.</span></span></label>
+                <label class="block text-label-sm font-medium text-on-surface-variant">Scope <span class="text-danger">*</span> <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Cakupan penggunaan voucher. Pilih 'Semua Customer' untuk voucher umum, atau 'Customer Tertentu' untuk voucher khusus pelanggan tertentu.</span></span></label>
                 <select name="scope" id="scopeSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
-                    <option value="1" {{ old('scope', $voucher->scope) == 1 ? 'selected' : '' }}>Semua Produk</option>
-                    <option value="2" {{ old('scope', $voucher->scope) == 2 ? 'selected' : '' }}>Produk Tertentu</option>
+                    <option value="1" {{ old('scope', $voucher->scope) == 1 ? 'selected' : '' }}>Semua Customer</option>
+                    <option value="2" {{ old('scope', $voucher->scope) == 2 ? 'selected' : '' }}>Customer Tertentu</option>
                     <option value="3" {{ old('scope', $voucher->scope) == 3 ? 'selected' : '' }}>Kategori Tertentu</option>
                 </select>
             </div>
 
-            <div id="productSelect" class="space-y-1.5 mt-4 {{ old('scope', $voucher->scope) == 2 ? '' : 'hidden' }}">
-                <label id="productSelectLabel" class="block text-label-sm font-medium text-on-surface-variant">Products</label>
-                <select name="product_ids[]" id="productsSelectInput" multiple class="select2 w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                    @foreach(\App\Models\Product\Product::all() as $p)
-                        <option value="{{ $p->id }}" {{ (old('product_ids', $voucher->products->pluck('id')->toArray()) && in_array($p->id, old('product_ids', $voucher->products->pluck('id')->toArray()))) ? 'selected' : '' }}>{{ $p->name }}</option>
+            <div id="customerSelect" class="space-y-2.5 mt-4 {{ old('scope', $voucher->scope) == 2 ? '' : 'hidden' }} p-4 rounded-xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm">
+                <div class="flex items-center justify-between">
+                    <label class="block text-label-sm font-semibold text-on-surface">
+                        Pilih Customer <span class="text-danger">*</span>
+                        <span class="inline-flex items-center cursor-help text-on-surface-variant relative group ml-1">
+                            <span class="material-symbols-outlined text-[16px]">info</span>
+                            <span class="absolute left-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50 font-normal">
+                                Pilih satu atau beberapa customer yang berhak menggunakan voucher ini. Anda dapat mencari berdasarkan nama, email, atau nomor HP.
+                            </span>
+                        </span>
+                    </label>
+                    <div class="flex items-center gap-2 text-xs">
+                        <span id="customerCountBadge" class="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold text-[11px]">0 customer dipilih</span>
+                        <span class="text-outline-variant">|</span>
+                        <button type="button" id="selectAllCustomers" class="text-primary hover:underline font-medium">Pilih Semua</button>
+                        <span class="text-outline-variant">|</span>
+                        <button type="button" id="clearAllCustomers" class="text-secondary hover:text-danger font-medium">Hapus Semua</button>
+                    </div>
+                </div>
+                <select name="customer_ids[]" id="customersSelectInput" multiple class="w-full">
+                    @foreach(\App\Models\Customer\Customer::orderBy('name')->get() as $c)
+                        <option value="{{ $c->id }}" 
+                            data-name="{{ $c->name }}"
+                            data-email="{{ $c->email ?? '' }}"
+                            data-phone="{{ $c->phone ?? '' }}"
+                            data-type="{{ $c->customer_type == 2 ? 'Reseller' : 'Customer' }}"
+                            data-initials="{{ strtoupper(substr($c->name, 0, 2)) }}"
+                            {{ (is_array(old('customer_ids')) ? in_array($c->id, old('customer_ids')) : $voucher->customers->contains('id', $c->id)) ? 'selected' : '' }}>
+                            {{ $c->name }} ({{ $c->email ?? $c->phone ?? 'No contact' }})
+                        </option>
                     @endforeach
                 </select>
+                <p class="text-label-xs text-on-surface-variant">Ketik untuk mencari customer berdasarkan nama, email, atau nomor HP.</p>
+                @error('customer_ids')<p class="text-danger text-sm">{{ $message }}</p>@enderror
             </div>
 
+
             <div id="categorySelect" class="space-y-1.5 mt-4 {{ old('scope', $voucher->scope) == 3 ? '' : 'hidden' }}">
-                <label class="block text-label-sm font-medium text-on-surface-variant">Categories</label>
+                <label class="block text-label-sm font-medium text-on-surface-variant">Categories <span class="text-danger">*</span></label>
                 <select name="category_ids[]" multiple class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white h-32">
                     @foreach(\App\Models\Product\Category::all() as $c)
-                        <option value="{{ $c->id }}" {{ (old('category_ids', $voucher->categories->pluck('id')->toArray()) && in_array($c->id, old('category_ids', $voucher->categories->pluck('id')->toArray()))) ? 'selected' : '' }}>{{ $c->name }}</option>
+                        <option value="{{ $c->id }}" {{ (is_array(old('category_ids')) ? in_array($c->id, old('category_ids')) : $voucher->categories->contains('id', $c->id)) ? 'selected' : '' }}>{{ $c->name }}</option>
                     @endforeach
                 </select>
                 <p class="text-label-sm text-on-surface-variant">Hold Ctrl/Cmd to select multiple</p>
+                @error('category_ids')<p class="text-danger text-sm">{{ $message }}</p>@enderror
             </div>
 
             <div class="flex items-center gap-2 mt-4">
+                <input type="checkbox" name="show_on_web" id="showOnWeb" class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" value="1" {{ old('show_on_web', $voucher->show_on_web ?? 1) ? 'checked' : '' }}>
+                <label for="showOnWeb" class="text-label-sm font-medium text-on-surface-variant">Show on Web (Tampilkan di Website) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Jika dicentang, voucher akan ditampilkan di website untuk pelanggan. Nonaktifkan jika voucher bersifat khusus/rahasia.</span></span></label>
+            </div>
+
+            <div id="allowStackingContainer" class="flex items-center gap-2 mt-4 {{ old('type', $voucher->type) == 3 ? '' : 'hidden' }}">
                 <input type="checkbox" name="allow_stacking" id="allowStacking" class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" value="1" {{ old('allow_stacking', $voucher->allow_stacking) ? 'checked' : '' }}>
-                <label for="allowStacking" class="text-label-sm font-medium text-on-surface-variant">Allow Stacking (bisa dipakai bersamaan dengan voucher lain) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Jika dicentang, voucher ini bisa digabung dengan voucher lain dalam satu transaksi. Jika tidak, hanya satu voucher yang berlaku per transaksi.</span></span></label>
+                <label for="allowStacking" class="text-label-sm font-medium text-on-surface-variant">Allow Stacking (bisa digabungkan dengan voucher belanja lain) <span class="inline-flex items-center cursor-help text-on-surface-variant relative group"><span class="material-symbols-outlined text-[18px]">info</span><span class="absolute right-0 top-full mt-2 w-80 bg-surface-container-highest rounded-lg shadow-lg border border-outline-variant p-4 text-body-xs text-on-surface-variant hidden group-hover:block z-50">Hanya voucher diskon ongkir yang dapat digabungkan dengan voucher belanja (persen / nominal). Jika dicentang, customer dapat memakai voucher ongkir ini bersamaan dengan voucher diskon belanja.</span></span></label>
             </div>
 
             <div class="flex items-center gap-2 mt-4">
@@ -250,55 +284,35 @@
 <script>
 function adjustFormFields() {
     const type = document.getElementById('typeSelect').value;
-    const scopeSelect = document.getElementById('scopeSelect');
-    const scope = scopeSelect.value;
+    const scope = document.getElementById('scopeSelect').value;
 
-    const productSelect = document.getElementById('productSelect');
-    const productSelectLabel = document.getElementById('productSelectLabel');
+    const customerSelect = document.getElementById('customerSelect');
     const categorySelect = document.getElementById('categorySelect');
     const maxDiscountContainer = document.getElementById('maxDiscountContainer');
-    
-    // Get scope option for value 2
-    const optionScopeSpecificProduct = scopeSelect.querySelector('option[value="2"]');
 
-    if (type === '4') { // Bonus Product
-        // Disable and hide scope 2 (Produk Tertentu) to avoid pivot collision
-        if (optionScopeSpecificProduct) {
-            optionScopeSpecificProduct.disabled = true;
-            if (scope === '2') {
-                scopeSelect.value = '1';
-            }
-        }
-        
-        // Max discount is irrelevant for bonus products
-        if (maxDiscountContainer) maxDiscountContainer.classList.add('hidden');
-        
-        // Show Products select box as "Bonus Products"
-        if (productSelect) productSelect.classList.remove('hidden');
-        if (productSelectLabel) productSelectLabel.textContent = 'Bonus Products';
-        
-        // Show/hide category select based on scope (scope 3 is eligible categories)
-        if (categorySelect) {
-            categorySelect.classList.toggle('hidden', scopeSelect.value !== '3');
-        }
-    } else {
-        // Enable scope 2
-        if (optionScopeSpecificProduct) {
-            optionScopeSpecificProduct.disabled = false;
-        }
-        
-        // Show Max Discount for other types (especially percentage)
-        if (maxDiscountContainer) maxDiscountContainer.classList.remove('hidden');
-        
-        // Restore label
-        if (productSelectLabel) productSelectLabel.textContent = 'Products';
-        
-        // Normal scope visibility
-        if (productSelect) {
-            productSelect.classList.toggle('hidden', scope !== '2');
-        }
-        if (categorySelect) {
-            categorySelect.classList.toggle('hidden', scope !== '3');
+    // Customer selection is shown when scope is 2 (Customer Tertentu)
+    if (customerSelect) {
+        customerSelect.classList.toggle('hidden', scope !== '2');
+    }
+
+    // Category selection is shown when scope is 3 (Kategori Tertentu)
+    if (categorySelect) {
+        categorySelect.classList.toggle('hidden', scope !== '3');
+    }
+
+    // Max discount is relevant for percentage discount
+    if (maxDiscountContainer) {
+        maxDiscountContainer.classList.toggle('hidden', type !== '1');
+    }
+
+    // Allow stacking ONLY available for Shipping Discount (type 3)
+    const allowStackingContainer = document.getElementById('allowStackingContainer');
+    const allowStackingInput = document.getElementById('allowStacking');
+    if (allowStackingContainer) {
+        const isShipping = type === '3';
+        allowStackingContainer.classList.toggle('hidden', !isShipping);
+        if (!isShipping && allowStackingInput) {
+            allowStackingInput.checked = false;
         }
     }
 }
@@ -309,14 +323,211 @@ document.getElementById('typeSelect').addEventListener('change', adjustFormField
 // Adjust fields on page load
 adjustFormFields();
 
+function formatCustomerOption(state) {
+    if (!state.id) {
+        return state.text;
+    }
+    const element = state.element;
+    if (!element) {
+        return state.text;
+    }
+    const name = element.dataset.name || state.text;
+    const email = element.dataset.email || '';
+    const phone = element.dataset.phone || '';
+    const type = element.dataset.type || '';
+    const initials = element.dataset.initials || name.substring(0, 2).toUpperCase();
+    
+    const contactParts = [];
+    if (email) contactParts.push(email);
+    if (phone) contactParts.push(phone);
+    const contactInfo = contactParts.join(' • ');
+
+    const badge = type === 'Reseller' 
+        ? '<span class="px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded-full flex-shrink-0">Reseller</span>'
+        : '';
+
+    return $(`
+        <div class="flex items-center gap-3 py-1">
+            <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/20">
+                ${initials}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="font-medium text-sm text-on-surface truncate">${name}</span>
+                    ${badge}
+                </div>
+                ${contactInfo ? `<div class="text-xs text-on-surface-variant truncate mt-0.5">${contactInfo}</div>` : ''}
+            </div>
+        </div>
+    `);
+}
+
+function formatCustomerSelection(state) {
+    if (!state.id) return state.text;
+    return state.element?.dataset.name || state.text;
+}
+
+function updateCustomerCount() {
+    const selectedCount = $('#customersSelectInput').val()?.length || 0;
+    const badge = document.getElementById('customerCountBadge');
+    if (badge) {
+        badge.textContent = `${selectedCount} customer dipilih`;
+    }
+}
+
 $(document).ready(function() {
-    $('#productsSelectInput').select2({
-        placeholder: "Select products...",
+    const $customerSelect = $('#customersSelectInput');
+    
+    $customerSelect.select2({
+        placeholder: "Cari nama, email, atau nomor HP customer...",
         allowClear: true,
         width: '100%',
-        theme: 'classic'
+        templateResult: formatCustomerOption,
+        templateSelection: formatCustomerSelection,
+        matcher: function(params, data) {
+            if ($.trim(params.term) === '') {
+                return data;
+            }
+            if (!data.id) {
+                return null;
+            }
+            const term = params.term.toLowerCase();
+            const element = data.element;
+            const name = (element?.dataset.name || data.text || '').toLowerCase();
+            const email = (element?.dataset.email || '').toLowerCase();
+            const phone = (element?.dataset.phone || '').toLowerCase();
+
+            if (name.includes(term) || email.includes(term) || phone.includes(term)) {
+                return data;
+            }
+            return null;
+        }
+    }).on('change', updateCustomerCount);
+
+    updateCustomerCount();
+
+    $('#selectAllCustomers').on('click', function() {
+        const allIds = $customerSelect.find('option').map(function() { return $(this).val(); }).get();
+        $customerSelect.val(allIds).trigger('change');
+    });
+
+    $('#clearAllCustomers').on('click', function() {
+        $customerSelect.val(null).trigger('change');
     });
 });
 </script>
+@endpush
+
+@push('styles')
+<style>
+/* Select2 Modern Tailwind Styling for Customer Multi-select */
+.select2-container--default .select2-selection--multiple {
+    border: 1px solid #d1d5db !important;
+    border-radius: 0.5rem !important;
+    min-height: 44px !important;
+    padding: 4px 8px !important;
+    background-color: #ffffff !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 4px !important;
+    transition: all 0.2s ease !important;
+}
+
+.select2-container--default.select2-container--focus .select2-selection--multiple,
+.select2-container--default.select2-container--open .select2-selection--multiple {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+    outline: none !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+    color: #1d4ed8 !important;
+    border-radius: 9999px !important;
+    padding: 3px 12px 3px 10px !important;
+    margin: 2px 0 !important;
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #3b82f6 !important;
+    font-weight: bold !important;
+    margin-right: 2px !important;
+    padding: 0 2px !important;
+    border: none !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    transition: color 0.15s ease !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #dc2626 !important;
+    background: transparent !important;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    margin: 4px 0 !important;
+    font-size: 0.875rem !important;
+    font-family: inherit !important;
+    color: #1e293b !important;
+    padding: 2px 4px !important;
+    width: 100% !important;
+}
+
+/* Dropdown menu styling */
+.select2-dropdown {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+    overflow: hidden !important;
+    z-index: 9999 !important;
+    margin-top: 4px !important;
+    background-color: #ffffff !important;
+}
+
+.select2-results__options {
+    max-height: 280px !important;
+    padding: 6px !important;
+}
+
+.select2-container--default .select2-results__option {
+    padding: 6px 10px !important;
+    border-radius: 0.5rem !important;
+    margin-bottom: 2px !important;
+    transition: background-color 0.15s ease !important;
+    cursor: pointer !important;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+}
+
+.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #eff6ff !important;
+    color: #1d4ed8 !important;
+}
+
+.select2-container--default .select2-results__option[aria-selected=true] .bg-primary\/10 {
+    background-color: #dbeafe !important;
+}
+</style>
 @endpush
 @endsection

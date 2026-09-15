@@ -52,7 +52,9 @@ class VoucherController extends Controller
 
     public function edit($id)
     {
-        $voucher = Voucher::withoutGlobalScope('active')->findOrFail($id);
+        $voucher = Voucher::withoutGlobalScope('active')
+            ->with(['customers', 'categories'])
+            ->findOrFail($id);
         return view('pages.vouchers.edit', compact('voucher'));
     }
 
@@ -67,6 +69,7 @@ class VoucherController extends Controller
             'type' => 'required|integer|in:1,2,3,4',
             'scope' => 'required|integer|in:1,2,3',
             'allow_stacking' => 'boolean',
+            'show_on_web' => 'boolean',
             'value' => 'required|numeric|min:0',
             'min_purchase' => 'nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
@@ -76,41 +79,41 @@ class VoucherController extends Controller
             'end_date' => 'nullable|date',
             'valid_for_new_customer' => 'boolean',
             'is_active' => 'boolean',
-            'product_ids' => 'nullable|array',
-            'product_ids.*' => 'exists:products,id',
+            'customer_ids' => 'nullable|array',
+            'customer_ids.*' => 'exists:customers,id',
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'exists:product_category,id',
         ]);
 
-        $validated['allow_stacking'] = $request->boolean('allow_stacking');
+        $validated['allow_stacking'] = ((int) $request->input('type') === 3) && $request->boolean('allow_stacking');
+        $validated['show_on_web'] = $request->boolean('show_on_web');
         $validated['valid_for_new_customer'] = $request->boolean('valid_for_new_customer');
         $validated['is_active'] = $request->boolean('is_active');
 
-        $productIds = $request->input('product_ids', []);
+        $customerIds = $request->input('customer_ids', []);
         $categoryIds = $request->input('category_ids', []);
 
-        unset($validated['product_ids'], $validated['category_ids']);
+        unset($validated['customer_ids'], $validated['category_ids']);
 
         $voucher->update($validated);
 
-        if ((int)$voucher->type === 4) {
-            $voucher->products()->sync($productIds);
-            if ((int)$voucher->scope === 3) {
-                $voucher->categories()->sync($categoryIds);
-            } else {
-                $voucher->categories()->detach();
+        if ((int)$voucher->scope === 2) {
+            $syncCustomers = [];
+            foreach ($customerIds as $cId) {
+                $syncCustomers[$cId] = ['id' => (string) \Illuminate\Support\Str::uuid()];
             }
+            $voucher->customers()->sync($syncCustomers);
+            $voucher->categories()->detach();
+        } elseif ((int)$voucher->scope === 3) {
+            $syncCats = [];
+            foreach ($categoryIds as $catId) {
+                $syncCats[$catId] = ['id' => (string) \Illuminate\Support\Str::uuid()];
+            }
+            $voucher->categories()->sync($syncCats);
+            $voucher->customers()->detach();
         } else {
-            if ((int)$voucher->scope === 2) {
-                $voucher->products()->sync($productIds);
-                $voucher->categories()->detach();
-            } elseif ((int)$voucher->scope === 3) {
-                $voucher->categories()->sync($categoryIds);
-                $voucher->products()->detach();
-            } else {
-                $voucher->products()->detach();
-                $voucher->categories()->detach();
-            }
+            $voucher->customers()->detach();
+            $voucher->categories()->detach();
         }
 
         return redirect()->route('vouchers.index')->with('success', 'Voucher updated successfully');
@@ -125,6 +128,7 @@ class VoucherController extends Controller
             'type' => 'required|integer|in:1,2,3,4',
             'scope' => 'required|integer|in:1,2,3',
             'allow_stacking' => 'boolean',
+            'show_on_web' => 'boolean',
             'value' => 'required|numeric|min:0',
             'min_purchase' => 'nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
@@ -134,37 +138,36 @@ class VoucherController extends Controller
             'end_date' => 'nullable|date',
             'valid_for_new_customer' => 'boolean',
             'is_active' => 'boolean',
-            'product_ids' => 'nullable|array',
-            'product_ids.*' => 'exists:products,id',
+            'customer_ids' => 'nullable|array',
+            'customer_ids.*' => 'exists:customers,id',
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'exists:product_category,id',
         ]);
 
-        $validated['allow_stacking'] = $request->boolean('allow_stacking');
+        $validated['allow_stacking'] = ((int) $request->input('type') === 3) && $request->boolean('allow_stacking');
+        $validated['show_on_web'] = $request->boolean('show_on_web');
         $validated['valid_for_new_customer'] = $request->boolean('valid_for_new_customer');
         $validated['is_active'] = $request->boolean('is_active');
 
-        $productIds = $request->input('product_ids', []);
+        $customerIds = $request->input('customer_ids', []);
         $categoryIds = $request->input('category_ids', []);
 
-        unset($validated['product_ids'], $validated['category_ids']);
+        unset($validated['customer_ids'], $validated['category_ids']);
 
         $voucher = Voucher::create($validated);
 
-        if ((int)$voucher->type === 4) {
-            if (!empty($productIds)) {
-                $voucher->products()->attach($productIds);
+        if ((int)$voucher->scope === 2 && !empty($customerIds)) {
+            $syncCustomers = [];
+            foreach ($customerIds as $cId) {
+                $syncCustomers[$cId] = ['id' => (string) \Illuminate\Support\Str::uuid()];
             }
-            if ((int)$voucher->scope === 3 && !empty($categoryIds)) {
-                $voucher->categories()->attach($categoryIds);
+            $voucher->customers()->attach($syncCustomers);
+        } elseif ((int)$voucher->scope === 3 && !empty($categoryIds)) {
+            $syncCats = [];
+            foreach ($categoryIds as $catId) {
+                $syncCats[$catId] = ['id' => (string) \Illuminate\Support\Str::uuid()];
             }
-        } else {
-            if ((int)$voucher->scope === 2 && !empty($productIds)) {
-                $voucher->products()->attach($productIds);
-            }
-            if ((int)$voucher->scope === 3 && !empty($categoryIds)) {
-                $voucher->categories()->attach($categoryIds);
-            }
+            $voucher->categories()->attach($syncCats);
         }
 
         return redirect()->route('vouchers.index')->with('success', 'Voucher created successfully');
