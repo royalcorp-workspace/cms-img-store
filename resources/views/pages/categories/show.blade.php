@@ -3,16 +3,26 @@
 @section('title', $category->name)
 
 @section('content')
-    <div class="mb-8">
-        <nav class="flex items-center gap-2 text-body-md text-on-surface-variant mb-4">
-            <a href="{{ route('home') }}" class="text-primary hover:underline">Home</a>
-            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-            <span>{{ $category->name }}</span>
-        </nav>
-        <h1 class="font-headline-lg text-headline-lg text-on-surface">{{ $category->name }}</h1>
-        @if($category->description)
-            <p class="text-body-md text-on-surface-variant mt-2">{{ $category->description }}</p>
-        @endif
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="font-headline-lg text-headline-lg text-on-surface">{{ $category->name }}</h1>
+            <nav class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-1 font-medium">
+                <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">eCommerce</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                <a href="{{ route('categories.index') }}" class="hover:text-primary transition-colors">Categories</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                <span class="text-on-surface">{{ $category->name }}</span>
+            </nav>
+            @if($category->description)
+                <p class="text-body-md text-on-surface-variant mt-1">{{ $category->description }}</p>
+            @endif
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('categories.index') }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-outline-variant text-on-surface-variant hover:bg-surface-container rounded-xl text-xs font-semibold transition-colors">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Kembali</span>
+            </a>
+        </div>
     </div>
 
     @include('layouts.partials.product-submenu')

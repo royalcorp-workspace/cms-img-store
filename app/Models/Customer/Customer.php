@@ -4,6 +4,7 @@ namespace App\Models\Customer;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Order\Order;
 
 class Customer extends Model
@@ -40,7 +41,7 @@ class Customer extends Model
         parent::boot();
 
         static::addGlobalScope('active', function ($query) {
-            $query->where('deleted', false);
+            $query->where($query->getModel()->getTable() . '.deleted', false);
         });
     }
 
@@ -57,5 +58,11 @@ class Customer extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class, 'customer_id', 'id');
+    }
+
+    public function vouchers(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Promo\Voucher::class, 'voucher_customers', 'customer_id', 'voucher_id')
+            ->withPivot('creator', 'editor', 'deleted');
     }
 }

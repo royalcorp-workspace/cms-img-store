@@ -6,19 +6,17 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
             <h1 class="font-headline-lg text-headline-lg text-on-surface">Orders</h1>
-            <nav class="flex items-center gap-2 text-body-md text-on-surface-variant mt-1">
-                <a href="{{ route('dashboard') }}" class="text-primary hover:underline">Dashboard</a>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-                <span>Orders</span>
+            <nav class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-1 font-medium">
+                <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">eCommerce</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                <span class="text-on-surface">Orders</span>
             </nav>
         </div>
-    
     </div>
 
     @include('layouts.partials.sales-submenu')
 
-
-    <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
         <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between">
             <div class="flex items-center gap-2">
                 <div class="relative">
@@ -54,6 +52,7 @@
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Customer</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Payment</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Status</th>
+                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Resi</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Action</th>
                     </tr>
@@ -97,16 +96,66 @@
                                     <span class="w-1.5 h-1.5 rounded-full bg-current"></span> {{ $statusLabel }}
                                 </span>
                             </td>
+                            <td class="px-gutter py-4" id="order-resi-badge-{{ $order->id }}">
+                                <script>
+                                    window.ordersCache = window.ordersCache || {};
+                                    window.ordersCache['{{ $order->id }}'] = @json($order->resi_modal_data);
+                                </script>
+                                @if($order->resi)
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" onclick="openResiModal('{{ $order->id }}', 'tracking')" class="font-mono text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 px-2 py-0.5 rounded border border-primary/20 text-left transition-colors" title="Lihat Status Resi">
+                                            {{ $order->resi }}
+                                        </button>
+                                        <button type="button" onclick="openResiModal('{{ $order->id }}', 'tracking')" class="p-1 text-on-surface-variant hover:text-primary transition-colors" title="Lihat Status Resi">
+                                            <span class="material-symbols-outlined text-[16px]">visibility</span>
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-1 text-[10px] text-on-surface-variant mt-1 flex-wrap">
+                                        <span class="font-medium">{{ $order->courier_name ?? 'Kurir' }}</span>
+                                        <span>&bull;</span>
+                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold border {{ $order->delivery_status_badge_class }}">
+                                            {{ $order->delivery_status_label }}
+                                        </span>
+                                    </div>
+                                @elseif($order->status >= \App\Models\Order\Order::STATUS_SHIPPED)
+                                    <div class="space-y-1">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-semibold border border-slate-200" title="Resi sudah terkunci (Pesanan {{ $order->statusLabel() }})">
+                                            <span class="material-symbols-outlined text-[12px]">lock</span>
+                                            <span>Resi Terkunci</span>
+                                        </span>
+                                        @if($order->delivery_status)
+                                            <div class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold border {{ $order->delivery_status_badge_class }}">
+                                                {{ $order->delivery_status_label }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                @elseif($order->delivery_status)
+                                    <button type="button" onclick="openResiModal('{{ $order->id }}', 'tracking')" class="text-left group" title="Lihat riwayat logs">
+                                        <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border {{ $order->delivery_status_badge_class }}">
+                                            {{ $order->delivery_status_label }}
+                                        </div>
+                                        <div class="text-[9px] text-primary group-hover:underline mt-0.5">+ Tambah Resi</div>
+                                    </button>
+                                @else
+                                    <button type="button" onclick="openResiModal('{{ $order->id }}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-dashed border-primary/40 text-[11px] font-semibold text-primary hover:bg-primary/5 transition-colors">
+                                        <span class="material-symbols-outlined text-[14px]">add</span>
+                                        <span>+ Resi</span>
+                                    </button>
+                                @endif
+                            </td>
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-medium">Rp{{ number_format($order->total, 2, ',', '.') }}</td>
                             <td class="px-gutter py-4">
                                 <div class="flex gap-2 justify-center">
-                                    <a href="{{ route('orders.show', $order->id) }}" class="text-on-surface-variant hover:text-primary" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
+                                    <button type="button" onclick="openResiModal('{{ $order->id }}', '{{ ($order->resi || $order->delivery_status) ? 'tracking' : 'manual' }}')" class="text-on-surface-variant hover:text-primary transition-colors" title="Resi & Log Pengiriman">
+                                        <span class="material-symbols-outlined text-[18px]">local_shipping</span>
+                                    </button>
+                                    <a href="{{ route('orders.show', $order->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-gutter py-8 text-center text-on-surface-variant">No orders found</td>
+                            <td colspan="8" class="px-gutter py-8 text-center text-on-surface-variant">No orders found</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -153,4 +202,6 @@
         window.location.href = buildUrl();
     });
     </script>
+
+    @include('pages.orders.partials.resi-modal')
 @endsection

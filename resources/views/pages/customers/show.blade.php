@@ -119,8 +119,9 @@
                             <th class="px-gutter py-4 font-headline-md text-[13px]">Order Number</th>
                             <th class="px-gutter py-4 font-headline-md text-[13px]">Date</th>
                             <th class="px-gutter py-4 font-headline-md text-[13px]">Total</th>
-                            <th class="px-gutter py-4 font-headline-md text-[13px]">Status</th>
-                            <th class="px-gutter py-4 font-headline-md text-[13px]">Resi</th>
+                            <th class="px-gutter py-4 font-headline-md text-[13px]">Status Pesanan</th>
+                            <th class="px-gutter py-4 font-headline-md text-[13px]">Resi & Status Pengiriman</th>
+                            <th class="px-gutter py-4 font-headline-md text-[13px] text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-outline-variant">
@@ -155,11 +156,36 @@
                                 <span class="px-2 py-1 bg-surface-gray text-on-surface-variant text-xs font-bold rounded">UNKNOWN</span>
                                 @endif
                             </td>
-                            <td class="px-gutter py-4 text-body-md">-</td>
+                            <td class="px-gutter py-4">
+                                @if($order->resi)
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-mono text-xs font-bold text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/20 select-all">
+                                                {{ $order->resi }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center gap-1 text-[11px] text-on-surface-variant flex-wrap">
+                                            <span class="font-semibold">{{ $order->courier_name ?? 'Kurir' }}</span>
+                                            <span>&bull;</span>
+                                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold border {{ $order->delivery_status_badge_class }}">
+                                                {{ $order->delivery_status_label }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="text-xs text-on-surface-variant italic">Belum ada resi</span>
+                                @endif
+                            </td>
+                            <td class="px-gutter py-4 text-center">
+                                <a href="{{ route('orders.show', $order->id) }}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-outline-variant text-xs font-semibold text-primary hover:bg-primary/5 transition-colors">
+                                    <span class="material-symbols-outlined text-[14px]">visibility</span>
+                                    <span>Detail</span>
+                                </a>
+                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="px-gutter py-8 text-center text-on-surface-variant">Belum ada riwayat pesanan.</td>
+                            <td colspan="6" class="px-gutter py-8 text-center text-on-surface-variant">Belum ada riwayat pesanan.</td>
                         </tr>
                         @endforelse
                     </tbody>

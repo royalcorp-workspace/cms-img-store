@@ -103,14 +103,7 @@
                                     $rawVariant = $variant->getAttributes();
                                     $rawProduct = $product->getAttributes();
 
-                                    $vp = 0;
-                                    if (isset($rawVariant['price']) && $rawVariant['price'] != '' && $rawVariant['price'] != 0) {
-                                        $vp = $rawVariant['price'];
-                                    } elseif (isset($rawProduct['price']) && $rawProduct['price'] != '' && $rawProduct['price'] != 0) {
-                                        $vp = $rawProduct['price'];
-                                    } elseif (isset($rawProduct['base_price']) && $rawProduct['base_price'] != '' && $rawProduct['base_price'] != 0) {
-                                        $vp = $rawProduct['base_price'];
-                                    }
+                                    $vp = (float) ($variant->sell_price ?: $variant->base_price ?: ($product->base_price ?? 0));
                                 @endphp
                                 <div class="flex items-center justify-between gap-2">
                                     <div class="flex-1 min-w-0">

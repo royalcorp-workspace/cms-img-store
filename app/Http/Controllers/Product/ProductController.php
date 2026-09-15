@@ -39,6 +39,10 @@ class ProductController extends Controller
             $query->where('brand_id', $brandId);
         }
 
+        if ($courierType = $request->query('courier_type')) {
+            $query->where('courier_type', $courierType);
+        }
+
         $products = $query->latest()->paginate(15)->appends($request->query());
         
         $categories = Category::orderBy('name')->get();
@@ -60,10 +64,19 @@ class ProductController extends Controller
             $variantsData = json_decode($request->variants, true);
             if (is_array($variantsData)) {
                 foreach ($variantsData as &$vData) {
-                    foreach (['base_price', 'sell_price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
+                    foreach (['base_price', 'sell_price', 'shipping_cost', 'stock_qty', 'min_order_qty', 'sort_order', 'length', 'width', 'height', 'weight'] as $field) {
                         if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
                             $vData[$field] = null;
                         }
+                    }
+                    if (isset($vData['price']) && !isset($vData['sell_price'])) {
+                        $vData['sell_price'] = $vData['price'];
+                    }
+                    if (isset($vData['sell_price']) && !isset($vData['base_price'])) {
+                        $vData['base_price'] = $vData['sell_price'];
+                    }
+                    if (isset($vData['base_price']) && !isset($vData['sell_price'])) {
+                        $vData['sell_price'] = $vData['base_price'];
                     }
                 }
             }
@@ -81,6 +94,13 @@ class ProductController extends Controller
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
             'warranty_duration' => 'nullable|string|max:255',
+            'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
+            'shipping_scheme' => 'nullable|string|in:dimension,fixed',
+            'shipping_cost' => 'nullable|numeric|min:0',
+            'length' => 'nullable|numeric|min:0',
+            'width' => 'nullable|numeric|min:0',
+            'height' => 'nullable|numeric|min:0',
+            'weight' => 'nullable|numeric|min:0',
             
             'segments' => 'nullable|array',
             'segments.*' => 'nullable|string|max:255',
@@ -98,8 +118,14 @@ class ProductController extends Controller
             'variants.*.sku' => 'nullable|string|max:255',
             'variants.*.variant_name' => 'nullable|string|max:255',
             'variants.*.attributes' => 'nullable|array',
+            'variants.*.image' => 'nullable|string|max:500',
             'variants.*.base_price' => 'nullable|numeric|min:0',
             'variants.*.sell_price' => 'nullable|numeric|min:0',
+            'variants.*.shipping_cost' => 'nullable|numeric|min:0',
+            'variants.*.length' => 'nullable|numeric|min:0',
+            'variants.*.width' => 'nullable|numeric|min:0',
+            'variants.*.height' => 'nullable|numeric|min:0',
+            'variants.*.weight' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
             'variants.*.sort_order' => 'nullable|integer|min:0',
@@ -117,6 +143,9 @@ class ProductController extends Controller
                 $validated['thumbnail'] = $request->input('thumbnail_file');
             }
 
+            $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
+            $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
+            $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
             $product = Product::create($validated);
 
             if (!empty($validated['thumbnail'])) {
@@ -161,18 +190,49 @@ class ProductController extends Controller
 
             if (isset($validated['colors']) && is_array($validated['colors'])) {
                 foreach ($validated['colors'] as $colorData) {
+                    unset($colorData['status'], $colorData['id']);
                     Color::create(array_merge(['product_id' => $product->id], $colorData));
                 }
             }
 
             if (isset($validated['variants']) && is_array($validated['variants'])) {
-                foreach ($validated['variants'] as $variantData) {
+                foreach ($validated['variants'] as $idx => $variantData) {
+                    $vImage = $variantData['image'] ?? null;
+                    unset($variantData['image']);
+
                     // Map stock_qty from frontend to stock_quantity for database
                     if (array_key_exists('stock_qty', $variantData)) {
                         $variantData['stock_quantity'] = $variantData['stock_qty'];
                         unset($variantData['stock_qty']);
                     }
-                    \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
+
+                    // Keep attributes clean for pos-dealer-web (only variant options, no image key)
+                    if (isset($variantData['attributes']) && is_array($variantData['attributes'])) {
+                        unset($variantData['attributes']['image'], $variantData['attributes']['image_url']);
+                    }
+
+                    // Fallback to product dimensions and shipping cost if variant not specified
+                    foreach (['length', 'width', 'height', 'weight'] as $dim) {
+                        if (!isset($variantData[$dim]) || $variantData[$dim] === '' || $variantData[$dim] === null) {
+                            $variantData[$dim] = $validated[$dim] ?? null;
+                        }
+                    }
+                    if (!isset($variantData['shipping_cost']) || $variantData['shipping_cost'] === '' || $variantData['shipping_cost'] === null) {
+                        $variantData['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
+                    }
+
+                    $variant = \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
+                    \App\Services\InventoryService::ensureVariantInventory($product->id, $variant->id);
+
+                    if ($vImage) {
+                        \App\Models\Product\Image::create([
+                            'product_id' => $product->id,
+                            'variant_id' => $variant->id,
+                            'image' => $vImage,
+                            'sort_order' => $idx,
+                            'status' => true,
+                        ]);
+                    }
                 }
             }
 
@@ -203,13 +263,13 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $product = Product::with('variants', 'colors')->findOrFail($id);
+        $product = Product::with(['variants', 'colors', 'category', 'brand', 'images', 'suggestedProducts'])->findOrFail($id);
         return view('pages.products.show', compact('product'));
     }
 
     public function edit($id)
     {
-        $product = Product::with('colors', 'suggestedProducts')->findOrFail($id);
+        $product = Product::with('variants', 'colors', 'suggestedProducts', 'images')->findOrFail($id);
         $allProducts = Product::where('id', '!=', $id)->orderBy('name')->get();
         return view('pages.products.create', compact('product', 'allProducts'));
     }
@@ -220,10 +280,19 @@ class ProductController extends Controller
             $variantsData = json_decode($request->variants, true);
             if (is_array($variantsData)) {
                 foreach ($variantsData as &$vData) {
-                    foreach (['base_price', 'sell_price', 'stock_qty', 'min_order_qty', 'sort_order'] as $field) {
+                    foreach (['base_price', 'sell_price', 'shipping_cost', 'stock_qty', 'min_order_qty', 'sort_order', 'length', 'width', 'height', 'weight'] as $field) {
                         if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
                             $vData[$field] = null;
                         }
+                    }
+                    if (isset($vData['price']) && !isset($vData['sell_price'])) {
+                        $vData['sell_price'] = $vData['price'];
+                    }
+                    if (isset($vData['sell_price']) && !isset($vData['base_price'])) {
+                        $vData['base_price'] = $vData['sell_price'];
+                    }
+                    if (isset($vData['base_price']) && !isset($vData['sell_price'])) {
+                        $vData['sell_price'] = $vData['base_price'];
                     }
                 }
             }
@@ -236,19 +305,22 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug,' . $product->id,
+            'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:products,slug,' . $id,
             'thumbnail' => 'nullable|string|max:255',
             'alt_text' => 'nullable|string|max:255',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
             'warranty_duration' => 'nullable|string|max:255',
-            
-            'segments' => 'nullable|array',
-            'segments.*' => 'nullable|string|max:255',
+            'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
+            'shipping_scheme' => 'nullable|string|in:dimension,fixed',
+            'shipping_cost' => 'nullable|numeric|min:0',
+            'length' => 'nullable|numeric|min:0',
+            'width' => 'nullable|numeric|min:0',
+            'height' => 'nullable|numeric|min:0',
+            'weight' => 'nullable|numeric|min:0',
             'best_seller' => 'boolean',
             'is_new' => 'boolean',
-            'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'category_id' => 'nullable|string|exists:product_category,id',
             'brand_id' => 'nullable|string|exists:brands,id',
@@ -262,8 +334,14 @@ class ProductController extends Controller
             'variants.*.sku' => 'nullable|string|max:255',
             'variants.*.variant_name' => 'nullable|string|max:255',
             'variants.*.attributes' => 'nullable|array',
+            'variants.*.image' => 'nullable|string|max:500',
             'variants.*.base_price' => 'nullable|numeric|min:0',
             'variants.*.sell_price' => 'nullable|numeric|min:0',
+            'variants.*.shipping_cost' => 'nullable|numeric|min:0',
+            'variants.*.length' => 'nullable|numeric|min:0',
+            'variants.*.width' => 'nullable|numeric|min:0',
+            'variants.*.height' => 'nullable|numeric|min:0',
+            'variants.*.weight' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
             'variants.*.sort_order' => 'nullable|integer|min:0',
@@ -288,6 +366,10 @@ class ProductController extends Controller
                 unlink_media($oldThumbnail);
             }
 
+            $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
+            $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
+            $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
+
             $product->update($validated);
 
             if (!empty($validated['thumbnail'])) {
@@ -298,16 +380,18 @@ class ProductController extends Controller
                 ]);
             }
 
-            // Handle Images
+            // Handle Images (Gallery images only, excluding variant images)
             if ($request->has('existing_images')) {
                 $existingImages = $request->input('existing_images');
                 $existingOrders = $request->input('existing_image_orders');
                 foreach ($existingImages as $index => $imageId) {
                     \App\Models\Product\Image::where('id', $imageId)
                         ->where('product_id', $product->id)
+                        ->whereNull('variant_id')
                         ->update(['sort_order' => $existingOrders[$index] ?? $index]);
                 }
                 $removedImages = \App\Models\Product\Image::where('product_id', $product->id)
+                    ->whereNull('variant_id')
                     ->whereNotIn('id', $existingImages)
                     ->get();
                 foreach ($removedImages as $removedImg) {
@@ -315,7 +399,9 @@ class ProductController extends Controller
                     $removedImg->delete();
                 }
             } else {
-                $removedImages = \App\Models\Product\Image::where('product_id', $product->id)->get();
+                $removedImages = \App\Models\Product\Image::where('product_id', $product->id)
+                    ->whereNull('variant_id')
+                    ->get();
                 foreach ($removedImages as $removedImg) {
                     unlink_media($removedImg->image);
                     $removedImg->delete();
@@ -357,14 +443,19 @@ class ProductController extends Controller
             if (isset($validated['colors']) && is_array($validated['colors'])) {
                 $submittedColorIds = [];
                 foreach ($validated['colors'] as $colorData) {
-                    if (isset($colorData['id'])) {
+                    unset($colorData['status']);
+                    if (!empty($colorData['id'])) {
                         $submittedColorIds[] = $colorData['id'];
                         $color = Color::find($colorData['id']);
                         if ($color) {
                             $color->update($colorData);
                         }
                     } else {
-                        Color::create(array_merge(['product_id' => $product->id], $colorData));
+                        unset($colorData['id']);
+                        $newColor = Color::create(array_merge(['product_id' => $product->id], $colorData));
+                        if ($newColor) {
+                            $submittedColorIds[] = $newColor->id;
+                        }
                     }
                 }
 
@@ -379,11 +470,29 @@ class ProductController extends Controller
 
             if (isset($validated['variants']) && is_array($validated['variants'])) {
                 $submittedVariantIds = [];
-                foreach ($validated['variants'] as $variantData) {
+                foreach ($validated['variants'] as $idx => $variantData) {
+                    $vImage = $variantData['image'] ?? null;
+                    unset($variantData['image']);
+
                     // Map stock_qty from frontend to stock_quantity for database
                     if (array_key_exists('stock_qty', $variantData)) {
                         $variantData['stock_quantity'] = $variantData['stock_qty'];
                         unset($variantData['stock_qty']);
+                    }
+
+                    // Keep attributes clean for pos-dealer-web (only variant options, no image key)
+                    if (isset($variantData['attributes']) && is_array($variantData['attributes'])) {
+                        unset($variantData['attributes']['image'], $variantData['attributes']['image_url']);
+                    }
+
+                    // Fallback to product dimensions and shipping cost if variant not specified
+                    foreach (['length', 'width', 'height', 'weight'] as $dim) {
+                        if (!isset($variantData[$dim]) || $variantData[$dim] === '' || $variantData[$dim] === null) {
+                            $variantData[$dim] = $validated[$dim] ?? null;
+                        }
+                    }
+                    if (!isset($variantData['shipping_cost']) || $variantData['shipping_cost'] === '' || $variantData['shipping_cost'] === null) {
+                        $variantData['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
                     }
                     
                     if (isset($variantData['id'])) {
@@ -393,15 +502,44 @@ class ProductController extends Controller
                             $variant->update($variantData);
                         }
                     } else {
-                        \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
+                        $variant = \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
+                        $submittedVariantIds[] = $variant->id;
+                    }
+
+                    if ($variant) {
+                        \App\Services\InventoryService::ensureVariantInventory($product->id, $variant->id);
+                        if ($vImage) {
+                            $existingImg = \App\Models\Product\Image::where('variant_id', $variant->id)->first();
+                            if ($existingImg) {
+                                $existingImg->update([
+                                    'image' => $vImage,
+                                    'sort_order' => $idx,
+                                ]);
+                            } else {
+                                \App\Models\Product\Image::create([
+                                    'product_id' => $product->id,
+                                    'variant_id' => $variant->id,
+                                    'image' => $vImage,
+                                    'sort_order' => $idx,
+                                    'status' => true,
+                                ]);
+                            }
+                        } else {
+                            \App\Models\Product\Image::where('variant_id', $variant->id)->delete();
+                        }
                     }
                 }
 
-                // Delete removed variants
-                \App\Models\Product\Variant::where('product_id', $product->id)
+                // Delete removed variants and their images
+                $deletedVariants = \App\Models\Product\Variant::where('product_id', $product->id)
                     ->whereNotIn('id', $submittedVariantIds)
-                    ->delete();
+                    ->get();
+                foreach ($deletedVariants as $delV) {
+                    \App\Models\Product\Image::where('variant_id', $delV->id)->delete();
+                    $delV->delete();
+                }
             } else {
+                \App\Models\Product\Image::where('product_id', $product->id)->whereNotNull('variant_id')->delete();
                 \App\Models\Product\Variant::where('product_id', $product->id)->delete();
             }
 
@@ -862,10 +1000,11 @@ class ProductController extends Controller
                 $variantData['id'] = $variant['id'];
             }
 
-            Variant::create(array_merge(
+            $createdVariant = Variant::create(array_merge(
                 ['product_id' => $product->id],
                 $variantData
             ));
+            \App\Services\InventoryService::ensureVariantInventory($product->id, $createdVariant->id);
         }
     }
 

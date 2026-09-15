@@ -7,18 +7,28 @@
         <div>
             <h1 class="font-headline-lg text-headline-lg text-on-surface">Edit Product Bundle</h1>
             <nav class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-1 font-medium">
-                <a href="{{ route('dashboard') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">eCommerce</a>
+                <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">eCommerce</a>
                 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
                 <a href="{{ route('bundlings.index') }}" class="hover:text-primary transition-colors">Bundling</a>
                 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
                 <span class="text-on-surface">Edit: {{ $bundling->name }}</span>
             </nav>
         </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('bundlings.index') }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-outline-variant text-on-surface-variant hover:bg-surface-container rounded-xl text-xs font-semibold transition-colors">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Batal</span>
+            </a>
+            <button type="submit" form="bundleForm" class="btn-save inline-flex items-center gap-2 px-5 py-2 bg-primary text-white hover:opacity-90 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95">
+                <span class="material-symbols-outlined text-[18px]">save</span>
+                <span>Simpan Perubahan</span>
+            </button>
+        </div>
     </div>
 
     @include('layouts.partials.promotions-submenu')
 
-    <div class="p-6 max-w-3xl" 
+    <form id="bundleForm" action="{{ route('bundlings.update', $bundling->id) }}" method="POST" enctype="multipart/form-data" class="w-full space-y-6"
          x-data="{ 
              products: @js($products),
              items: @js(old('items', $bundling->items->map(fn($i) => ['product_id' => $i->product_id, 'variant_id' => $i->variant_id ?? '', 'quantity' => $i->quantity])->toArray())),
@@ -46,28 +56,37 @@
                      alert('Harga bundling (Rp' + this.bundlePrice.toLocaleString('id-ID') + ') tidak boleh lebih mahal dari total harga item (Rp' + this.itemSum.toLocaleString('id-ID') + ')');
                  }
              }
-         }">
-        <form action="{{ route('bundlings.update', $bundling->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6" @submit="validateSubmit">
-            @csrf
-            @method('PUT')
+         }"
+         @submit="validateSubmit">
+        @csrf
+        @method('PUT')
+
+        <div class="w-full bg-white rounded-2xl shadow-sm border border-outline-variant/30 p-6 space-y-6">
+            <div class="border-b border-outline-variant/20 pb-3">
+                <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">package_2</span>
+                    Informasi Paket Bundling
+                </h2>
+                <p class="text-xs text-on-surface-variant mt-0.5">Edit nama paket, slug URL, harga bundling, dan status aktif.</p>
+            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Name <span class="text-danger">*</span></label>
-                    <input type="text" name="name" value="{{ old('name', $bundling->name) }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" required>
+                    <input type="text" name="name" value="{{ old('name', $bundling->name) }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-body-md" required>
                     @error('name') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Slug (URL Name)</label>
-                    <input type="text" name="slug" value="{{ old('slug', $bundling->slug) }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                    <input type="text" name="slug" value="{{ old('slug', $bundling->slug) }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-body-md">
                     @error('slug') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
                 </div>
             </div>
 
             <div class="space-y-1.5">
                 <label class="block text-label-sm font-medium text-on-surface-variant">Description</label>
-                <textarea name="description" rows="3" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">{{ old('description', $bundling->description) }}</textarea>
+                <textarea name="description" rows="3" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-body-md">{{ old('description', $bundling->description) }}</textarea>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-outline-variant/30">
@@ -75,30 +94,33 @@
                     <div class="space-y-1.5">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Main Image (Square)</label>
                         @if($bundling->image_url)
-                            <div class="mb-2 w-20 h-20 bg-surface-container rounded overflow-hidden border border-outline-variant/20 flex items-center justify-center bg-white p-1">
+                            <div class="mb-2 w-20 h-20 bg-surface-container rounded-xl overflow-hidden border border-outline-variant/20 flex items-center justify-center bg-white p-1">
                                 <img class="max-w-full max-h-full object-contain" src="{{ media_url($bundling->image_url) }}" alt="Bundle image">
                             </div>
                         @endif
-                        <input type="file" name="image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
+                        <input type="file" name="image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Banner Image (Landscape)</label>
                         @if($bundling->banner_image)
-                            <div class="mb-2 w-32 h-16 bg-surface-container rounded overflow-hidden border border-outline-variant/20 flex items-center justify-center bg-white p-1">
+                            <div class="mb-2 w-32 h-16 bg-surface-container rounded-xl overflow-hidden border border-outline-variant/20 flex items-center justify-center bg-white p-1">
                                 <img class="max-w-full max-h-full object-contain" src="{{ media_url($bundling->banner_image) }}" alt="Bundle banner">
                             </div>
                         @endif
-                        <input type="file" name="banner_image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
+                        <input type="file" name="banner_image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1.5">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Price (Rp) <span class="text-danger">*</span></label>
-                        <input type="number" step="0.01" name="price" x-model.number="bundlePrice" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" required>
+                        <input type="number" step="0.01" name="price" x-model.number="bundlePrice" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-body-md font-bold" required>
                         <div class="text-xs text-on-surface-variant mt-1">
-                            Total Harga Item: <span class="font-bold" x-text="'Rp ' + itemSum.toLocaleString('id-ID')"></span>
-                            <div x-show="bundlePrice > itemSum" class="text-danger font-bold mt-0.5"><span class="material-symbols-outlined text-[12px] align-middle">error</span> Harga melebihi total item!</div>
+                            Total Harga Item: <span class="font-bold text-primary" x-text="'Rp ' + itemSum.toLocaleString('id-ID')"></span>
+                            <div x-show="bundlePrice > itemSum" class="text-danger font-bold mt-0.5 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">error</span>
+                                <span>Harga melebihi total item!</span>
+                            </div>
                         </div>
                         @error('price') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
                     </div>
@@ -116,31 +138,35 @@
             <!-- Items Section -->
             <div class="space-y-4 pt-6 border-t border-outline-variant/30">
                 <div class="flex justify-between items-center">
-                    <h3 class="font-headline-md text-headline-md text-on-surface">Bundle Items <span class="text-danger">*</span></h3>
-                    <button type="button" @click="items.push({ id: '', product_id: '', variant_id: '', quantity: 1 })" class="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-label-md font-bold transition-all flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[18px]">add</span> Add Product
+                    <div>
+                        <h3 class="font-headline-md text-headline-md text-on-surface">Bundle Items <span class="text-danger">*</span></h3>
+                        <p class="text-xs text-on-surface-variant">Edit produk dan jumlah yang termasuk di paket bundling ini.</p>
+                    </div>
+                    <button type="button" @click="addItem()" class="px-3.5 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">add</span>
+                        <span>Add Product</span>
                     </button>
                 </div>
 
                 <div class="space-y-3">
                     <template x-for="(item, index) in items" :key="index">
-                        <div class="flex flex-col md:flex-row items-start md:items-center gap-3 bg-surface-container/30 p-3 rounded-lg border border-outline-variant/20">
+                        <div class="flex flex-col md:flex-row items-start md:items-center gap-3 bg-surface-gray/40 p-4 rounded-xl border border-outline-variant/30">
                             <!-- Product Select -->
-                            <div class="flex-1">
+                            <div class="flex-1 w-full">
                                 <label class="block text-label-sm font-medium text-on-surface-variant mb-1">Product</label>
-                                <select :name="`items[${index}][product_id]`" x-model="item.product_id" @change="item.variant_id = ''" required class="w-full border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20">
+                                <select :name="`items[${index}][product_id]`" x-model="item.product_id" @change="item.variant_id = ''" required class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 text-body-md bg-white">
                                     <option value="">-- Choose Product --</option>
                                     <template x-for="prod in products" :key="prod.id">
-                                        <option :value="prod.id" x-text="`${prod.name} (Base Price: Rp${Number(prod.base_price || 0).toLocaleString('id-ID')})`" :selected="prod.id === item.product_id"></option>
+                                        <option :value="prod.id" x-text="`${prod.name} (Base Price: Rp${Number(prod.base_price || 0).toLocaleString('id-ID')})`" :selected="prod.id == item.product_id"></option>
                                     </template>
                                 </select>
                             </div>
-                            <div class="w-48">
+                            <div class="w-full md:w-56">
                                 <label class="block text-label-sm font-medium text-on-surface-variant mb-1">Variant (Optional)</label>
-                                <select :name="`items[${index}][variant_id]`" x-model="item.variant_id" class="w-full border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20">
+                                <select :name="`items[${index}][variant_id]`" x-model="item.variant_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 text-body-md bg-white">
                                     <option value="">-- Bebas Pilih di Web --</option>
                                     <template x-if="item.product_id">
-                                        <template x-for="variant in (products.find(p => String(p.id) === String(item.product_id))?.variants || [])" :key="variant.id">
+                                        <template x-for="variant in (products.find(p => p.id == item.product_id)?.variants || [])" :key="variant.id">
                                             <option :value="variant.id" x-text="`${variant.variant_name} (Rp${Number(variant.price || 0).toLocaleString('id-ID')})`" :selected="String(variant.id) === String(item.variant_id)"></option>
                                         </template>
                                     </template>
@@ -148,14 +174,14 @@
                             </div>
 
                             <!-- Quantity -->
-                            <div class="w-24 w-full md:w-24">
-                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase">Qty</label>
-                                <input type="number" :name="`items[${index}][quantity]`" x-model="item.quantity" min="1" placeholder="Qty" required class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20">
+                            <div class="w-full md:w-24">
+                                <label class="block text-label-sm font-medium text-on-surface-variant mb-1">Qty</label>
+                                <input type="number" :name="`items[${index}][quantity]`" x-model="item.quantity" min="1" placeholder="Qty" required class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 text-body-md bg-white">
                             </div>
 
                             <!-- Delete button -->
-                            <div class="pt-6">
-                                <button type="button" @click="if (items.length > 1) items.splice(index, 1)" class="w-9 h-9 rounded-md bg-danger/10 text-danger hover:bg-danger/20 transition-all flex items-center justify-center">
+                            <div class="pt-0 md:pt-6">
+                                <button type="button" @click="if (items.length > 1) items.splice(index, 1)" class="w-10 h-10 rounded-xl bg-danger/10 text-danger hover:bg-danger/20 transition-all flex items-center justify-center" title="Hapus Item">
                                     <span class="material-symbols-outlined text-[18px]">delete</span>
                                 </button>
                             </div>
@@ -165,10 +191,10 @@
                 @error('items') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
             </div>
 
-            <div class="flex items-center gap-3 pt-6 border-t border-outline-variant/30">
-                <button type="submit" class="px-6 py-2.5 bg-primary text-white font-label-md hover:opacity-90 transition-all">Update Bundle</button>
-                <a href="{{ route('bundlings.index') }}" class="px-6 py-2.5 border border-outline-variant text-on-surface rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</a>
+            <div class="flex items-center justify-end gap-3 pt-6 border-t border-outline-variant/30">
+                <a href="{{ route('bundlings.index') }}" class="px-6 py-2.5 border border-outline-variant text-on-surface-variant rounded-xl text-xs font-semibold hover:bg-surface-container transition-colors">Batal</a>
+                <button type="submit" class="btn-save px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-sm active:scale-95">Simpan Perubahan</button>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 @endsection

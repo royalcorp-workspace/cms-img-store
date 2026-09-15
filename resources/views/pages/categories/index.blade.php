@@ -6,10 +6,10 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
             <h1 class="font-headline-lg text-headline-lg text-on-surface">Categories</h1>
-            <nav class="flex items-center gap-2 text-body-md text-on-surface-variant mt-1">
-                <a href="{{ route('dashboard') }}" class="text-primary hover:underline">Dashboard</a>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-                <span>Categories</span>
+            <nav class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-1 font-medium">
+                <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">eCommerce</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                <span class="text-on-surface">Categories</span>
             </nav>
         </div>
         <div class="flex items-center gap-3 relative group">
@@ -27,9 +27,9 @@
                 </ul>
             </div>
             
-            <button onclick="createCategory()" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
+            <button onclick="createCategory()" class="btn-save flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-sm active:scale-95">
                 <span class="material-symbols-outlined text-[18px]">add</span>
-                Add Category
+                <span>Add Category</span>
             </button>
         </div>
     </div>
@@ -50,6 +50,7 @@
                         <th class="px-4 py-3 font-medium">Name</th>
                         <th class="px-4 py-3 font-medium">Slug</th>
                         <th class="px-4 py-3 font-medium">Parent</th>
+                        <th class="px-4 py-3 font-medium">Kurir & Ongkir</th>
                         <th class="px-4 py-3 font-medium">Sort</th>
                         <th class="px-4 py-3 font-medium">Status</th>
                         <th class="px-4 py-3 font-medium text-center">Actions</th>
@@ -61,6 +62,19 @@
                         <td class="px-4 py-3 font-medium">{{ $category->name }}</td>
                         <td class="px-4 py-3 text-on-surface-variant">{{ $category->slug }}</td>
                         <td class="px-4 py-3">{{ $category->parent ? $category->parent->name : '-' }}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex flex-col gap-1">
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold {{ ($category->courier_setting_type ?? 'detail') === 'global' ? 'text-primary' : 'text-on-surface-variant' }}">
+                                    <span class="w-1.5 h-1.5 rounded-full {{ ($category->courier_setting_type ?? 'detail') === 'global' ? 'bg-primary' : 'bg-outline-variant' }}"></span>
+                                    {{ ($category->courier_setting_type ?? 'detail') === 'global' ? 'Global: ' . $category->courier_type_label : 'Detail (Per Produk)' }}
+                                </span>
+                                @if(($category->courier_setting_type ?? 'detail') === 'global')
+                                    <span class="text-[10px] text-on-surface-variant">
+                                        {{ $category->shipping_scheme === 'fixed' ? 'Ongkir Tetap (Rp ' . number_format($category->shipping_cost, 0, ',', '.') . ')' : 'Hitung dari Dimensi' }}
+                                    </span>
+                                @endif
+                            </div>
+                        </td>
                         <td class="px-4 py-3">{{ $category->sort_order }}</td>
                         <td class="px-4 py-3">
                             @if($category->status)
@@ -78,7 +92,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-on-surface-variant">No categories found.</td>
+                        <td colspan="7" class="px-4 py-8 text-center text-on-surface-variant">No categories found.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -138,6 +152,38 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Pengaturan Tipe Kurir Kategori -->
+                <div class="border-t border-outline-variant pt-4 mt-2 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-on-surface flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-primary text-[18px]">local_shipping</span>
+                            <span>Pengaturan Kurir Kategori</span>
+                        </label>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">
+                            Tipe Pengaturan Kurir
+                        </label>
+                        <select id="categoryCourierSettingType" name="courier_setting_type" onchange="toggleCategoryCourierFields()" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white text-xs">
+                            <option value="detail">Detail / Kondisional (Pilihan tipe kurir ditentukan per masing-masing produk)</option>
+                            <option value="global">Global (Semua produk di kategori ini menggunakan tipe kurir seragam)</option>
+                        </select>
+                        <p class="text-[11px] text-on-surface-variant">Jika dipilih "Global", semua produk di bawah kategori ini menggunakan tipe kurir yang ditentukan di bawah.</p>
+                    </div>
+
+                    <div id="categoryCourierDetailsContainer" class="p-3 bg-surface-container-lowest rounded-xl border border-outline-variant/40 space-y-2">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Pilihan Tipe Kurir Kategori</label>
+                        <select id="categoryCourierType" name="courier_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white text-xs">
+                            <option value="keduanya">Keduanya (Toko & Expedisi)</option>
+                            <option value="toko">Pengiriman by Toko</option>
+                            <option value="expedisi">Pengiriman by Expedisi</option>
+                        </select>
+                        <p class="text-[11px] text-on-surface-variant">Tipe kurir yang berlaku untuk produk di kategori ini jika diset Global.</p>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4 border-t border-outline-variant pt-4 mt-2">
                     <div class="space-y-1.5">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Banner Desktop (Web)</label>
@@ -167,6 +213,15 @@
 <script>
 const csrfToken = '{{ csrf_token() }}';
 
+function toggleCategoryCourierFields() {
+    const type = $('#categoryCourierSettingType').val();
+    if (type === 'global') {
+        $('#categoryCourierDetailsContainer').removeClass('opacity-50');
+    } else {
+        $('#categoryCourierDetailsContainer').addClass('opacity-50');
+    }
+}
+
 function createCategory(parentName = null, parentId = null) {
     $('#categoryId').val('');
     $('#categoryName').val(parentName ? '' : 'New Category');
@@ -176,6 +231,9 @@ function createCategory(parentName = null, parentId = null) {
     $('#categoryStatus').val(1);
     $('#categoryWarranty').val(1);
     $('#categoryParent').val(parentId || '');
+    $('#categoryCourierSettingType').val('detail');
+    $('#categoryCourierType').val('keduanya');
+    toggleCategoryCourierFields();
     $('#previewBannerWeb').addClass('hidden').find('img').attr('src', '');
     $('#previewBannerMobile').addClass('hidden').find('img').attr('src', '');
     $('#categoryBannerWeb').val('');
@@ -195,6 +253,9 @@ function editCategory(id) {
         $('#categoryStatus').val(cat.status ? 1 : 0);
         $('#categoryWarranty').val(cat.has_warranty ? 1 : 0);
         $('#categoryParent').val(cat.parent_id || '');
+        $('#categoryCourierSettingType').val(cat.courier_setting_type || 'detail');
+        $('#categoryCourierType').val(cat.courier_type || 'keduanya');
+        toggleCategoryCourierFields();
         
         if (cat.banner_web_url) {
             $('#previewBannerWeb').removeClass('hidden').find('img').attr('src', cat.banner_web_url);

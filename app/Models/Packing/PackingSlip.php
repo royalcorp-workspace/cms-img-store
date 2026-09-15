@@ -53,7 +53,7 @@ class PackingSlip extends Model
 
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::class, 'order_id');
+        return $this->belongsTo(Order::class, 'order_id')->withoutGlobalScope('active');
     }
 
     public function packer(): BelongsTo
@@ -64,5 +64,10 @@ class PackingSlip extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PackingSlipItem::class, 'packing_slip_id');
+    }
+
+    public function packingOut(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PackingOut::class, 'packing_slip_id');
     }
 }

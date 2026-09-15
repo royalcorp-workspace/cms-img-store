@@ -49,7 +49,7 @@
                     <tr class="bg-surface-gray">
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Code</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Name</th>
-                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Type</th>
+                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Type Layanan</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Status</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Actions</th>
                     </tr>
@@ -99,7 +99,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-gutter py-8 text-center text-on-surface-variant">No couriers found</td>
+                        <td colspan="6" class="px-gutter py-8 text-center text-on-surface-variant">No couriers found</td>
                     </tr>
                     @endforelse
                 </tbody>

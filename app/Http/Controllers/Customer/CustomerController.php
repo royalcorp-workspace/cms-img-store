@@ -86,7 +86,7 @@ class CustomerController extends Controller
 
     public function show($id)
     {
-        $customer = Customer::with(['user', 'addresses', 'orders'])->findOrFail($id);
+        $customer = Customer::with(['user', 'addresses', 'orders.deliveryLogs', 'orders.courier', 'orders.delivery.courier'])->findOrFail($id);
         return view('pages.customers.show', compact('customer'));
     }
 

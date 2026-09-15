@@ -75,16 +75,28 @@
                     </td>
                     <td class="px-6 py-5">
                         <div class="flex flex-col gap-1">
-                            <span class="text-label-sm text-on-surface">{{ $voucher->scopeLabel() }}</span>
-                            @if($voucher->allow_stacking)
-                            <span class="inline-flex items-center gap-1 text-label-sm text-success">
-                                <span class="material-symbols-outlined text-[14px]">check_circle</span> Stackable
-                            </span>
-                            @else
-                            <span class="inline-flex items-center gap-1 text-label-sm text-secondary">
-                                <span class="material-symbols-outlined text-[14px]">block</span> Non-stackable
-                            </span>
-                            @endif
+                            <span class="text-label-sm text-on-surface font-medium">{{ $voucher->scopeLabel() }}</span>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                @if($voucher->allow_stacking)
+                                <span class="inline-flex items-center gap-1 text-[11px] text-success font-medium">
+                                    <span class="material-symbols-outlined text-[13px]">check_circle</span> Stackable
+                                </span>
+                                @else
+                                <span class="inline-flex items-center gap-1 text-[11px] text-secondary">
+                                    <span class="material-symbols-outlined text-[13px]">block</span> Non-stackable
+                                </span>
+                                @endif
+
+                                @if($voucher->show_on_web)
+                                <span class="inline-flex items-center gap-1 text-[11px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium" title="Ditampilkan di Web">
+                                    <span class="material-symbols-outlined text-[13px]">public</span> Web
+                                </span>
+                                @else
+                                <span class="inline-flex items-center gap-1 text-[11px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded" title="Tidak ditampilkan di Web">
+                                    <span class="material-symbols-outlined text-[13px]">visibility_off</span> Hidden
+                                </span>
+                                @endif
+                            </div>
                         </div>
                     </td>
                     <td class="px-6 py-5">

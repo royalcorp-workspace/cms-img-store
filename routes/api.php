@@ -34,10 +34,16 @@ Route::post('media/upload-url', [MediaController::class, 'getUploadUrl']);
 Route::post('media/upload', [MediaController::class, 'upload']);
 Route::delete('media/{id}', [MediaController::class, 'destroy']);
 
+// Biteship Webhook Receivers (public endpoint for Biteship callback notifications)
+Route::post('webhooks/biteship', [\App\Http\Controllers\Api\Webhook\BiteshipWebhookController::class, 'handle']);
+
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('mock-login', [AuthController::class, 'mockLogin']);
     Route::get('mock-login', [AuthController::class, 'getMockLogin']);
+
+    // Biteship Webhook v1 alias
+    Route::post('webhooks/biteship', [\App\Http\Controllers\Api\Webhook\BiteshipWebhookController::class, 'handle']);
 
     // Direct Upload Flow & Fallback
     Route::post('media/upload-url', [MediaController::class, 'getUploadUrl']);

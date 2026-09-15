@@ -25,9 +25,14 @@ class Variant extends Model
         'attributes',
         'base_price',
         'sell_price',
+        'shipping_cost',
         'stock_quantity',
         'min_order_qty',
         'sort_order',
+        'length',
+        'width',
+        'height',
+        'weight',
         'status',
         'creator',
         'editor',
@@ -40,6 +45,7 @@ class Variant extends Model
             'attributes' => 'array',
             'base_price' => 'decimal:2',
             'sell_price' => 'decimal:2',
+            'shipping_cost' => 'decimal:2',
             'stock_quantity' => 'integer',
             'min_order_qty' => 'integer',
             'sort_order' => 'integer',
@@ -50,14 +56,68 @@ class Variant extends Model
         ];
     }
 
+    public function inventories(): HasMany
+    {
+        return $this->hasMany(\App\Models\Inventory\Inventory::class, 'product_variant_id');
+    }
+
     public function getStockQtyAttribute()
     {
-        return $this->stock_quantity;
+        if ($this->relationLoaded('inventories')) {
+            return (int) $this->inventories->where('deleted', false)->sum('available');
+        }
+        $sum = $this->inventories()->where('deleted', false)->sum('available');
+        if ($sum > 0 || $this->inventories()->exists()) {
+            return (int) $sum;
+        }
+        return (int) ($this->attributes['stock_quantity'] ?? 0);
+    }
+
+    public function getStockQuantityAttribute()
+    {
+        return $this->getStockQtyAttribute();
     }
 
     public function setStockQtyAttribute($value)
     {
         $this->attributes['stock_quantity'] = $value;
+    }
+
+    public function getAvailableStockAttribute(): int
+    {
+        return $this->getStockQtyAttribute();
+    }
+
+    public function getOnStockAttribute(): int
+    {
+        if ($this->relationLoaded('inventories')) {
+            return (int) $this->inventories->where('deleted', false)->sum('on_stock');
+        }
+        return (int) $this->inventories()->where('deleted', false)->sum('on_stock');
+    }
+
+    public function getIncomingStockAttribute(): int
+    {
+        if ($this->relationLoaded('inventories')) {
+            return (int) $this->inventories->where('deleted', false)->sum('incoming');
+        }
+        return (int) $this->inventories()->where('deleted', false)->sum('incoming');
+    }
+
+    public function getOnOrderStockAttribute(): int
+    {
+        if ($this->relationLoaded('inventories')) {
+            return (int) $this->inventories->where('deleted', false)->sum('on_order');
+        }
+        return (int) $this->inventories()->where('deleted', false)->sum('on_order');
+    }
+
+    public function getOutgoingStockAttribute(): int
+    {
+        if ($this->relationLoaded('inventories')) {
+            return (int) $this->inventories->where('deleted', false)->sum('outgoing');
+        }
+        return (int) $this->inventories()->where('deleted', false)->sum('outgoing');
     }
 
     public function getSortOrderAttribute()
@@ -68,6 +128,19 @@ class Variant extends Model
     public function setSortOrderAttribute($value)
     {
         // Ignored since column does not exist on product_variants
+    }
+
+    public function getPriceAttribute()
+    {
+        return $this->sell_price ?? $this->base_price ?? 0;
+    }
+
+    public function setPriceAttribute($value)
+    {
+        $this->attributes['sell_price'] = $value;
+        if (!isset($this->attributes['base_price'])) {
+            $this->attributes['base_price'] = $value;
+        }
     }
 
     public function product(): BelongsTo

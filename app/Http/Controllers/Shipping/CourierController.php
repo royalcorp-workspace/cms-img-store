@@ -24,6 +24,10 @@ class CourierController extends Controller
             $query->where('type', $request->query('type'));
         }
 
+        if ($request->filled('courier_type')) {
+            $query->where('courier_type', $request->query('courier_type'));
+        }
+
         if ($request->filled('status')) {
             $status = $request->query('status');
             if ($status === 'active') {
@@ -43,8 +47,7 @@ class CourierController extends Controller
     public function create()
     {
         $categories = \App\Models\Product\Category::all();
-        $products = \App\Models\Product\Product::all();
-        return view('pages.shipping.courier.create', compact('categories', 'products'));
+        return view('pages.shipping.courier.create', compact('categories'));
     }
 
     public function store(Request $request)
@@ -52,25 +55,23 @@ class CourierController extends Controller
         $validated = $request->validate([
             'code' => 'required|string|max:50|unique:couriers,code',
             'name' => 'required|string|max:150',
+            'courier_type' => 'required|in:toko,expedisi',
             'type' => 'required|integer|in:1,2,3,4',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'category_ids' => 'nullable|array',
-            'product_ids' => 'nullable|array',
         ]);
 
         $validated['creator'] = auth()->user()->name ?? 'admin';
         $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
+        $validated['courier_type'] = $validated['courier_type'] ?? 'expedisi';
 
         $courier = Courier::create($validated);
         
         if (!empty($validated['category_ids'])) {
             $courier->restrictedCategories()->sync($validated['category_ids']);
-        }
-        if (!empty($validated['product_ids'])) {
-            $courier->restrictedProducts()->sync($validated['product_ids']);
         }
 
         return redirect()->route('couriers.index')->with('success', 'Courier created successfully');
@@ -80,9 +81,8 @@ class CourierController extends Controller
     {
         $courier = Courier::withoutGlobalScope('active')->findOrFail($id);
         $categories = \App\Models\Product\Category::all();
-        $products = \App\Models\Product\Product::all();
 
-        return view('pages.shipping.courier.edit', compact('courier', 'categories', 'products'));
+        return view('pages.shipping.courier.edit', compact('courier', 'categories'));
     }
 
     public function update(Request $request, string $id)
@@ -92,21 +92,21 @@ class CourierController extends Controller
         $validated = $request->validate([
             'code' => 'required|string|max:50|unique:couriers,code,' . $id,
             'name' => 'required|string|max:150',
+            'courier_type' => 'required|in:toko,expedisi',
             'type' => 'required|integer|in:1,2,3,4',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'category_ids' => 'nullable|array',
-            'product_ids' => 'nullable|array',
         ]);
 
         $validated['editor'] = auth()->user()->name ?? 'admin';
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
+        $validated['courier_type'] = $validated['courier_type'] ?? 'expedisi';
 
         $courier->update($validated);
         
         $courier->restrictedCategories()->sync($validated['category_ids'] ?? []);
-        $courier->restrictedProducts()->sync($validated['product_ids'] ?? []);
 
         return redirect()->route('couriers.index')->with('success', 'Courier updated successfully');
     }

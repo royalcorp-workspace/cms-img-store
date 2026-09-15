@@ -28,34 +28,40 @@
 
     <div class="bg-white rounded-lg shadow-sm border border-outline-variant/30 overflow-hidden mb-8">
         <div class="p-4 border-b border-outline-variant/30 bg-surface-container-lowest">
-            <form method="GET" action="{{ route('products.index') }}" class="flex flex-col md:flex-row gap-3">
-                <div class="flex-1 relative">
+            <form method="GET" action="{{ route('products.index') }}" class="flex flex-col lg:flex-row lg:items-center gap-3">
+                <div class="flex-1 relative min-w-[240px]">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama atau kode produk..." class="w-full pl-9 pr-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm bg-white">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama atau kode produk..." class="w-full h-10 pl-9 pr-3 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-sm bg-white transition-all">
                 </div>
-                <div class="w-full md:w-48">
-                    <select name="category_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm bg-white select2-enable" onchange="this.form.submit()">
-                        <option value="">Semua Kategori</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="w-full md:w-48">
-                    <select name="brand_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm bg-white select2-enable" onchange="this.form.submit()">
-                        <option value="">Semua Brand</option>
-                        @foreach($brands as $brand)
-                            <option value="{{ $brand->id }}" {{ request('brand_id') == $brand->id ? 'selected' : '' }}>{{ $brand->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex items-center">
-                    <button type="submit" class="px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-lg text-sm font-semibold border border-outline-variant/30 transition-colors hidden md:block">Filter</button>
-                    @if(request()->hasAny(['search', 'category_id', 'brand_id']))
-                        <a href="{{ route('products.index') }}" class="ml-2 px-3 py-2 text-danger hover:bg-danger/10 rounded-lg text-sm font-semibold transition-colors" title="Reset Filters">
-                            <span class="material-symbols-outlined text-[18px] align-middle">close</span>
-                        </a>
-                    @endif
+                <div class="flex flex-wrap sm:flex-nowrap items-center gap-3">
+                    <div class="w-full sm:w-48">
+                        <select name="category_id" class="w-full h-10 px-3 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-sm bg-white text-on-surface cursor-pointer transition-all" onchange="this.form.submit()">
+                            <option value="">Semua Kategori</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="w-full sm:w-44">
+                        <select name="brand_id" class="w-full h-10 px-3 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-sm bg-white text-on-surface cursor-pointer transition-all" onchange="this.form.submit()">
+                            <option value="">Semua Brand</option>
+                            @foreach($brands as $brand)
+                                <option value="{{ $brand->id }}" {{ request('brand_id') == $brand->id ? 'selected' : '' }}>{{ $brand->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button type="submit" class="h-10 px-4 bg-primary text-white hover:bg-primary/90 rounded-lg text-sm font-medium transition-colors shadow-sm inline-flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[18px]">filter_list</span>
+                            <span>Filter</span>
+                        </button>
+                        @if(request()->hasAny(['search', 'category_id', 'brand_id']))
+                            <a href="{{ route('products.index') }}" class="h-10 px-3 bg-danger/10 text-danger hover:bg-danger/20 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1" title="Reset Filters">
+                                <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+                                <span class="hidden sm:inline">Reset</span>
+                            </a>
+                        @endif
+                    </div>
                 </div>
             </form>
         </div>
@@ -98,7 +104,9 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-body-md text-on-surface font-mono text-sm">{{ $product->code ?? '-' }}</td>
-                            <td class="px-6 py-4 text-body-md text-secondary font-medium">{{ $product->category->name ?? '-' }}</td>
+                            <td class="px-6 py-4 text-body-md text-secondary font-medium">
+                                <div>{{ $product->category->name ?? '-' }}</div>
+                            </td>
                             <td class="px-6 py-4 font-headline-md text-[14px] font-bold text-on-surface">
                                 @php
                                     $minPrice = $product->variants->min('sell_price') ?? 0;

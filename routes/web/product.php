@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Product\CategoryController;
 use App\Http\Controllers\Product\VoucherController;
-use App\Http\Controllers\Product\InventoryController;
 use App\Http\Controllers\Product\PriceProductSettingController;
 
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
@@ -37,9 +36,6 @@ Route::get('/vouchers/{id}/edit', [VoucherController::class, 'edit'])->name('vou
 Route::put('/vouchers/{id}', [VoucherController::class, 'update'])->name('vouchers.update');
 Route::delete('/vouchers/{id}', [VoucherController::class, 'destroy'])->name('vouchers.destroy');
 
-Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
-Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
-
 Route::post('/price-settings/bulk', [PriceProductSettingController::class, 'bulkStore'])->name('price-settings.bulk.store');
 Route::get('/price-settings', [PriceProductSettingController::class, 'index'])->name('price-settings.index');
 Route::get('/price-settings/bulk', [PriceProductSettingController::class, 'bulk'])->name('price-settings.bulk');
@@ -52,6 +48,7 @@ use App\Http\Controllers\Product\BrandController;
 Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
 Route::get('/brands/create', [BrandController::class, 'create'])->name('brands.create');
 Route::post('/brands', [BrandController::class, 'store'])->name('brands.store');
+Route::get('/brands/{id}', [BrandController::class, 'show'])->name('brands.show');
 Route::get('/brands/{id}/edit', [BrandController::class, 'edit'])->name('brands.edit');
 Route::put('/brands/{id}', [BrandController::class, 'update'])->name('brands.update');
 Route::delete('/brands/{id}', [BrandController::class, 'destroy'])->name('brands.destroy');

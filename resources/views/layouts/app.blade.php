@@ -428,6 +428,87 @@
             background-color: var(--color-primary) !important;
             border-color: var(--color-primary) !important;
         }
+
+        /* Modern Select2 Styling matching Tailwind */
+        .select2-container--default .select2-selection--single {
+            height: 42px !important;
+            border: 1px solid var(--color-outline-variant, #e2e8f0) !important;
+            border-radius: 0.5rem !important;
+            padding: 6px 12px !important;
+            background-color: #ffffff !important;
+            display: flex !important;
+            align-items: center !important;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+        }
+        .select2-container--default.select2-container--focus .select2-selection--single,
+        .select2-container--default.select2-container--open .select2-selection--single {
+            border-color: var(--color-primary, #2563eb) !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+            outline: none !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: var(--color-on-surface, #1e293b) !important;
+            font-size: 0.875rem !important;
+            padding-left: 0 !important;
+            line-height: normal !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 100% !important;
+            right: 8px !important;
+            top: 0 !important;
+        }
+        .select2-dropdown {
+            border: 1px solid var(--color-outline-variant, #e2e8f0) !important;
+            border-radius: 0.5rem !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+            z-index: 9999 !important;
+            overflow: hidden !important;
+            background-color: #ffffff !important;
+        }
+        .select2-search--dropdown {
+            padding: 8px !important;
+        }
+        .select2-search--dropdown .select2-search__field {
+            border: 1px solid var(--color-outline-variant, #e2e8f0) !important;
+            border-radius: 0.375rem !important;
+            padding: 6px 10px !important;
+            font-size: 0.875rem !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            outline: none !important;
+        }
+        .select2-search--dropdown .select2-search__field:focus {
+            border-color: var(--color-primary, #2563eb) !important;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+        }
+        .select2-results__options {
+            max-height: 260px !important;
+            padding: 4px !important;
+        }
+        .select2-container--default .select2-results__option {
+            padding: 8px 12px !important;
+            border-radius: 0.375rem !important;
+            margin-bottom: 2px !important;
+            font-size: 0.875rem !important;
+            cursor: pointer !important;
+            transition: background-color 0.15s ease !important;
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #eff6ff !important;
+            color: #1d4ed8 !important;
+        }
+        .select2-container--default .select2-results__option[aria-selected=true] {
+            background-color: var(--color-primary, #2563eb) !important;
+            color: #ffffff !important;
+        }
+        .select2-container--default .select2-results__option[aria-selected=true] .text-primary {
+            color: #ffffff !important;
+        }
+        .select2-container--default .select2-results__option[aria-selected=true] .text-on-surface,
+        .select2-container--default .select2-results__option[aria-selected=true] .text-on-surface-variant,
+        .select2-container--default .select2-results__option[aria-selected=true] .text-secondary {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
     </style>
     @stack('styles')
 </head>
@@ -454,13 +535,90 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Select2 globally
+            // Initialize Channel Select2 with rich autocomplete (supports both local options and remote AJAX)
             if (typeof jQuery !== 'undefined' && $.fn.select2) {
-                $('.select2-enable').select2({
+                $('.select2-channel').each(function() {
+                    const $select = $(this);
+                    const ajaxUrl = $select.data('ajax-url');
+                    const placeholder = $select.data('placeholder') || 'Pilih atau cari Store Channel...';
+                    const allowClear = $select.data('allow-clear') !== false;
+
+                    const config = {
+                        width: '100%',
+                        placeholder: placeholder,
+                        allowClear: allowClear,
+                        matcher: function(params, data) {
+                            if ($.trim(params.term) === '') {
+                                return data;
+                            }
+                            if (!data.id) {
+                                return null;
+                            }
+                            const term = params.term.toLowerCase();
+                            const text = (data.text || '').toLowerCase();
+                            const element = data.element;
+                            const store = (element ? element.getAttribute('data-store') : '') || (data.store_name || '');
+                            const code = (element ? element.getAttribute('data-code') : '') || (data.code || '');
+
+                            if (text.includes(term) || store.toLowerCase().includes(term) || code.toLowerCase().includes(term)) {
+                                return data;
+                            }
+                            return null;
+                        },
+                        templateResult: function(data) {
+                            if (!data.id) return data.text;
+                            const element = data.element;
+                            const store = (element ? element.getAttribute('data-store') : '') || (data.store_name || '');
+                            const code = (element ? element.getAttribute('data-code') : '') || (data.code || '');
+                            const rawName = (data.name || data.text.split('(')[0]).trim();
+
+                            return $(`
+                                <div class="flex items-center gap-2.5 py-0.5">
+                                    <span class="material-symbols-outlined text-primary text-[18px] shrink-0">storefront</span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="font-medium text-xs text-on-surface truncate">${rawName}</div>
+                                        ${store ? `<div class="text-[11px] text-on-surface-variant flex items-center gap-1 mt-0.5 truncate">Toko: <span class="text-secondary font-medium">${store}</span> ${code ? `<span class="text-outline font-mono text-[10px]">(${code})</span>` : ''}</div>` : ''}
+                                    </div>
+                                </div>
+                            `);
+                        },
+                        templateSelection: function(data) {
+                            if (!data.id) return data.text;
+                            const element = data.element;
+                            const store = (element ? element.getAttribute('data-store') : '') || (data.store_name || '');
+                            const rawName = (data.name || data.text.split('(')[0]).trim();
+                            return store ? `${rawName} (Toko: ${store})` : rawName;
+                        }
+                    };
+
+                    if (ajaxUrl) {
+                        config.ajax = {
+                            url: ajaxUrl,
+                            dataType: 'json',
+                            delay: 250,
+                            data: function(params) {
+                                return { q: params.term || '' };
+                            },
+                            processResults: function(data) {
+                                return { results: data.results || [] };
+                            },
+                            cache: true
+                        };
+                        config.minimumInputLength = 0;
+                    }
+
+                    $select.select2(config).on('select2:select select2:clear', function(e) {
+                        e.target.dispatchEvent(new Event('input', { bubbles: true }));
+                        e.target.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
+                });
+
+                // Initialize other generic Select2
+                $('.select2-enable:not(.select2-channel)').select2({
                     width: '100%',
                     dropdownCssClass: 'text-sm font-sans',
                     selectionCssClass: 'text-sm font-sans'
-                }).on('select2:select', function (e) {
+                }).on('select2:select select2:clear', function (e) {
                     // Dispatch native event for Alpine JS compatibility
                     e.target.dispatchEvent(new Event('input', { bubbles: true }));
                     e.target.dispatchEvent(new Event('change', { bubbles: true }));

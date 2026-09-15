@@ -6,19 +6,17 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
             <h1 class="font-headline-lg text-headline-lg text-on-surface">Product Suggestions</h1>
-            <nav class="flex items-center gap-2 text-body-md text-on-surface-variant mt-1">
-                <a href="{{ route('dashboard') }}" class="text-primary hover:underline">Dashboard</a>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-                <span>Products</span>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-                <span>Suggestions</span>
+            <nav class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-1 font-medium">
+                <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">eCommerce</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                <span class="text-on-surface">Suggestions</span>
             </nav>
         </div>
     </div>
 
     @include('layouts.partials.product-submenu')
 
-    <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30">
+    <div class="bg-white rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
         <div class="p-6">
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
                 <form method="GET" action="{{ route('product-suggestions.index') }}" class="relative w-full sm:w-96">

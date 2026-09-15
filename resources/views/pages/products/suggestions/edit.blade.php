@@ -6,27 +6,34 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
             <h1 class="font-headline-lg text-headline-lg text-on-surface">Manage Suggestions</h1>
-            <nav class="flex items-center gap-2 text-body-md text-on-surface-variant mt-1">
-                <a href="{{ route('dashboard') }}" class="text-primary hover:underline">Dashboard</a>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-                <a href="{{ route('products.index') }}" class="text-primary hover:underline">Products</a>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-                <a href="{{ route('product-suggestions.index') }}" class="text-primary hover:underline">Suggestions</a>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-                <span>Edit</span>
+            <nav class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-1 font-medium">
+                <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">eCommerce</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                <a href="{{ route('product-suggestions.index') }}" class="hover:text-primary transition-colors">Suggestions</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                <span class="text-on-surface">Edit: {{ $product->name }}</span>
             </nav>
         </div>
-        <a href="{{ route('product-suggestions.index') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-outline-variant text-secondary rounded-lg font-label-md text-label-md hover:bg-surface-container transition-all">
-            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Back
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('product-suggestions.index') }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-outline-variant text-on-surface-variant hover:bg-surface-container rounded-xl text-xs font-semibold transition-colors">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Batal</span>
+            </a>
+            <button type="submit" form="suggestionForm" class="btn-save inline-flex items-center gap-2 px-5 py-2 bg-primary text-white hover:opacity-90 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95">
+                <span class="material-symbols-outlined text-[18px]">save</span>
+                <span>Simpan Saran</span>
+            </button>
+        </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 mb-6 overflow-hidden">
-        <div class="p-4 bg-surface-container-lowest border-b border-outline-variant/50">
+    @include('layouts.partials.product-submenu')
+
+    <div class="bg-white rounded-2xl shadow-sm border border-outline-variant/30 mb-6 overflow-hidden">
+        <div class="p-4 bg-surface-container-lowest border-b border-outline-variant/30">
             <h3 class="text-label-md font-bold text-on-surface">Target Product</h3>
         </div>
         <div class="p-6 flex items-start gap-4">
-            <div class="w-20 h-20 rounded-lg bg-surface-gray border border-outline-variant/30 overflow-hidden flex-shrink-0">
+            <div class="w-20 h-20 rounded-xl bg-surface-gray border border-outline-variant/30 overflow-hidden flex-shrink-0">
                 @if($product->images->isNotEmpty())
                     <img src="{{ $product->images->first()->url }}" alt="Image" class="w-full h-full object-cover">
                 @else
@@ -42,11 +49,11 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('product-suggestions.update', $product->id) }}">
+    <form id="suggestionForm" method="POST" action="{{ route('product-suggestions.update', $product->id) }}">
         @csrf
         @method('PUT')
         
-        <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6" x-data="{ search: '' }">
+        <div class="bg-white rounded-2xl shadow-sm border border-outline-variant/30 p-6" x-data="{ search: '' }">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-3">
                 <div class="space-y-1">
                     <h3 class="font-headline-md text-headline-md text-on-surface">Select Suggested Products</h3>
@@ -88,9 +95,9 @@
                 @endif
             </div>
 
-            <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-outline-variant">
-                <a href="{{ route('product-suggestions.index') }}" class="px-6 py-2.5 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</a>
-                <button type="submit" class="px-8 py-2.5 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Save Suggestions</button>
+            <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-outline-variant/30">
+                <a href="{{ route('product-suggestions.index') }}" class="inline-flex items-center gap-1.5 px-4 py-2.5 border border-outline-variant text-on-surface-variant hover:bg-surface-container rounded-xl text-xs font-semibold transition-colors">Batal</a>
+                <button type="submit" class="btn-save inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-white hover:opacity-90 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95">Simpan Saran</button>
             </div>
         </div>
     </form>

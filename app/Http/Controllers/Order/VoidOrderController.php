@@ -13,7 +13,17 @@ class VoidOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $voidOrders = VoidOrder::orderBy('voided_at', 'desc')->paginate(15);
+        $query = VoidOrder::query();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                  ->orWhere('void_reason', 'like', "%{$search}%");
+            });
+        }
+
+        $voidOrders = $query->orderBy('voided_at', 'desc')->paginate(15)->withQueryString();
         return view('pages.orders.void.index', compact('voidOrders'));
     }
     

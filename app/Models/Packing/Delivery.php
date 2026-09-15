@@ -57,4 +57,9 @@ class Delivery extends Model
     {
         return $this->belongsTo(Courier::class, 'courier_id');
     }
+
+    public function deliveryLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(DeliveryLog::class, 'delivery_id');
+    }
 }

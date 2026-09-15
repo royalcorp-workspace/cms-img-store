@@ -5,7 +5,17 @@
 @section('content')
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-            <h1 class="font-headline-lg text-headline-lg text-on-surface">Edit Brand</h1>
+            <div class="flex items-center gap-3">
+                <h1 class="font-headline-lg text-headline-lg text-on-surface">Edit Brand</h1>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $brand->status ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span> {{ $brand->status ? 'Aktif' : 'Nonaktif' }}
+                </span>
+                @if($brand->is_featured)
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider text-[10px]">
+                        Featured
+                    </span>
+                @endif
+            </div>
             <nav class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-1 font-medium">
                 <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">eCommerce</a>
                 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -14,14 +24,36 @@
                 <span class="text-on-surface">Edit: {{ $brand->name }}</span>
             </nav>
         </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('brands.index') }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-outline-variant text-on-surface-variant hover:bg-surface-container rounded-xl text-xs font-semibold transition-colors">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Batal</span>
+            </a>
+            <a href="{{ route('brands.show', $brand->id) }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl text-xs font-semibold transition-colors">
+                <span class="material-symbols-outlined text-[16px]">visibility</span>
+                <span>Lihat Detail</span>
+            </a>
+            <button type="submit" form="brandForm" class="btn-save inline-flex items-center gap-2 px-5 py-2 bg-primary text-white hover:opacity-90 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95">
+                <span class="material-symbols-outlined text-[18px]">save</span>
+                <span>Simpan Perubahan</span>
+            </button>
+        </div>
     </div>
 
     @include('layouts.partials.product-submenu')
 
-    <div class="p-6 max-w-2xl">
-        <form action="{{ route('brands.update', $brand->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-            @csrf
-            @method('PUT')
+    <form id="brandForm" action="{{ route('brands.update', $brand->id) }}" method="POST" enctype="multipart/form-data" class="w-full space-y-6">
+        @csrf
+        @method('PUT')
+
+        <div class="w-full bg-white rounded-2xl shadow-sm border border-outline-variant/30 p-6 space-y-6">
+            <div class="border-b border-outline-variant/20 pb-3">
+                <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">branding_watermark</span>
+                    Informasi Brand & Logo
+                </h2>
+                <p class="text-xs text-on-surface-variant mt-0.5">Nama brand, slug URL, deskripsi, dan logo brand.</p>
+            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-1.5">
@@ -43,9 +75,9 @@
                 @error('description') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
             </div>
 
-            <div class="grid grid-cols-1 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Logo File Input & Preview -->
-                <div class="space-y-1.5 md:w-1/3">
+                <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Brand Logo</label>
                     @if($brand->logo)
                         <div class="mb-2 w-20 h-20 bg-surface-container rounded-md overflow-hidden border border-outline-variant/30 p-1 flex items-center justify-center bg-white">
@@ -58,9 +90,13 @@
             </div>
 
             <!-- Banner Section -->
-            <div class="col-span-1 md:col-span-3 mt-2 border-t border-outline-variant/30 pt-4">
-                <h3 class="text-title-md font-bold text-on-surface mb-4">Brand Banner (Shop Page)</h3>
-                
+            <div class="border-t border-outline-variant/20 pt-6">
+                <h3 class="text-base font-bold text-on-surface flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-primary text-[20px]">panorama</span>
+                    Brand Banner (Shop Page)
+                </h3>
+                <p class="text-xs text-on-surface-variant mb-4">Banner khusus yang akan tampil pada halaman katalog/brand di toko.</p>
+
                 <div class="flex flex-col gap-4">
                     <div class="space-y-1.5 md:w-1/3">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Banner Type</label>
@@ -114,7 +150,7 @@
                     <div class="space-y-1.5 p-4 border border-outline-variant/30 rounded-xl bg-surface-container/30">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Redirect Banner Link (URL)</label>
                         <input type="url" name="banner_link" value="{{ old('banner_link', $brand->banner_link) }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="https://example.com/promo">
-                        <p class="text-xs text-on-surface-variant mt-1">If filled, clicking the banner will redirect to this link.</p>
+                        <p class="text-xs text-on-surface-variant mt-1">Jika diisi, klik banner di halaman shop akan dialihkan ke tautan ini.</p>
                         @error('banner_link') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
                     </div>
                 </div>
@@ -134,7 +170,7 @@
                 document.addEventListener('DOMContentLoaded', toggleBannerInputs);
             </script>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-outline-variant/30">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-outline-variant/20">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Sort Order</label>
                     <input type="number" name="sort_order" value="{{ old('sort_order', $brand->sort_order ?? 0) }}" min="0" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
@@ -158,10 +194,10 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-3 pt-6 border-t border-outline-variant/30">
-                <button type="submit" class="px-6 py-2.5 bg-primary text-white font-label-md hover:opacity-90 transition-all">Update Brand</button>
-                <a href="{{ route('brands.index') }}" class="px-6 py-2.5 border border-outline-variant text-on-surface rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</a>
+            <div class="flex items-center gap-3 pt-6 border-t border-outline-variant/20">
+                <button type="submit" class="px-6 py-2.5 bg-primary text-white font-label-md hover:opacity-90 transition-all rounded-lg">Simpan Perubahan</button>
+                <a href="{{ route('brands.index') }}" class="px-6 py-2.5 border border-outline-variant text-on-surface rounded-lg font-label-md hover:bg-surface-container transition-colors">Batal</a>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 @endsection

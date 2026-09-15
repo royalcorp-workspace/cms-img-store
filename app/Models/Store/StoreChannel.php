@@ -53,4 +53,9 @@ class StoreChannel extends Model
     {
         return $this->hasMany(StoreChannelStock::class, 'store_channel_id');
     }
+
+    public function inventories(): HasMany
+    {
+        return $this->hasMany(\App\Models\Inventory\Inventory::class, 'store_channel_id');
+    }
 }

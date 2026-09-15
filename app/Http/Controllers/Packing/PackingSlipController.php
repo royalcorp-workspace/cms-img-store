@@ -62,6 +62,25 @@ class PackingSlipController extends Controller
             ]);
         }
 
+        // Record delivery log: Sedang Dikemas
+        try {
+            $order = Order::find($request->order_id);
+            \App\Models\Packing\DeliveryLog::create([
+                'order_id' => $order?->id,
+                'waybill_id' => $order?->resi,
+                'courier_code' => $order?->courier?->code,
+                'event' => 'packing_slip.created',
+                'status' => 'sedang_dikemas',
+                'location' => 'Gudang Pengirim',
+                'note' => 'Pesanan sedang dikemas di gudang (Packing Slip diterbitkan)',
+                'payload' => [
+                    'packing_slip_id' => $packingSlip->id,
+                    'box_count' => $packingSlip->box_count,
+                    'weight' => $packingSlip->weight,
+                ],
+            ]);
+        } catch (\Throwable $e) {}
+
         return redirect()->route('packing-slip.show', $packingSlip->id)->with('success', 'Packing slip created');
     }
 }

@@ -59,9 +59,19 @@ class PriceProductSettingController extends Controller
     public function create()
     {
         $productsQuery = \App\Models\Product\Product::where('deleted', false)
-            ->select(['id', 'name', 'category_id'])
+            ->whereHas('variants', function ($q) {
+                $q->where('stock_quantity', '>', 0)
+                  ->where(function ($pq) {
+                      $pq->where('sell_price', '>', 0)->orWhere('base_price', '>', 0);
+                  });
+            })
+            ->select(['id', 'name', 'category_id', 'base_price'])
             ->with(['variants' => function ($q) {
-                $q->select(['id', 'product_id', 'variant_name', 'sku', 'sell_price', 'stock_quantity'])
+                $q->where('stock_quantity', '>', 0)
+                  ->where(function ($pq) {
+                      $pq->where('sell_price', '>', 0)->orWhere('base_price', '>', 0);
+                  })
+                  ->select(['id', 'product_id', 'variant_name', 'sku', 'sell_price', 'base_price', 'stock_quantity'])
                   ->orderBy('variant_name');
             }, 'category' => function ($q) {
                 $q->select(['id', 'name', 'slug']);
@@ -116,12 +126,39 @@ class PriceProductSettingController extends Controller
     public function edit($id)
     {
         $setting = PriceProductSetting::withoutGlobalScope('active')->findOrFail($id);
+
+        $selectedVariantIds = $setting->variants()->pluck('product_variants.id')->toArray();
+        $variantPricesFromPivot = $setting->variants()->pluck('discount_value', 'product_variants.id')->toArray();
+        $selectedBundlingIds = $setting->bundlings()->pluck('products_bundling.id')->toArray();
+        $bundlingPricesFromPivot = $setting->bundlings()->pluck('discount_value', 'products_bundling.id')->toArray();
         
         $productsQuery = \App\Models\Product\Product::where('deleted', false)
-            ->select(['id', 'name', 'category_id'])
-            ->with(['variants' => function ($q) {
-                $q->select(['id', 'product_id', 'variant_name', 'sku', 'sell_price', 'stock_quantity'])
-                  ->orderBy('variant_name');
+            ->where(function ($q) use ($selectedVariantIds) {
+                $q->whereHas('variants', function ($vq) {
+                    $vq->where('stock_quantity', '>', 0)
+                       ->where(function ($pq) {
+                           $pq->where('sell_price', '>', 0)->orWhere('base_price', '>', 0);
+                       });
+                });
+                if (!empty($selectedVariantIds)) {
+                    $q->orWhereHas('variants', function ($vq) use ($selectedVariantIds) {
+                        $vq->whereIn('id', $selectedVariantIds);
+                    });
+                }
+            })
+            ->select(['id', 'name', 'category_id', 'base_price'])
+            ->with(['variants' => function ($q) use ($selectedVariantIds) {
+                $q->where(function ($vq) use ($selectedVariantIds) {
+                    $vq->where('stock_quantity', '>', 0)
+                       ->where(function ($pq) {
+                           $pq->where('sell_price', '>', 0)->orWhere('base_price', '>', 0);
+                       });
+                    if (!empty($selectedVariantIds)) {
+                        $vq->orWhereIn('id', $selectedVariantIds);
+                    }
+                })
+                ->select(['id', 'product_id', 'variant_name', 'sku', 'sell_price', 'base_price', 'stock_quantity'])
+                ->orderBy('variant_name');
             }, 'category' => function ($q) {
                 $q->select(['id', 'name', 'slug']);
             }, 'images' => function ($q) {
@@ -147,11 +184,6 @@ class PriceProductSettingController extends Controller
         }
 
         $products = $productsQuery->paginate(12);
-
-        $selectedVariantIds = $setting->variants()->pluck('product_variants.id')->toArray();
-        $variantPricesFromPivot = $setting->variants()->pluck('discount_value', 'product_variants.id')->toArray();
-        $selectedBundlingIds = $setting->bundlings()->pluck('products_bundling.id')->toArray();
-        $bundlingPricesFromPivot = $setting->bundlings()->pluck('discount_value', 'products_bundling.id')->toArray();
 
         if (request()->ajax()) {
             $bundlings = \App\Models\Product\ProductBundling::where('is_active', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'price']);
@@ -201,7 +233,7 @@ class PriceProductSettingController extends Controller
             'description' => 'nullable|string',
             'type' => 'required|integer|in:1,2',
             'discount_type' => 'required|integer|in:1,2',
-            'discount_value' => 'required|numeric|min:0',
+            'discount_value' => 'required_if:scope,1|nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
@@ -211,9 +243,23 @@ class PriceProductSettingController extends Controller
             'scope_store_id' => 'nullable|uuid|exists:store,id',
             'scope_tier_id' => 'nullable|uuid|exists:store_tier,id',
             'scope_channel_group_id' => 'nullable|uuid|exists:store_channel_group,id',
-            'bundling_id' => 'nullable|uuid|exists:products_bundling,id',
             'variant_ids' => 'nullable|array',
-            'variant_ids.*' => 'uuid|exists:product_variants,id',
+            'variant_ids.*' => [
+                'uuid',
+                'exists:product_variants,id',
+                function ($attribute, $value, $fail) use ($id) {
+                    $variant = Variant::find($value);
+                    if ($variant) {
+                        $alreadyAttached = DB::table('price_product_setting_variants')
+                            ->where('price_product_setting_id', $id)
+                            ->where('product_variant_id', $value)
+                            ->exists();
+                        if (!$alreadyAttached && ($variant->stock_quantity ?? 0) <= 0) {
+                            $fail('Variant "' . ($variant->variant_name ?? $variant->sku) . '" tidak memiliki stok dan tidak dapat dipilih.');
+                        }
+                    }
+                },
+            ],
             'variant_prices' => 'nullable|array',
             'variant_prices.*' => 'nullable|numeric|min:0',
             'volume_tiers' => 'nullable|array',
@@ -224,6 +270,9 @@ class PriceProductSettingController extends Controller
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_featured'] = $request->boolean('is_featured');
+        if ((int)$validated['scope'] === 2 && empty($validated['discount_value'])) {
+            $validated['discount_value'] = 0;
+        }
 
         $scopeStoreType = (int) $request->input('scope_store_type', 0);
         $scopeStoreId = null;
@@ -258,7 +307,9 @@ class PriceProductSettingController extends Controller
                     $productId = $variant ? $variant->product_id : null;
 
                     // If scope == 1 (Global), force use the header discount_value
-                    $discountValue = $validated['scope'] == 1 ? $validated['discount_value'] : ($variantPrices[$variantId] ?? $validated['discount_value']);
+                    $discountValue = (int)$validated['scope'] === 1 
+                        ? (float)$validated['discount_value'] 
+                        : (isset($variantPrices[$variantId]) && $variantPrices[$variantId] !== '' ? (float)$variantPrices[$variantId] : 0.0);
 
                     $pivotData[$variantId] = [
                         'product_id' => $productId,
@@ -275,7 +326,9 @@ class PriceProductSettingController extends Controller
                 $bundlingPivotData = [];
                 foreach ($bundlingIds as $bId) {
                     // If scope == 1 (Global), force use the header discount_value
-                    $discountValue = $validated['scope'] == 1 ? $validated['discount_value'] : ($bundlingPrices[$bId] ?? $validated['discount_value']);
+                    $discountValue = (int)$validated['scope'] === 1 
+                        ? (float)$validated['discount_value'] 
+                        : (isset($bundlingPrices[$bId]) && $bundlingPrices[$bId] !== '' ? (float)$bundlingPrices[$bId] : 0.0);
 
                     $bundlingPivotData[$bId] = [
                         'discount_type' => $validated['discount_type'],
@@ -395,7 +448,7 @@ class PriceProductSettingController extends Controller
             'description' => 'nullable|string',
             'type' => 'required|integer|in:1,2',
             'discount_type' => 'required|integer|in:1,2',
-            'discount_value' => 'required|numeric|min:0',
+            'discount_value' => 'required_if:scope,1|nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
@@ -405,9 +458,17 @@ class PriceProductSettingController extends Controller
             'scope_store_id' => 'nullable|uuid|exists:store,id',
             'scope_tier_id' => 'nullable|uuid|exists:store_tier,id',
             'scope_channel_group_id' => 'nullable|uuid|exists:store_channel_group,id',
-            'bundling_id' => 'nullable|uuid|exists:products_bundling,id',
             'variant_ids' => 'nullable|array',
-            'variant_ids.*' => 'uuid|exists:product_variants,id',
+            'variant_ids.*' => [
+                'uuid',
+                'exists:product_variants,id',
+                function ($attribute, $value, $fail) {
+                    $variant = Variant::find($value);
+                    if ($variant && ($variant->stock_quantity ?? 0) <= 0) {
+                        $fail('Variant "' . ($variant->variant_name ?? $variant->sku) . '" tidak memiliki stok dan tidak dapat dipilih.');
+                    }
+                },
+            ],
             'variant_prices' => 'nullable|array',
             'variant_prices.*' => 'nullable|numeric|min:0',
             'volume_tiers' => 'nullable|array',
@@ -418,6 +479,9 @@ class PriceProductSettingController extends Controller
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_featured'] = $request->boolean('is_featured');
+        if ((int)$validated['scope'] === 2 && empty($validated['discount_value'])) {
+            $validated['discount_value'] = 0;
+        }
 
         $scopeStoreType = (int) $request->input('scope_store_type', 0);
         $scopeStoreId = null;
@@ -455,7 +519,9 @@ class PriceProductSettingController extends Controller
                     $productId = $variant ? $variant->product_id : null;
 
                     // If scope == 1 (Global), force use the header discount_value
-                    $discountValue = $validated['scope'] == 1 ? $validated['discount_value'] : ($variantPrices[$variantId] ?? $validated['discount_value']);
+                    $discountValue = (int)$validated['scope'] === 1 
+                        ? (float)$validated['discount_value'] 
+                        : (isset($variantPrices[$variantId]) && $variantPrices[$variantId] !== '' ? (float)$variantPrices[$variantId] : 0.0);
 
                     $pivotData[$variantId] = [
                         'product_id' => $productId,
@@ -470,7 +536,9 @@ class PriceProductSettingController extends Controller
                 $bundlingPivotData = [];
                 foreach ($bundlingIds as $bId) {
                     // If scope == 1 (Global), force use the header discount_value
-                    $discountValue = $validated['scope'] == 1 ? $validated['discount_value'] : ($bundlingPrices[$bId] ?? $validated['discount_value']);
+                    $discountValue = (int)$validated['scope'] === 1 
+                        ? (float)$validated['discount_value'] 
+                        : (isset($bundlingPrices[$bId]) && $bundlingPrices[$bId] !== '' ? (float)$bundlingPrices[$bId] : 0.0);
 
                     $bundlingPivotData[$bId] = [
                         'discount_type' => $validated['discount_type'],
