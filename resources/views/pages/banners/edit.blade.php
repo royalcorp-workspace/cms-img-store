@@ -19,7 +19,7 @@
     @include('layouts.partials.content-submenu')
 
     <div class="p-6 max-w-3xl">
-        <form action="{{ route('content.banners.update', $banner->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6" id="banner-form">
+        <form action="{{ route('content.banners.update', $banner->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6" id="banner-form" data-folder="banners">
             @csrf
             @method('PUT')
 

@@ -21,7 +21,7 @@
 
     @include('layouts.partials.shipping-payment-submenu')
 
-    <form method="POST" action="{{ route('payment-methods.store') }}" class="space-y-6" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('payment-methods.store') }}" class="space-y-6" enctype="multipart/form-data" data-folder="payment-methods">
         @csrf
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -41,13 +41,13 @@
                     <label class="block text-label-sm font-medium text-on-surface-variant">Type <span class="text-danger">*</span></label>
                     <select name="type" id="typeSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
                         <option value="1" {{ old('type', '1') == '1' ? 'selected' : '' }}>Bank Transfer</option>
-                        <option value="2" {{ old('type') == '2' ? 'selected' : '' }}>Virtual Account</option>
-                        <option value="3" {{ old('type') == '3' ? 'selected' : '' }}>E-Wallet</option>
-                        <option value="4" {{ old('type') == '4' ? 'selected' : '' }}>QRIS</option>
-                        <option value="5" {{ old('type') == '5' ? 'selected' : '' }}>Credit Card</option>
-                        <option value="6" {{ old('type') == '6' ? 'selected' : '' }}>Debit Card</option>
-                        <option value="7" {{ old('type') == '7' ? 'selected' : '' }}>COD</option>
-                        <option value="8" {{ old('type') == '8' ? 'selected' : '' }}>PayLater</option>
+                        <option value="2" {{ old('type', '2') == '2' ? 'selected' : '' }}>Virtual Account</option>
+                        <option value="3" {{ old('type', '3') == '3' ? 'selected' : '' }}>E-Wallet</option>
+                        <option value="4" {{ old('type', '4') == '4' ? 'selected' : '' }}>QRIS</option>
+                        <option value="5" {{ old('type', '5') == '5' ? 'selected' : '' }}>Credit Card</option>
+                        <option value="6" {{ old('type', '6') == '6' ? 'selected' : '' }}>Debit Card</option>
+                        <option value="7" {{ old('type', '7') == '7' ? 'selected' : '' }}>COD</option>
+                        <option value="8" {{ old('type', '8') == '8' ? 'selected' : '' }}>PayLater</option>
                     </select>
                     @error('type')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
@@ -60,7 +60,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Image (Logo)</label>
-                    <input type="file" name="image" accept="image/*" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <input type="file" name="image" accept="image/*" data-folder="payment-methods" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
                     @error('image')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
                 <div class="space-y-1.5">

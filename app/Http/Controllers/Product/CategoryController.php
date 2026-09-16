@@ -74,8 +74,12 @@ class CategoryController extends Controller
             'tagline' => 'nullable|string|max:255',
             'slug' => 'nullable|string|max:255|unique:product_category,slug',
             'description' => 'nullable|string',
-            'banner_web' => 'nullable|string',
-            'banner_mobile' => 'nullable|string',
+            'banner_web' => $request->hasFile('banner_web')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
+            'banner_mobile' => $request->hasFile('banner_mobile')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'has_warranty' => 'boolean',
@@ -91,13 +95,15 @@ class CategoryController extends Controller
         $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
         $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
         
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+
         if ($request->hasFile('banner_web')) {
-            $validated['banner_web'] = $request->file('banner_web')->store('categories', 's3');
+            $validated['banner_web'] = $request->file('banner_web')->store('categories', $uploadDisk);
         } elseif ($request->filled('banner_web')) {
             $validated['banner_web'] = $request->input('banner_web');
         }
         if ($request->hasFile('banner_mobile')) {
-            $validated['banner_mobile'] = $request->file('banner_mobile')->store('categories', 's3');
+            $validated['banner_mobile'] = $request->file('banner_mobile')->store('categories', $uploadDisk);
         } elseif ($request->filled('banner_mobile')) {
             $validated['banner_mobile'] = $request->input('banner_mobile');
         }
@@ -130,8 +136,12 @@ class CategoryController extends Controller
             'tagline' => 'nullable|string|max:255',
             'slug' => 'nullable|string|max:255|unique:product_category,slug,' . $id,
             'description' => 'nullable|string',
-            'banner_web' => 'nullable|string',
-            'banner_mobile' => 'nullable|string',
+            'banner_web' => $request->hasFile('banner_web')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
+            'banner_mobile' => $request->hasFile('banner_mobile')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'has_warranty' => 'boolean',
@@ -160,6 +170,8 @@ class CategoryController extends Controller
                 unlink_media($category->banner_web);
             }
             $validated['banner_web'] = $newBannerWeb;
+        } else {
+            unset($validated['banner_web']);
         }
 
         if ($request->hasFile('banner_mobile')) {
@@ -173,6 +185,8 @@ class CategoryController extends Controller
                 unlink_media($category->banner_mobile);
             }
             $validated['banner_mobile'] = $newBannerMobile;
+        } else {
+            unset($validated['banner_mobile']);
         }
 
         $category->update($validated);

@@ -45,8 +45,12 @@ class ProductBundlingController extends Controller
             'slug' => 'nullable|string|max:255|unique:products_bundling,slug',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|file|image|max:5120',
-            'banner_image' => 'nullable|file|image|max:5120',
+            'image' => $request->hasFile('image')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
+            'banner_image' => $request->hasFile('banner_image')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|string|exists:products,id',
             'items.*.variant_id' => 'nullable|string|exists:product_variants,id',
@@ -57,11 +61,16 @@ class ProductBundlingController extends Controller
         $validated['slug'] = $validated['slug'] ?: Str::slug($validated['name']);
         $validated['is_active'] = $request->has('is_active');
 
-        if ($request->file('image')) {
-            $validated['image_url'] = $request->file('image')->store('bundlings', 'public');
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+        if ($request->hasFile('image')) {
+            $validated['image_url'] = $request->file('image')->store('bundlings', $uploadDisk);
+        } elseif ($request->filled('image')) {
+            $validated['image_url'] = $request->input('image');
         }
-        if ($request->file('banner_image')) {
-            $validated['banner_image'] = $request->file('banner_image')->store('bundlings', 'public');
+        if ($request->hasFile('banner_image')) {
+            $validated['banner_image'] = $request->file('banner_image')->store('bundlings', $uploadDisk);
+        } elseif ($request->filled('banner_image')) {
+            $validated['banner_image'] = $request->input('banner_image');
         }
 
         $bundling = ProductBundling::create($validated);
@@ -100,8 +109,12 @@ class ProductBundlingController extends Controller
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'is_active' => 'boolean',
-            'image' => 'nullable|file|image|max:5120',
-            'banner_image' => 'nullable|file|image|max:5120',
+            'image' => $request->hasFile('image')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
+            'banner_image' => $request->hasFile('banner_image')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|string|exists:products,id',
             'items.*.variant_id' => 'nullable|string|exists:product_variants,id',
@@ -111,18 +124,32 @@ class ProductBundlingController extends Controller
         $validated['slug'] = $validated['slug'] ?: Str::slug($validated['name']);
         $validated['is_active'] = $request->has('is_active');
 
-        if ($request->file('image')) {
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+
+        if ($request->hasFile('image')) {
             if ($bundling->image_url) {
-                Storage::disk('public')->delete($bundling->image_url);
+                unlink_media($bundling->image_url);
             }
-            $validated['image_url'] = $request->file('image')->store('bundlings', 'public');
+            $validated['image_url'] = $request->file('image')->store('bundlings', $uploadDisk);
+        } elseif ($request->filled('image')) {
+            $newImage = $request->input('image');
+            if ($bundling->image_url && $bundling->image_url !== $newImage) {
+                unlink_media($bundling->image_url);
+            }
+            $validated['image_url'] = $newImage;
         }
 
-        if ($request->file('banner_image')) {
+        if ($request->hasFile('banner_image')) {
             if ($bundling->banner_image) {
-                Storage::disk('public')->delete($bundling->banner_image);
+                unlink_media($bundling->banner_image);
             }
-            $validated['banner_image'] = $request->file('banner_image')->store('bundlings', 'public');
+            $validated['banner_image'] = $request->file('banner_image')->store('bundlings', $uploadDisk);
+        } elseif ($request->filled('banner_image')) {
+            $newBanner = $request->input('banner_image');
+            if ($bundling->banner_image && $bundling->banner_image !== $newBanner) {
+                unlink_media($bundling->banner_image);
+            }
+            $validated['banner_image'] = $newBanner;
         }
 
         $bundling->update($validated);
@@ -148,7 +175,10 @@ class ProductBundlingController extends Controller
         $bundling->update(['deleted' => true]);
 
         if ($bundling->image_url) {
-            Storage::disk('public')->delete($bundling->image_url);
+            unlink_media($bundling->image_url);
+        }
+        if ($bundling->banner_image) {
+            unlink_media($bundling->banner_image);
         }
 
         return redirect()->route('bundlings.index')->with('success', 'Product bundle deleted successfully.');

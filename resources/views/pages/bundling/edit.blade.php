@@ -98,7 +98,7 @@
                                 <img class="max-w-full max-h-full object-contain" src="{{ media_url($bundling->image_url) }}" alt="Bundle image">
                             </div>
                         @endif
-                        <input type="file" name="image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
+                        <input type="file" name="image" accept="image/*" data-folder="bundlings" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Banner Image (Landscape)</label>
@@ -107,7 +107,7 @@
                                 <img class="max-w-full max-h-full object-contain" src="{{ media_url($bundling->banner_image) }}" alt="Bundle banner">
                             </div>
                         @endif
-                        <input type="file" name="banner_image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
+                        <input type="file" name="banner_image" accept="image/*" data-folder="bundlings" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
                     </div>
                 </div>
 

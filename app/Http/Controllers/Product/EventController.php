@@ -53,7 +53,9 @@ class EventController extends Controller
             // Event Details
             'title' => 'required|string|max:255',
             'event_type' => 'required|string',
-            'banner_image' => 'nullable|string',
+            'banner_image' => $request->hasFile('banner_image')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'slug' => 'nullable|string|max:255|unique:events,slug',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
@@ -64,7 +66,9 @@ class EventController extends Controller
 
             // Popup Details
             'popup_title' => 'nullable|string|max:255',
-            'popup_image' => 'nullable|string',
+            'popup_image' => $request->hasFile('popup_image')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'popup_link' => 'nullable|string|max:500',
             'popup_button_text' => 'nullable|string|max:100',
             'popup_active' => 'boolean',
@@ -74,9 +78,12 @@ class EventController extends Controller
         $eventSlug = $request->input('slug') ?: Str::slug($request->input('title'));
         $isActive = $request->has('is_active');
 
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
         $bannerPath = null;
-        if ($request->file('banner_image')) {
-            $bannerPath = $request->hasFile('banner_image') ? $request->file('banner_image')->store('events', 's3') : $request->input('banner_image');
+        if ($request->hasFile('banner_image')) {
+            $bannerPath = $request->file('banner_image')->store('events', $uploadDisk);
+        } elseif ($request->filled('banner_image')) {
+            $bannerPath = $request->input('banner_image');
         }
 
         // 1. Create Event
@@ -105,8 +112,10 @@ class EventController extends Controller
             'is_active' => $request->has('popup_active'),
         ];
 
-        if ($request->file('popup_image')) {
-            $popupData['image_url'] = $request->file('popup_image')->store('popups', 'public');
+        if ($request->hasFile('popup_image')) {
+            $popupData['image_url'] = $request->file('popup_image')->store('popups', $uploadDisk);
+        } elseif ($request->filled('popup_image')) {
+            $popupData['image_url'] = $request->input('popup_image');
         }
 
         EventPopup::create($popupData);
@@ -134,7 +143,9 @@ class EventController extends Controller
             // Event Details
             'title' => 'required|string|max:255',
             'event_type' => 'required|string',
-            'banner_image' => 'nullable|string',
+            'banner_image' => $request->hasFile('banner_image')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'slug' => 'nullable|string|max:255|unique:events,slug,' . $id,
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
@@ -145,7 +156,9 @@ class EventController extends Controller
 
             // Popup Details
             'popup_title' => 'nullable|string|max:255',
-            'popup_image' => 'nullable|string',
+            'popup_image' => $request->hasFile('popup_image')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'popup_link' => 'nullable|string|max:500',
             'popup_button_text' => 'nullable|string|max:100',
             'popup_active' => 'boolean',
@@ -163,11 +176,19 @@ class EventController extends Controller
             'is_active' => $isActive,
         ];
 
-        if ($request->file('banner_image')) {
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+
+        if ($request->hasFile('banner_image')) {
             if ($event->banner_image) {
-                Storage::disk('public')->delete($event->banner_image);
+                unlink_media($event->banner_image);
             }
-            $eventData['banner_image'] = $request->file('banner_image')->store('events', 'public');
+            $eventData['banner_image'] = $request->file('banner_image')->store('events', $uploadDisk);
+        } elseif ($request->filled('banner_image')) {
+            $newBanner = $request->input('banner_image');
+            if ($event->banner_image && $event->banner_image !== $newBanner) {
+                unlink_media($event->banner_image);
+            }
+            $eventData['banner_image'] = $newBanner;
         }
 
         // 1. Update Event
@@ -188,11 +209,17 @@ class EventController extends Controller
             'is_active' => $request->has('popup_active'),
         ];
 
-        if ($request->file('popup_image')) {
+        if ($request->hasFile('popup_image')) {
             if ($popup && $popup->image_url) {
-                Storage::disk('public')->delete($popup->image_url);
+                unlink_media($popup->image_url);
             }
-            $popupData['image_url'] = $request->file('popup_image')->store('popups', 'public');
+            $popupData['image_url'] = $request->file('popup_image')->store('popups', $uploadDisk);
+        } elseif ($request->filled('popup_image')) {
+            $newPopup = $request->input('popup_image');
+            if ($popup && $popup->image_url && $popup->image_url !== $newPopup) {
+                unlink_media($popup->image_url);
+            }
+            $popupData['image_url'] = $newPopup;
         }
 
         if ($popup) {
@@ -213,6 +240,14 @@ class EventController extends Controller
 
         // Dissociate settings
         PriceProductSetting::where('event_id', $event->id)->update(['event_id' => null]);
+
+        if ($event->banner_image) {
+            unlink_media($event->banner_image);
+        }
+        $popup = EventPopup::where('event_id', $event->id)->first();
+        if ($popup && $popup->image_url) {
+            unlink_media($popup->image_url);
+        }
 
         return redirect()->route('events.index')->with('success', 'Event deleted successfully.');
     }

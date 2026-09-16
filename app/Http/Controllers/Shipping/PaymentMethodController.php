@@ -53,7 +53,9 @@ class PaymentMethodController extends Controller
             'name' => 'required|string|max:150',
             'type' => 'required|integer|in:1,2,3,4,5,6,7,8',
             'provider' => 'nullable|string|max:100',
-            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'image' => $request->hasFile('image')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'has_charge' => 'boolean',
             'charge_type' => 'nullable|integer|in:1,2',
             'charge_value' => 'nullable|numeric|min:0',
@@ -77,8 +79,11 @@ class PaymentMethodController extends Controller
         $validated['deleted'] = false;
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('payment-methods', 'public');
+            $validated['image'] = $request->file('image')->store('payment-methods', $uploadDisk);
+        } elseif ($request->filled('image')) {
+            $validated['image'] = $request->input('image');
         }
 
         if (!$validated['has_charge']) {
@@ -124,7 +129,9 @@ class PaymentMethodController extends Controller
             'name' => 'required|string|max:150',
             'type' => 'required|integer|in:1,2,3,4,5,6,7,8',
             'provider' => 'nullable|string|max:100',
-            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'image' => $request->hasFile('image')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'has_charge' => 'boolean',
             'charge_type' => 'nullable|integer|in:1,2',
             'charge_value' => 'nullable|numeric|min:0',
@@ -144,11 +151,18 @@ class PaymentMethodController extends Controller
         $validated['has_charge'] = $request->boolean('has_charge', false);
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
         if ($request->hasFile('image')) {
             if ($paymentMethod->image) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($paymentMethod->image);
+                unlink_media($paymentMethod->image);
             }
-            $validated['image'] = $request->file('image')->store('payment-methods', 'public');
+            $validated['image'] = $request->file('image')->store('payment-methods', $uploadDisk);
+        } elseif ($request->filled('image')) {
+            $newImage = $request->input('image');
+            if ($paymentMethod->image && $paymentMethod->image !== $newImage) {
+                unlink_media($paymentMethod->image);
+            }
+            $validated['image'] = $newImage;
         } else {
             unset($validated['image']);
         }

@@ -117,7 +117,7 @@
                 <h2 class="font-headline-md text-headline-md text-on-surface mb-2">Upload File Spreadsheet</h2>
                 <p class="text-body-md text-on-surface-variant mb-6">Pilih file Excel (.xlsx, .xls) atau CSV untuk mengisi stok incoming berdasarkan SKU varian produk.</p>
                 
-                <form action="{{ route('inventory.import.store') }}" method="POST" enctype="multipart/form-data" id="importForm" class="space-y-5">
+                <form action="{{ route('inventory.import.store') }}" method="POST" enctype="multipart/form-data" id="importForm" class="space-y-5" data-no-direct-upload="true">
                     @csrf
                     
                     <!-- File Dropzone -->

@@ -76,7 +76,7 @@
                                 <img class="max-w-full max-h-full object-contain" src="{{ media_url($event->banner_image) }}" alt="Banner">
                             </div>
                         @endif
-                        <input type="file" name="banner_image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
+                        <input type="file" name="banner_image" accept="image/*" data-folder="events" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
                         <p class="text-[11px] text-on-surface-variant mt-1">Banner landscape untuk ditampilkan di halaman depan web.</p>
                         @error('banner_image') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
                     </div>
@@ -159,7 +159,7 @@
                                 <img class="max-w-full max-h-full object-contain" src="{{ media_url($event->popup->image_url) }}" alt="Popup Image">
                             </div>
                         @endif
-                        <input type="file" name="popup_image" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
+                        <input type="file" name="popup_image" accept="image/*" data-folder="popups" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
                     </div>
 
                     <div class="space-y-1.5">

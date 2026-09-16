@@ -110,7 +110,7 @@
                 <h2 class="font-headline-md text-headline-md text-on-surface mb-2">Upload Import File</h2>
                 <p class="text-body-md text-on-surface-variant mb-6">Select an Excel (.xlsx, .xls) or CSV file with the required formats to bulk import your products.</p>
                 
-                <form action="{{ route('products.import.store') }}" method="POST" enctype="multipart/form-data" id="importForm">
+                <form action="{{ route('products.import.store') }}" method="POST" enctype="multipart/form-data" id="importForm" data-no-direct-upload="true">
                     @csrf
                     
                     <div class="mb-6">

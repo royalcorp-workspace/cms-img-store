@@ -79,6 +79,16 @@
             'color_code' => $c->color_code ?? '#FF0000',
         ];
     })->values()->all();
+
+    $existingGalleryImages = ($product->images ?? collect([]))->whereNull('variant_id')->sortBy('sort_order')->map(function($img) {
+        return [
+            'id' => $img->id,
+            'image' => $img->image,
+            'url' => $img->url,
+            'sort_order' => $img->sort_order ?? 0,
+        ];
+    })->values()->all();
+
     $productCode = $product->code ?? '';
 @endphp
 
@@ -252,6 +262,28 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Galeri Foto Produk (Bisa Upload Banyak Foto) -->
+            <div class="space-y-3 pt-4 border-t border-outline-variant/20">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                            Galeri Foto Produk 
+                        </label>
+                        <p class="text-[11px] text-on-surface-variant">Upload banyak foto produk untuk slider/galeri katalog utama. Urutan foto dapat digeser (drag & drop atau tombol panah).</p>
+                    </div>
+                    <button type="button" onclick="document.getElementById('galleryImagesInput').click()" class="px-3.5 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-2xs self-start sm:self-auto">
+                        <span class="material-symbols-outlined text-[16px]">add_photo_alternate</span>
+                        <span>+ Tambah Foto Galeri</span>
+                    </button>
+                </div>
+
+                <input type="file" id="galleryImagesInput" multiple accept="image/*" class="hidden" onchange="handleGalleryImagesPicked(this)">
+
+                <div id="galleryImagesContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 min-h-[70px] p-3 rounded-2xl bg-surface-container-lowest border border-dashed border-outline-variant/60">
+                    <!-- Populated by renderGalleryImages() -->
                 </div>
             </div>
 
@@ -2058,6 +2090,185 @@ function removeRowImage(rowIdx) {
     renderVariantsTable();
 }
 
+// ==================== 6b. PRODUCT HEADER GALLERY IMAGES ====================
+let existingGalleryImages = @json($existingGalleryImages ?? []);
+let newGalleryFiles = [];
+
+// Unified galleryItems list to allow seamless reordering (drag & drop and arrow buttons)
+let galleryItems = [];
+if (Array.isArray(existingGalleryImages) && existingGalleryImages.length > 0) {
+    galleryItems = existingGalleryImages.map(img => ({
+        type: 'existing',
+        id: img.id,
+        url: img.url,
+        sort_order: img.sort_order ?? 0
+    }));
+}
+
+function handleGalleryImagesPicked(input) {
+    if (!input.files || input.files.length === 0) return;
+    for (let i = 0; i < input.files.length; i++) {
+        const file = input.files[i];
+        galleryItems.push({
+            type: 'new',
+            id: null,
+            file: file,
+            previewUrl: URL.createObjectURL(file)
+        });
+    }
+    input.value = '';
+    renderGalleryImages();
+}
+
+function removeGalleryItem(idx) {
+    if (galleryItems[idx] && galleryItems[idx].type === 'new' && galleryItems[idx].previewUrl) {
+        try { URL.revokeObjectURL(galleryItems[idx].previewUrl); } catch (e) {}
+    }
+    galleryItems.splice(idx, 1);
+    renderGalleryImages();
+}
+
+function removeExistingGalleryImage(idx) {
+    removeGalleryItem(idx);
+}
+
+function removeNewGalleryImage(idx) {
+    removeGalleryItem(idx);
+}
+
+function moveGalleryItem(idx, direction) {
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= galleryItems.length) return;
+    const item = galleryItems.splice(idx, 1)[0];
+    galleryItems.splice(targetIdx, 0, item);
+    renderGalleryImages();
+}
+
+// HTML5 Drag & Drop handlers
+let draggedGalleryIdx = null;
+
+function handleGalleryDragStart(e, idx) {
+    draggedGalleryIdx = idx;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(idx));
+    const target = e.currentTarget;
+    setTimeout(() => {
+        if (target) {
+            target.classList.add('opacity-40', 'scale-95');
+        }
+    }, 0);
+}
+
+function handleGalleryDragEnd(e) {
+    draggedGalleryIdx = null;
+    const cards = document.querySelectorAll('.gallery-card');
+    cards.forEach(c => {
+        c.classList.remove('opacity-40', 'scale-95', 'ring-2', 'ring-primary', 'border-primary');
+    });
+}
+
+function handleGalleryDragOver(e, idx) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleGalleryDragEnter(e, idx) {
+    e.preventDefault();
+    if (draggedGalleryIdx !== null && draggedGalleryIdx !== idx) {
+        const target = document.getElementById(`gallery-item-${idx}`);
+        if (target) {
+            target.classList.add('ring-2', 'ring-primary', 'border-primary');
+        }
+    }
+}
+
+function handleGalleryDragLeave(e, idx) {
+    const target = document.getElementById(`gallery-item-${idx}`);
+    if (target) {
+        target.classList.remove('ring-2', 'ring-primary', 'border-primary');
+    }
+}
+
+function handleGalleryDrop(e, targetIdx) {
+    e.preventDefault();
+    const sourceIdx = draggedGalleryIdx !== null ? draggedGalleryIdx : parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (sourceIdx !== null && !isNaN(sourceIdx) && sourceIdx !== targetIdx && sourceIdx >= 0 && sourceIdx < galleryItems.length) {
+        const movedItem = galleryItems.splice(sourceIdx, 1)[0];
+        galleryItems.splice(targetIdx, 0, movedItem);
+        renderGalleryImages();
+    }
+    draggedGalleryIdx = null;
+}
+
+function renderGalleryImages() {
+    const container = document.getElementById('galleryImagesContainer');
+    if (!container) return;
+
+    if (galleryItems.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-center py-6 text-xs text-on-surface-variant flex flex-col items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[26px] text-outline">photo_library</span>
+            <span>Belum ada foto galeri tambahan. Klik <b>"+ Tambah Foto Galeri"</b> untuk mengunggah banyak foto produk.</span>
+        </p>`;
+        return;
+    }
+
+    let html = '';
+    galleryItems.forEach((item, idx) => {
+        const imgSrc = item.previewUrl || item.url;
+        const isNew = item.type === 'new';
+        const isFirst = idx === 0;
+        const isLast = idx === galleryItems.length - 1;
+
+        html += `
+            <div id="gallery-item-${idx}" 
+                 class="gallery-card relative group/gallery aspect-square rounded-xl overflow-hidden border-2 ${isNew ? 'border-primary/60' : 'border-outline-variant/60'} bg-surface-container-lowest shadow-2xs cursor-grab active:cursor-grabbing transition-all select-none"
+                 draggable="true"
+                 ondragstart="handleGalleryDragStart(event, ${idx})"
+                 ondragend="handleGalleryDragEnd(event)"
+                 ondragover="handleGalleryDragOver(event, ${idx})"
+                 ondragenter="handleGalleryDragEnter(event, ${idx})"
+                 ondragleave="handleGalleryDragLeave(event, ${idx})"
+                 ondrop="handleGalleryDrop(event, ${idx})">
+                
+                <img src="${imgSrc}" class="w-full h-full object-cover pointer-events-none" alt="Gallery #${idx + 1}">
+                
+                <!-- Order & Type Badge -->
+                <div class="absolute top-1.5 left-1.5 flex items-center gap-1 z-10 pointer-events-none">
+                    <span class="px-1.5 py-0.5 ${isFirst ? 'bg-primary text-white font-black' : 'bg-black/70 text-white font-bold'} rounded text-[10px] shadow-xs">
+                        #${idx + 1}
+                    </span>
+                    ${isNew ? '<span class="px-1.5 py-0.5 bg-secondary-container text-on-secondary-container rounded text-[9px] font-bold shadow-xs">Baru</span>' : ''}
+                </div>
+
+                <!-- Drag indicator handle overlay -->
+                <div class="absolute bottom-1.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/70 text-white text-[10px] flex items-center gap-0.5 opacity-0 group-hover/gallery:opacity-100 transition-opacity pointer-events-none shadow-xs">
+                    <span class="material-symbols-outlined text-[13px]">drag_indicator</span>
+                    <span>Geser</span>
+                </div>
+
+                <!-- Action Buttons: Move Left, Move Right, Delete -->
+                <div class="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+                    ${!isFirst ? `
+                        <button type="button" onclick="moveGalleryItem(${idx}, -1)" class="w-6 h-6 rounded-full bg-black/70 hover:bg-primary text-white flex items-center justify-center opacity-100 sm:opacity-0 group-hover/gallery:opacity-100 transition-all shadow-xs" title="Geser ke kiri">
+                            <span class="material-symbols-outlined text-[14px]">arrow_back</span>
+                        </button>
+                    ` : ''}
+                    ${!isLast ? `
+                        <button type="button" onclick="moveGalleryItem(${idx}, 1)" class="w-6 h-6 rounded-full bg-black/70 hover:bg-primary text-white flex items-center justify-center opacity-100 sm:opacity-0 group-hover/gallery:opacity-100 transition-all shadow-xs" title="Geser ke kanan">
+                            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                        </button>
+                    ` : ''}
+                    <button type="button" onclick="removeGalleryItem(${idx})" class="w-6 h-6 rounded-full bg-danger text-white flex items-center justify-center opacity-100 sm:opacity-0 group-hover/gallery:opacity-100 transition-all hover:bg-danger/80 shadow-xs" title="Hapus Foto">
+                        <span class="material-symbols-outlined text-[14px]">close</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
 // ==================== 7. INITIALIZE FROM BACKEND ====================
 function initVariantsFromBackend() {
     // 1. Initialize Colors
@@ -2258,7 +2469,7 @@ function initVariantsFromBackend() {
 }
 
 // ==================== 8. S3 UPLOAD HELPER ====================
-async function uploadProductImage(file) {
+async function uploadProductImage(file, folder = 'products') {
     const extension = file.name.split('.').pop().toLowerCase();
     let mimeType = file.type;
     if (!mimeType) {
@@ -2279,7 +2490,7 @@ async function uploadProductImage(file) {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': csrfToken
             },
-            body: JSON.stringify({ mime_type: mimeType, extension: extension })
+            body: JSON.stringify({ mime_type: mimeType, extension: extension, folder: folder })
         });
 
         if (authRes.ok) {
@@ -2299,6 +2510,7 @@ async function uploadProductImage(file) {
 
     const fallbackData = new FormData();
     fallbackData.append('file', file);
+    fallbackData.append('folder', folder);
 
     const fallbackRes = await fetch('/api/v1/media/upload', {
         method: 'POST',
@@ -2363,7 +2575,19 @@ async function submitProductForm() {
         for (let i = 0; i < variantRows.length; i++) {
             const rowItem = variantRows[i];
             if (rowItem && rowItem.image_file && !rowItem.image) {
-                rowItem.image = await uploadProductImage(rowItem.image_file);
+                rowItem.image = await uploadProductImage(rowItem.image_file, 'products');
+            }
+        }
+
+        // Upload new gallery files (Header gallery)
+        const uploadedGalleryMap = new Map();
+        for (let i = 0; i < galleryItems.length; i++) {
+            const item = galleryItems[i];
+            if (item.type === 'new' && item.file) {
+                const gPath = await uploadProductImage(item.file, 'products');
+                if (gPath) {
+                    uploadedGalleryMap.set(item, gPath);
+                }
             }
         }
 
@@ -2443,9 +2667,29 @@ async function submitProductForm() {
         const thumbnailInput = document.getElementById('thumbnailInput');
         formData.delete('thumbnail_file');
         if (thumbnailInput.files && thumbnailInput.files.length > 0) {
-            const uploadedThumb = await uploadProductImage(thumbnailInput.files[0]);
+            const uploadedThumb = await uploadProductImage(thumbnailInput.files[0], 'products');
             formData.append('thumbnail_file', uploadedThumb);
+            formData.set('thumbnail', uploadedThumb);
         }
+
+        // Append gallery images in exact reordered sequence
+        formData.delete('existing_images[]');
+        formData.delete('existing_image_orders[]');
+        formData.delete('new_images[]');
+        formData.delete('new_image_orders[]');
+
+        galleryItems.forEach((item, orderIdx) => {
+            if (item.type === 'existing' && item.id) {
+                formData.append('existing_images[]', item.id);
+                formData.append('existing_image_orders[]', orderIdx);
+            } else if (item.type === 'new') {
+                const path = uploadedGalleryMap.get(item);
+                if (path) {
+                    formData.append('new_images[]', path);
+                    formData.append('new_image_orders[]', orderIdx);
+                }
+            }
+        });
 
         let res = await fetch(form.action, {
             method: 'POST',
@@ -2628,6 +2872,7 @@ $(document).ready(function() {
     });
 
     initVariantsFromBackend();
+    renderGalleryImages();
 
     // Initialize shipping UI state
     calculateVolumetricWeight();
@@ -2636,6 +2881,18 @@ $(document).ready(function() {
     checkCategoryShipping(false);
 
     // Expose all interactive functions to window for global inline event handlers
+    window.renderGalleryImages = renderGalleryImages;
+    window.handleGalleryImagesPicked = handleGalleryImagesPicked;
+    window.removeGalleryItem = removeGalleryItem;
+    window.removeExistingGalleryImage = removeExistingGalleryImage;
+    window.removeNewGalleryImage = removeNewGalleryImage;
+    window.moveGalleryItem = moveGalleryItem;
+    window.handleGalleryDragStart = handleGalleryDragStart;
+    window.handleGalleryDragEnd = handleGalleryDragEnd;
+    window.handleGalleryDragOver = handleGalleryDragOver;
+    window.handleGalleryDragEnter = handleGalleryDragEnter;
+    window.handleGalleryDragLeave = handleGalleryDragLeave;
+    window.handleGalleryDrop = handleGalleryDrop;
     window.calculateVolumetricWeight = calculateVolumetricWeight;
     window.onShippingSchemeChanged = onShippingSchemeChanged;
     window.onCourierTypeChanged = onCourierTypeChanged;
