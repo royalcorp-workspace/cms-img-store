@@ -1,4 +1,4 @@
-async function uploadProductImage(file) {
+async function uploadProductImage(file, folder = 'products') {
     const extension = file.name.split('.').pop().toLowerCase();
     let mimeType = file.type;
     if (!mimeType) {
@@ -20,7 +20,7 @@ async function uploadProductImage(file) {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': csrfToken
             },
-            body: JSON.stringify({ mime_type: mimeType, extension })
+            body: JSON.stringify({ mime_type: mimeType, extension, folder })
         });
 
         if (authRes.ok) {
@@ -46,6 +46,7 @@ async function uploadProductImage(file) {
     // 2. Fallback server-side upload jika direct upload diblokir CORS / mixed content
     const fallbackData = new FormData();
     fallbackData.append('file', file);
+    fallbackData.append('folder', folder);
 
     const fallbackRes = await fetch('/api/v1/media/upload', {
         method: 'POST',

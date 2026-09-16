@@ -44,13 +44,19 @@ class BrandController extends Controller
             'name' => 'required|string|max:255|unique:brands,name',
             'slug' => 'nullable|string|max:255|unique:brands,slug',
             'description' => 'nullable|string',
-            'logo' => 'nullable|string',
+            'logo' => $request->hasFile('logo')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'banner_type' => 'required|in:1,2',
             'embed_web' => 'nullable|string',
             'embed_mobile' => 'nullable|string',
             'banner_link' => 'nullable|string|max:1000',
-            'banner_web' => 'nullable|string',
-            'banner_mobile' => 'nullable|string',
+            'banner_web' => $request->hasFile('banner_web')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
+            'banner_mobile' => $request->hasFile('banner_mobile')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'is_featured' => 'boolean',
@@ -61,18 +67,20 @@ class BrandController extends Controller
         $validated['status'] = $request->has('status');
         $validated['is_featured'] = $request->has('is_featured');
 
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+
         if ($request->hasFile('logo')) {
-            $validated['logo'] = $request->file('logo')->store('brands', 's3');
+            $validated['logo'] = $request->file('logo')->store('brands', $uploadDisk);
         } elseif ($request->filled('logo')) {
             $validated['logo'] = $request->input('logo');
         }
         if ($request->hasFile('banner_web')) {
-            $validated['banner_web'] = $request->file('banner_web')->store('brands', 's3');
+            $validated['banner_web'] = $request->file('banner_web')->store('brands', $uploadDisk);
         } elseif ($request->filled('banner_web')) {
             $validated['banner_web'] = $request->input('banner_web');
         }
         if ($request->hasFile('banner_mobile')) {
-            $validated['banner_mobile'] = $request->file('banner_mobile')->store('brands', 's3');
+            $validated['banner_mobile'] = $request->file('banner_mobile')->store('brands', $uploadDisk);
         } elseif ($request->filled('banner_mobile')) {
             $validated['banner_mobile'] = $request->input('banner_mobile');
         }
@@ -96,13 +104,19 @@ class BrandController extends Controller
             'name' => 'required|string|max:255|unique:brands,name,' . $id,
             'slug' => 'nullable|string|max:255|unique:brands,slug,' . $id,
             'description' => 'nullable|string',
-            'logo' => 'nullable|string',
+            'logo' => $request->hasFile('logo')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'banner_type' => 'required|in:1,2',
             'embed_web' => 'nullable|string',
             'embed_mobile' => 'nullable|string',
             'banner_link' => 'nullable|string|max:1000',
-            'banner_web' => 'nullable|string',
-            'banner_mobile' => 'nullable|string',
+            'banner_web' => $request->hasFile('banner_web')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
+            'banner_mobile' => $request->hasFile('banner_mobile')
+                ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
+                : 'nullable|string|max:1000',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
             'is_featured' => 'boolean',
@@ -119,18 +133,44 @@ class BrandController extends Controller
                 unlink_media($brand->logo);
             }
             $validated['logo'] = $request->file('logo')->store('brands', $uploadDisk);
+        } elseif ($request->filled('logo')) {
+            $newLogo = $request->input('logo');
+            if ($brand->logo && $brand->logo !== $newLogo) {
+                unlink_media($brand->logo);
+            }
+            $validated['logo'] = $newLogo;
+        } else {
+            unset($validated['logo']);
         }
+
         if ($request->hasFile('banner_web')) {
             if ($brand->banner_web) {
                 unlink_media($brand->banner_web);
             }
             $validated['banner_web'] = $request->file('banner_web')->store('brands', $uploadDisk);
+        } elseif ($request->filled('banner_web')) {
+            $newBannerWeb = $request->input('banner_web');
+            if ($brand->banner_web && $brand->banner_web !== $newBannerWeb) {
+                unlink_media($brand->banner_web);
+            }
+            $validated['banner_web'] = $newBannerWeb;
+        } else {
+            unset($validated['banner_web']);
         }
+
         if ($request->hasFile('banner_mobile')) {
             if ($brand->banner_mobile) {
                 unlink_media($brand->banner_mobile);
             }
             $validated['banner_mobile'] = $request->file('banner_mobile')->store('brands', $uploadDisk);
+        } elseif ($request->filled('banner_mobile')) {
+            $newBannerMobile = $request->input('banner_mobile');
+            if ($brand->banner_mobile && $brand->banner_mobile !== $newBannerMobile) {
+                unlink_media($brand->banner_mobile);
+            }
+            $validated['banner_mobile'] = $newBannerMobile;
+        } else {
+            unset($validated['banner_mobile']);
         }
 
         $brand->update($validated);

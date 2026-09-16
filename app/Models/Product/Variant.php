@@ -148,6 +148,29 @@ class Variant extends Model
         return $this->belongsTo(Product::class, 'product_id');
     }
 
+    public function images(): HasMany
+    {
+        return $this->hasMany(Image::class, 'variant_id');
+    }
+
+    public function image(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Image::class, 'variant_id')->orderBy('sort_order');
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if ($this->relationLoaded('image') && $this->image) {
+            return $this->image->url;
+        }
+        $firstImg = $this->images()->first();
+        if ($firstImg) {
+            return $firstImg->url;
+        }
+        $attrImg = $this->attributes['image'] ?? null;
+        return $attrImg ? media_url($attrImg) : null;
+    }
+
     public function priceProductSettings(): BelongsToMany
     {
         return $this->belongsToMany(\App\Models\Promo\PriceProductSetting::class, 'price_product_setting_items', 'variant_id', 'price_product_setting_id')

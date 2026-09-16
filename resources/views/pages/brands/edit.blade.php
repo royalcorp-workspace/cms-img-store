@@ -42,7 +42,7 @@
 
     @include('layouts.partials.product-submenu')
 
-    <form id="brandForm" action="{{ route('brands.update', $brand->id) }}" method="POST" enctype="multipart/form-data" class="w-full space-y-6">
+    <form id="brandForm" action="{{ route('brands.update', $brand->id) }}" method="POST" enctype="multipart/form-data" class="w-full space-y-6" data-folder="brands">
         @csrf
         @method('PUT')
 

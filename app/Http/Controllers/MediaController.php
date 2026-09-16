@@ -22,6 +22,7 @@ class MediaController extends Controller
         $request->validate([
             'mime_type' => 'required|string',
             'extension' => 'required|string',
+            'folder'    => 'nullable|string|max:50',
         ]);
 
         $rawMime = strtolower(trim(explode(';', (string) $request->mime_type)[0]));
@@ -59,8 +60,14 @@ class MediaController extends Controller
             ], 422);
         }
 
+        // Sanitize and normalize folder (default: products)
+        $folder = preg_replace('/[^a-zA-Z0-9_\-]/', '', (string) $request->input('folder', 'products'));
+        if (empty($folder)) {
+            $folder = 'products';
+        }
+
         try {
-            $filePath = 'products/' . date('Y/m/') . Str::uuid() . '.' . $rawExt;
+            $filePath = $folder . '/' . date('Y/m/') . Str::uuid() . '.' . $rawExt;
             $bucket = config('filesystems.disks.s3.bucket') ?? env('AWS_BUCKET');
             $s3Url = rtrim((string) (config('filesystems.disks.s3.url') ?? env('AWS_URL', '')), '/');
 
@@ -79,6 +86,7 @@ class MediaController extends Controller
 
             Log::channel('media')->info('S3 Pre-signed URL generated successfully', [
                 'file_path'  => $filePath,
+                'folder'     => $folder,
                 'mime_type'  => $rawMime,
                 'extension'  => $rawExt,
                 'bucket'     => $bucket,
@@ -110,14 +118,20 @@ class MediaController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|image|max:10240',
+            'file'   => 'required|file|image|max:10240',
+            'folder' => 'nullable|string|max:50',
         ]);
 
         try {
+            $folder = preg_replace('/[^a-zA-Z0-9_\-]/', '', (string) $request->input('folder', 'products'));
+            if (empty($folder)) {
+                $folder = 'products';
+            }
+
             $file = $request->file('file');
             $rawExt = strtolower($file->getClientOriginalExtension() ?: 'jpg');
             $fileName = Str::uuid() . '.' . $rawExt;
-            $subDir = 'products/' . date('Y/m');
+            $subDir = $folder . '/' . date('Y/m');
 
             $path = Storage::disk('s3')->putFileAs($subDir, $file, $fileName);
 
@@ -126,6 +140,7 @@ class MediaController extends Controller
 
             Log::channel('media')->info('S3 server-side upload completed successfully', [
                 'file_path'  => $path,
+                'folder'     => $folder,
                 'public_url' => $publicUrl,
                 'size'       => $file->getSize(),
                 'mime_type'  => $file->getMimeType(),

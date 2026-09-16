@@ -35,9 +35,9 @@ class BannerController extends Controller
             'placement_size'=> 'required|integer|in:1,2,3',
             'sort_order'    => 'nullable|integer|min:0',
             'is_active'     => 'boolean',
-            'images_web.*'          => 'nullable|string',
+            'images_web.*'          => 'nullable',
             'images_web_url_text.*' => 'nullable|string|max:1000',
-            'images_mobile.*'       => 'nullable|string',
+            'images_mobile.*'       => 'nullable',
             'image_links.*'         => 'nullable|string|max:500',
         ]);
 
@@ -54,24 +54,48 @@ class BannerController extends Controller
             'is_active'     => $request->has('is_active'),
         ]);
 
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+
         // Save uploaded images or text URLs
         $webFiles    = $request->file('images_web', []);
+        $webInputs   = $request->input('images_web', []);
         $webUrlsText = $request->input('images_web_url_text', []);
         $mobileFiles = $request->file('images_mobile', []);
+        $mobileInputs= $request->input('images_mobile', []);
         $imageLinks  = $request->input('image_links', []);
         
-        $count = max(count($webFiles), count($webUrlsText));
+        $count = max(
+            is_array($webFiles) ? count($webFiles) : 0,
+            is_array($webInputs) ? count($webInputs) : 0,
+            is_array($webUrlsText) ? count($webUrlsText) : 0,
+            is_array($mobileFiles) ? count($mobileFiles) : 0,
+            is_array($mobileInputs) ? count($mobileInputs) : 0
+        );
 
         for ($index = 0; $index < $count; $index++) {
             $webFile = $webFiles[$index] ?? null;
+            $webInput = $webInputs[$index] ?? null;
             $webText = $webUrlsText[$index] ?? null;
 
-            if (!$webFile && !$webText) continue;
+            $webUrl = null;
+            if ($webFile instanceof \Illuminate\Http\UploadedFile) {
+                $webUrl = $webFile->store('banners', $uploadDisk);
+            } elseif (!empty($webInput) && is_string($webInput)) {
+                $webUrl = $webInput;
+            } elseif (!empty($webText) && is_string($webText)) {
+                $webUrl = $webText;
+            }
 
-            $webUrl = $webFile ? $webFile->store('banners', 'public') : $webText;
-            
             $mobileFile = $mobileFiles[$index] ?? null;
-            $mobileUrl  = $mobileFile ? $mobileFile->store('banners', 'public') : null;
+            $mobileInput = $mobileInputs[$index] ?? null;
+            $mobileUrl  = null;
+            if ($mobileFile instanceof \Illuminate\Http\UploadedFile) {
+                $mobileUrl = $mobileFile->store('banners', $uploadDisk);
+            } elseif (!empty($mobileInput) && is_string($mobileInput)) {
+                $mobileUrl = $mobileInput;
+            }
+
+            if (!$webUrl && !$mobileUrl) continue;
 
             BannerImage::create([
                 'banner_id'      => $banner->id,
@@ -106,9 +130,9 @@ class BannerController extends Controller
             'placement_size'  => 'required|integer|in:1,2,3',
             'sort_order'      => 'nullable|integer|min:0',
             'is_active'       => 'boolean',
-            'images_web.*'          => 'nullable|string',
+            'images_web.*'          => 'nullable',
             'images_web_url_text.*' => 'nullable|string|max:1000',
-            'images_mobile.*'       => 'nullable|string',
+            'images_mobile.*'       => 'nullable',
             'image_links.*'         => 'nullable|string|max:500',
         ]);
 
@@ -124,25 +148,49 @@ class BannerController extends Controller
             'is_active'     => $request->has('is_active'),
         ]);
 
+        $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+
         // Append new uploaded images or text URLs
         $webFiles    = $request->file('images_web', []);
+        $webInputs   = $request->input('images_web', []);
         $webUrlsText = $request->input('images_web_url_text', []);
         $mobileFiles = $request->file('images_mobile', []);
+        $mobileInputs= $request->input('images_mobile', []);
         $imageLinks  = $request->input('image_links', []);
         $existingCount = $banner->images()->count();
 
-        $count = max(count($webFiles), count($webUrlsText));
+        $count = max(
+            is_array($webFiles) ? count($webFiles) : 0,
+            is_array($webInputs) ? count($webInputs) : 0,
+            is_array($webUrlsText) ? count($webUrlsText) : 0,
+            is_array($mobileFiles) ? count($mobileFiles) : 0,
+            is_array($mobileInputs) ? count($mobileInputs) : 0
+        );
 
         for ($index = 0; $index < $count; $index++) {
             $webFile = $webFiles[$index] ?? null;
+            $webInput = $webInputs[$index] ?? null;
             $webText = $webUrlsText[$index] ?? null;
 
-            if (!$webFile && !$webText) continue;
+            $webUrl = null;
+            if ($webFile instanceof \Illuminate\Http\UploadedFile) {
+                $webUrl = $webFile->store('banners', $uploadDisk);
+            } elseif (!empty($webInput) && is_string($webInput)) {
+                $webUrl = $webInput;
+            } elseif (!empty($webText) && is_string($webText)) {
+                $webUrl = $webText;
+            }
 
-            $webUrl = $webFile ? $webFile->store('banners', 'public') : $webText;
-            
             $mobileFile = $mobileFiles[$index] ?? null;
-            $mobileUrl  = $mobileFile ? $mobileFile->store('banners', 'public') : null;
+            $mobileInput = $mobileInputs[$index] ?? null;
+            $mobileUrl  = null;
+            if ($mobileFile instanceof \Illuminate\Http\UploadedFile) {
+                $mobileUrl = $mobileFile->store('banners', $uploadDisk);
+            } elseif (!empty($mobileInput) && is_string($mobileInput)) {
+                $mobileUrl = $mobileInput;
+            }
+
+            if (!$webUrl && !$mobileUrl) continue;
 
             BannerImage::create([
                 'banner_id'        => $banner->id,

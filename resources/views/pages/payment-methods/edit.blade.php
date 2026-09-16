@@ -21,7 +21,7 @@
 
     @include('layouts.partials.shipping-payment-submenu')
 
-    <form method="POST" action="{{ route('payment-methods.update', $paymentMethod->id) }}" class="space-y-6" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('payment-methods.update', $paymentMethod->id) }}" class="space-y-6" enctype="multipart/form-data" data-folder="payment-methods">
         @csrf
         @method('PUT')
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6">
@@ -66,7 +66,7 @@
                             <img src="{{ media_url($paymentMethod->image) }}" class="h-10 object-contain border rounded bg-white">
                         </div>
                     @endif
-                    <input type="file" name="image" accept="image/*" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <input type="file" name="image" accept="image/*" data-folder="payment-methods" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
                     @error('image')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
                 <div class="space-y-1.5">

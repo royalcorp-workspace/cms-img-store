@@ -28,7 +28,7 @@
 
     @include('layouts.partials.product-submenu')
 
-    <form id="brandForm" action="{{ route('brands.store') }}" method="POST" enctype="multipart/form-data" class="w-full space-y-6">
+    <form id="brandForm" action="{{ route('brands.store') }}" method="POST" enctype="multipart/form-data" class="w-full space-y-6" data-folder="brands">
         @csrf
 
         <div class="w-full bg-white rounded-2xl shadow-sm border border-outline-variant/30 p-6 space-y-6">
