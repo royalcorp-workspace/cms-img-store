@@ -12,7 +12,11 @@
                 <span class="text-on-surface">Products</span>
             </nav>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2.5">
+            <a href="{{ route('products.export', request()->query()) }}" target="_blank" rel="noopener noreferrer" data-no-loader="true" class="flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-md font-label-md text-label-md transition-all shadow-xs" title="Export seluruh produk atau hasil filter ke file Excel Item Master">
+                <span class="material-symbols-outlined text-[18px]">download</span>
+                <span>Export Excel</span>
+            </a>
             <a href="{{ route('products.import.form') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-md font-label-md text-label-md transition-all border border-outline-variant/30">
                 <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
                 Bulk Import

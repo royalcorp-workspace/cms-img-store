@@ -13,6 +13,7 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet"/>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     @vite(['resources/js/app.js'])
     <script id="tailwind-config">
@@ -661,7 +662,12 @@
         document.addEventListener('click', function(e) {
             const loader = document.getElementById('page-loader');
             if (!loader) return;
-            const target = e.target.closest('a[href]:not([target="_blank"]):not([href^="#"]):not([href^="javascript"])');
+            // Ignore new tab, download, javascript, anchor, or explicit no-loader links
+            if (e.target.closest('a[target="_blank"], a[download], a[data-no-loader], a[href*="/export"]')) {
+                loader.classList.add('hidden');
+                return;
+            }
+            const target = e.target.closest('a[href]:not([target="_blank"]):not([download]):not([data-no-loader]):not([href^="#"]):not([href^="javascript"])');
             if (target) {
                 loader.classList.remove('hidden');
             }

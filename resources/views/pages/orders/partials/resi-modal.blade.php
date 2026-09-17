@@ -11,7 +11,7 @@
                         <span>Penyelesaian & Pengiriman Pesanan</span>
                         <span id="modalOrderBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary">#ORD-</span>
                     </h3>
-                    <p class="text-xs text-on-surface-variant mt-0.5">Potong alur pick & pack: lengkapi pengiriman secara manual atau otomatis via Biteship</p>
+                    <p class="text-xs text-on-surface-variant mt-0.5">Lengkapi pengiriman: input resi manual untuk armada toko atau ambil resi otomatis melalui vendor ekspedisi</p>
                 </div>
             </div>
             <button type="button" onclick="closeResiModal()" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors">
@@ -24,11 +24,12 @@
             <button type="button" id="tabBtnManual" onclick="switchFulfillmentTab('manual')" class="px-4 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-primary text-primary bg-white flex items-center gap-1.5 transition-all">
                 <span class="material-symbols-outlined text-[16px]">edit_document</span>
                 <span>1. Input Resi Manual</span>
+                <span id="tabBadgeKurirToko" class="hidden text-[10px] px-1.5 py-0.2 rounded font-bold bg-amber-100 text-amber-800">Kurir Toko</span>
             </button>
             <button type="button" id="tabBtnBiteship" onclick="switchFulfillmentTab('biteship')" class="px-4 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-on-surface-variant hover:text-primary hover:bg-white/50 flex items-center gap-1.5 transition-all">
-                <span class="material-symbols-outlined text-[16px]">rocket_launch</span>
-                <span>2. Hit Biteship (Otomatis)</span>
-                <span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-amber-100 text-amber-800">Trial API</span>
+                <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
+                <span>2. Ambil Resi Otomatis (Get Resi)</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-blue-100 text-blue-800">Vendor Ekspedisi</span>
             </button>
             <button type="button" id="tabBtnTracking" onclick="switchFulfillmentTab('tracking')" class="px-4 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-on-surface-variant hover:text-primary hover:bg-white/50 flex items-center gap-1.5 transition-all hidden">
                 <span class="material-symbols-outlined text-[16px]">radar</span>
@@ -41,6 +42,18 @@
             
             <!-- TAB 1: MANUAL RESI -->
             <div id="panelManual" class="space-y-4">
+                <!-- Notice: Khusus Kurir Toko -->
+                <div id="kurirTokoNotice" class="hidden p-3.5 bg-amber-50/90 border border-amber-300 rounded-xl flex items-start gap-2.5 text-xs text-amber-900">
+                    <span class="material-symbols-outlined text-[20px] text-amber-600 mt-0.5 shrink-0">storefront</span>
+                    <div class="space-y-0.5">
+                        <div class="font-bold text-amber-950 flex items-center gap-1.5">
+                            <span>Pengiriman Menggunakan Kurir Toko</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold">Armada Internal</span>
+                        </div>
+                        <p class="text-amber-800">Pesanan ini menggunakan kurir armada internal toko. Pengiriman ini <strong>hanya dapat menggunakan Input Resi Manual</strong> (silakan masukkan nomor surat jalan atau resi pengiriman armada).</p>
+                    </div>
+                </div>
+
                 <!-- Notice: Resi Terkunci jika pesanan sudah Shipped / Delivered -->
                 <div id="manualResiLockedNotice" class="hidden p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-900">
                     <span class="material-symbols-outlined text-[20px] text-amber-600 mt-0.5 shrink-0">lock</span>
@@ -53,7 +66,7 @@
                 <div class="p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-start gap-2.5 text-xs text-blue-900">
                     <span class="material-symbols-outlined text-[18px] text-blue-600 mt-0.5 shrink-0">info</span>
                     <div>
-                        <span class="font-bold">Mode Manual:</span> Masukkan nomor resi (AWB) dari kurir. Status pesanan akan diupdate dan sistem otomatis membentuk seluruh dokumen dari <strong>Picking List</strong>, <strong>Packing Slip</strong>, hingga <strong>Handover</strong> kurir.
+                        <span class="font-bold">Mode Manual:</span> Masukkan nomor resi (AWB) ekspedisi atau surat jalan kurir toko. Status pesanan akan diupdate dan sistem otomatis menyelaraskan dokumen dari <strong>Picking List</strong>, <strong>Packing Slip</strong>, hingga <strong>Handover</strong> kurir.
                     </div>
                 </div>
 
@@ -112,33 +125,46 @@
                 </form>
             </div>
 
-            <!-- TAB 2: HIT BITESHIP -->
+            <!-- TAB 2: AMBIL RESI OTOMATIS (VENDOR EKSPEDISI) -->
             <div id="panelBiteship" class="space-y-4 hidden">
+
+                <!-- Notice: Kurir Toko Blocked inside panel -->
+                <div id="panelBiteshipKurirTokoBlock" class="hidden p-4 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 flex items-start gap-3">
+                    <span class="material-symbols-outlined text-[22px] text-amber-600 shrink-0">storefront</span>
+                    <div class="space-y-1">
+                        <div class="font-bold text-amber-950">Layanan Resi Ekspedisi Otomatis Tidak Tersedia untuk Kurir Toko</div>
+                        <p class="text-amber-800">Pesanan ini menggunakan pengiriman <strong>Kurir Toko</strong> yang dikirim oleh armada toko sendiri. Layanan resi ekspedisi otomatis hanya berlaku untuk kurir ekspedisi pihak ketiga. Silakan gunakan tab <strong>Input Resi Manual</strong>.</p>
+                        <button type="button" onclick="switchFulfillmentTab('manual')" class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:opacity-90">
+                            <span class="material-symbols-outlined text-[15px]">arrow_back</span>
+                            <span>Buka Input Resi Manual</span>
+                        </button>
+                    </div>
+                </div>
                 
                 @if(isset($biteshipConfigured) && !$biteshipConfigured)
                     <div class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-900">
                         <span class="material-symbols-outlined text-[20px] text-amber-600 mt-0.5 shrink-0">warning</span>
                         <div class="space-y-1">
-                            <div class="font-bold">Biteship API Key Belum Dikonfigurasi</div>
-                            <p class="text-amber-800">Key Biteship belum diisi di file <code>.env</code> (variabel <code>BITESHIP_API_KEY</code>). Anda dapat memasukkan key di <code>.env</code> terlebih dahulu, atau gunakan tab <strong>Input Resi Manual</strong> untuk memasukkan resi secara langsung.</p>
+                            <div class="font-bold">Layanan Resi Ekspedisi Otomatis Belum Aktif</div>
+                            <p class="text-amber-800">Koneksi layanan ekspedisi otomatis belum diaktifkan. Anda dapat menggunakan tab <strong>Input Resi Manual</strong> untuk memasukkan nomor resi atau surat jalan pengiriman secara langsung.</p>
                         </div>
                     </div>
                 @else
                     <div class="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl flex items-center justify-between text-xs text-emerald-900">
                         <div class="flex items-center gap-2">
                             <span class="material-symbols-outlined text-[18px] text-emerald-600">verified</span>
-                            <span><strong>Biteship Siap:</strong> Sistem akan membuat shipment order ke Biteship, menerbitkan resi AWB, dan mengisi seluruh dokumen Picking List hingga Handover otomatis.</span>
+                            <span><strong>Layanan Ekspedisi Terhubung:</strong> Sistem akan mengambil nomor resi (AWB) langsung dari vendor ekspedisi yang dipilih dan memperbarui dokumen pengiriman secara otomatis.</span>
                         </div>
                         <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase">Ready</span>
                     </div>
                 @endif
 
-                <!-- Notice: Biteship Waybill Already Issued -->
+                <!-- Notice: Resi Ekspedisi Sudah Terbit -->
                 <div id="biteshipAlreadyIssuedNotice" class="hidden p-3.5 bg-blue-50/90 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5">
                     <span class="material-symbols-outlined text-[20px] text-blue-600 mt-0.5 shrink-0">verified</span>
                     <div class="space-y-1">
-                        <div class="font-bold text-blue-950">Pesanan Sudah Diterbitkan di Biteship</div>
-                        <p class="text-blue-800">Nomor resi untuk pesanan ini telah aktif. Anda tidak dapat melakukan Hit Biteship ulang guna mencegah duplikasi pengiriman dan penagihan ongkir ganda. Silakan gunakan tab <strong>Lacak Pengiriman</strong> untuk memantau perjalanan kurir.</p>
+                        <div class="font-bold text-blue-950">Nomor Resi Ekspedisi Sudah Terbit</div>
+                        <p class="text-blue-800">Nomor resi untuk pesanan ini telah aktif dari vendor ekspedisi. Pengambilan resi otomatis tidak dapat diulang guna mencegah duplikasi pengiriman. Silakan gunakan tab <strong>Lacak Pengiriman</strong> untuk memantau perjalanan kurir.</p>
                     </div>
                 </div>
 
@@ -164,8 +190,8 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div class="space-y-1">
                             <label for="biteshipCourierCompany" class="block text-xs font-semibold text-on-surface flex items-center justify-between">
-                                <span>Ekspedisi Biteship</span>
-                                <span class="text-[10px] text-on-surface-variant font-normal">Data Kurir Aktif</span>
+                                <span>Pilih Vendor Ekspedisi</span>
+                                <span class="text-[10px] text-on-surface-variant font-normal">Data Vendor Aktif</span>
                             </label>
                             <select id="biteshipCourierCompany" onchange="onBiteshipCourierSelected(this.value)" class="w-full px-3 py-2 border border-outline-variant rounded-xl text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
                                 <!-- Opsi ekspedisi akan diisi otomatis dari database -->
@@ -197,11 +223,11 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <label for="biteshipFinalStatus" class="block text-xs font-semibold text-on-surface">
-                                Status Pesanan Setelah Hit
+                                Status Pesanan Setelah Mendapatkan Resi
                             </label>
                             <select id="biteshipFinalStatus" class="w-full px-3 py-2 border border-outline-variant rounded-xl text-xs focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                                <option value="4" selected>Shipped (Dikirim Langsung)</option>
-                                <option value="5">Delivered (Selesai)</option>
+                                <option value="4" selected>Shipped (Pesanan Dikirim)</option>
+                                <option value="5">Delivered (Pesanan Selesai)</option>
                             </select>
                         </div>
 
@@ -215,7 +241,7 @@
 
                     <div id="biteshipError" class="hidden p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-danger font-medium flex items-center gap-2">
                         <span class="material-symbols-outlined text-[16px]">error</span>
-                        <span id="biteshipErrorText">Terjadi kesalahan pada Biteship API.</span>
+                        <span id="biteshipErrorText">Terjadi kendala saat menghubungi vendor ekspedisi.</span>
                     </div>
 
                     <div class="flex justify-end gap-2 pt-3 border-t border-outline-variant/20">
@@ -223,8 +249,8 @@
                             Batal
                         </button>
                         <button type="submit" id="hitBiteshipBtn" class="px-5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 active:scale-95">
-                            <span class="material-symbols-outlined text-[16px]" id="hitBiteshipIcon">rocket_launch</span>
-                            <span id="hitBiteshipText">Hit Biteship & Buat Resi</span>
+                            <span class="material-symbols-outlined text-[16px]" id="hitBiteshipIcon">cloud_sync</span>
+                            <span id="hitBiteshipText">Get Resi Otomatis</span>
                         </button>
                     </div>
                 </form>
@@ -244,11 +270,11 @@
                                 <span class="material-symbols-outlined text-[15px]" id="trackingStatusIcon">local_shipping</span>
                                 <span id="trackingStatusText">Menunggu Log</span>
                             </span>
-                            <a id="externalTrackingLink" href="#" target="_blank" class="hidden px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors" title="Buka tautan tracking resmi Biteship">
+                            <a id="externalTrackingLink" href="#" target="_blank" class="hidden px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors" title="Buka tautan pelacakan resmi ekspedisi">
                                 <span class="material-symbols-outlined text-[15px]">open_in_new</span>
-                                <span>Lacak di Biteship</span>
+                                <span>Lacak di Website Ekspedisi</span>
                             </a>
-                            <button type="button" onclick="fetchBiteshipTracking()" class="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors" title="Perbarui dari Log Webhook Sistem">
+                            <button type="button" onclick="fetchBiteshipTracking()" class="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors" title="Perbarui Status Pelacakan">
                                 <span class="material-symbols-outlined text-[15px]">refresh</span>
                                 <span>Muat Ulang</span>
                             </button>
@@ -257,7 +283,7 @@
                     <div class="flex items-center justify-between text-[11px] text-on-surface-variant pt-2.5 border-t border-outline-variant/30 flex-wrap gap-2">
                         <div class="flex items-center gap-1.5 text-emerald-700 font-medium">
                             <span class="material-symbols-outlined text-[15px]">verified</span>
-                            <span>Pelacakan berbasis <strong>Log Webhook Kurir</strong> (Bebas Biaya Hit API)</span>
+                            <span>Pembaruan status pengiriman tersinkronisasi otomatis dari ekspedisi</span>
                         </div>
                         <div id="trackingLastUpdated" class="text-[10px] text-on-surface-variant/80 font-mono"></div>
                     </div>
@@ -294,15 +320,31 @@ function formatHumanErrorMessage(raw) {
         return 'Data relasi (User / Gudang / Kurir) belum sinkron pada sistem. Silakan periksa kembali profil pengguna Anda atau hubungi admin.';
     }
     if (msg.includes('Reference id has already been used')) {
-        return 'Pesanan ini sudah pernah dikirimkan ke Biteship sebelumnya. Pengiriman tidak dapat di-hit ulang.';
+        return 'Nomor resi untuk pesanan ini sudah pernah diterbitkan. Pengambilan resi otomatis tidak dapat diulang.';
     }
     if (msg.includes('invalid or missing postal code')) {
         return 'Kode pos tujuan tidak valid atau tidak didukung oleh kurir yang dipilih. Pastikan kode pos 5 digit sesuai wilayah tujuan.';
+    }
+    if (msg.includes('Biteship')) {
+        msg = msg.replace(/Biteship/gi, 'vendor ekspedisi');
     }
     return msg;
 }
 
 function switchFulfillmentTab(tab) {
+    if (tab === 'biteship' && currentActiveOrderData?.is_kurir_toko) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Pengiriman Kurir Toko',
+                text: 'Pesanan Kurir Toko dikirimkan oleh armada internal toko dan hanya dapat menggunakan Input Resi Manual.',
+                confirmButtonColor: '#1e3a8a',
+                confirmButtonText: 'Buka Input Resi Manual'
+            });
+        }
+        tab = 'manual';
+    }
+
     const tabManual = document.getElementById('tabBtnManual');
     const tabBiteship = document.getElementById('tabBtnBiteship');
     const tabTracking = document.getElementById('tabBtnTracking');
@@ -385,6 +427,34 @@ function openResiModal(order, defaultTab = 'manual') {
     }
     currentActiveOrderData = order;
 
+    const isKurirToko = !!(order.is_kurir_toko || (order.courier_type === 'toko') || (order.courier_code === 'kurir_toko') || (order.courier_name && order.courier_name.toLowerCase().includes('toko')));
+    order.is_kurir_toko = isKurirToko;
+
+    const kurirTokoNotice = document.getElementById('kurirTokoNotice');
+    const tabBadgeKurirToko = document.getElementById('tabBadgeKurirToko');
+    const tabBtnBiteship = document.getElementById('tabBtnBiteship');
+    const panelBiteshipKurirTokoBlock = document.getElementById('panelBiteshipKurirTokoBlock');
+    const biteshipShipmentForm = document.getElementById('biteshipShipmentForm');
+
+    if (isKurirToko) {
+        if (kurirTokoNotice) kurirTokoNotice.classList.remove('hidden');
+        if (tabBadgeKurirToko) tabBadgeKurirToko.classList.remove('hidden');
+        if (tabBtnBiteship) tabBtnBiteship.classList.add('hidden');
+        if (panelBiteshipKurirTokoBlock) panelBiteshipKurirTokoBlock.classList.remove('hidden');
+        if (biteshipShipmentForm) biteshipShipmentForm.classList.add('hidden');
+
+        // Kurir Toko HANYA BISA INPUT RESI MANUAL
+        if (defaultTab === 'biteship') {
+            defaultTab = 'manual';
+        }
+    } else {
+        if (kurirTokoNotice) kurirTokoNotice.classList.add('hidden');
+        if (tabBadgeKurirToko) tabBadgeKurirToko.classList.add('hidden');
+        if (tabBtnBiteship) tabBtnBiteship.classList.remove('hidden');
+        if (panelBiteshipKurirTokoBlock) panelBiteshipKurirTokoBlock.classList.add('hidden');
+        if (biteshipShipmentForm) biteshipShipmentForm.classList.remove('hidden');
+    }
+
     document.getElementById('modalOrderBadge').textContent = '#' + (order.order_number || order.id || '');
     document.getElementById('formOrderId').value = order.id || '';
     document.getElementById('formTrackingNumber').value = order.resi || '';
@@ -402,6 +472,9 @@ function openResiModal(order, defaultTab = 'manual') {
             opt.value = item.id || key;
             opt.textContent = item.name + (item.courier_type === 'toko' ? ' (Kurir Toko)' : '');
             if (item.id === order.courier_id || (item.code && item.code.toLowerCase() === courierCode)) {
+                opt.selected = true;
+                foundManualMatch = true;
+            } else if (isKurirToko && !foundManualMatch && item.courier_type === 'toko') {
                 opt.selected = true;
                 foundManualMatch = true;
             }
@@ -483,7 +556,7 @@ function openResiModal(order, defaultTab = 'manual') {
             hitBiteshipBtn.classList.add('opacity-50', 'cursor-not-allowed');
             hitBiteshipBtn.classList.remove('active:scale-95');
         }
-        if (hitBiteshipText) hitBiteshipText.textContent = 'Resi Biteship Sudah Terbit';
+        if (hitBiteshipText) hitBiteshipText.textContent = 'Resi Ekspedisi Sudah Terbit';
         // Auto-switch to tracking view if user opens modal
         if (defaultTab === 'biteship' && order.resi) {
             defaultTab = 'tracking';
@@ -495,7 +568,7 @@ function openResiModal(order, defaultTab = 'manual') {
             hitBiteshipBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             hitBiteshipBtn.classList.add('active:scale-95');
         }
-        if (hitBiteshipText) hitBiteshipText.textContent = 'Hit Biteship & Buat Resi';
+        if (hitBiteshipText) hitBiteshipText.textContent = 'Get Resi Otomatis';
     }
 
     // Handle Order status >= 4 (Shipped / Delivered): Lock manual resi input as well!
@@ -621,14 +694,32 @@ async function submitResiForm(e) {
     const saveBtn = document.getElementById('saveResiBtn');
 
     if (currentActiveOrderData && (parseInt(currentActiveOrderData.status) === 4 || parseInt(currentActiveOrderData.status) === 5)) {
-        errorText.textContent = 'Pesanan sudah berstatus Dikirim atau Diterima. Nomor resi sudah terkunci dan tidak dapat diubah lagi.';
+        const msg = 'Pesanan sudah berstatus Dikirim atau Diterima. Nomor resi sudah terkunci dan tidak dapat diubah lagi.';
+        errorText.textContent = msg;
         errorDiv.classList.remove('hidden');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Resi Terkunci',
+                text: msg,
+                confirmButtonColor: '#1e3a8a'
+            });
+        }
         return;
     }
 
     if (!trackingNumber) {
-        errorText.textContent = 'Nomor resi wajib diisi.';
+        const msg = 'Nomor resi pengiriman atau surat jalan wajib diisi.';
+        errorText.textContent = msg;
         errorDiv.classList.remove('hidden');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Nomor Resi Kosong',
+                text: msg,
+                confirmButtonColor: '#1e3a8a'
+            });
+        }
         return;
     }
     errorDiv.classList.add('hidden');
@@ -655,23 +746,51 @@ async function submitResiForm(e) {
 
         const data = await response.json();
         if (response.ok && data.success) {
-            updateOrderUIElements(orderId, data);
             closeResiModal();
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Resi Berhasil Disimpan!',
+                    html: `Nomor resi: <b class="font-mono text-primary text-base">${trackingNumber}</b><br><span class="text-xs text-gray-500">Status pesanan diperbarui menjadi: <b>${data.status_label || 'Dikirim'}</b></span>`,
+                    confirmButtonColor: '#1e3a8a',
+                    timer: 2500,
+                    timerProgressBar: true
+                });
+            }
+            updateOrderUIElements(orderId, data);
         } else {
-            errorText.textContent = formatHumanErrorMessage(data.message || 'Gagal menyimpan nomor resi.');
+            const err = formatHumanErrorMessage(data.message || 'Gagal menyimpan nomor resi.');
+            errorText.textContent = err;
             errorDiv.classList.remove('hidden');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Gagal Menyimpan Resi',
+                    text: err,
+                    confirmButtonColor: '#1e3a8a'
+                });
+            }
         }
     } catch (err) {
         console.error(err);
-        errorText.textContent = 'Terjadi kesalahan sistem saat menyimpan resi.';
+        const errMsg = 'Terjadi kesalahan sistem saat menyimpan nomor resi.';
+        errorText.textContent = errMsg;
         errorDiv.classList.remove('hidden');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gangguan Sistem',
+                text: errMsg,
+                confirmButtonColor: '#1e3a8a'
+            });
+        }
     } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>Simpan Resi Manual</span>';
     }
 }
 
-// 2. Submit Biteship API Shipment
+// 2. Submit Vendor Expedition Shipment (Get Resi Otomatis)
 async function submitBiteshipForm(e) {
     e.preventDefault();
     const orderId = document.getElementById('formOrderId').value;
@@ -685,15 +804,43 @@ async function submitBiteshipForm(e) {
     const errorText = document.getElementById('biteshipErrorText');
     const hitBtn = document.getElementById('hitBiteshipBtn');
 
-    if (!postalCode || postalCode.length !== 5) {
-        errorText.textContent = 'Kode pos tujuan harus berupa 5 digit angka.';
+    // Pengamanan Kurir Toko
+    if (currentActiveOrderData?.is_kurir_toko) {
+        const msg = 'Pesanan dengan armada Kurir Toko hanya dapat menggunakan Input Resi Manual. Pengambilan resi otomatis tidak didukung untuk kurir toko.';
+        errorText.textContent = msg;
         errorDiv.classList.remove('hidden');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Pengiriman Kurir Toko',
+                text: msg,
+                confirmButtonColor: '#1e3a8a',
+                confirmButtonText: 'Buka Input Resi Manual'
+            }).then(() => {
+                switchFulfillmentTab('manual');
+            });
+        }
+        return;
+    }
+
+    if (!postalCode || postalCode.length !== 5) {
+        const msg = 'Kode pos tujuan harus berupa 5 digit angka untuk pemesanan ekspedisi.';
+        errorText.textContent = msg;
+        errorDiv.classList.remove('hidden');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Kode Pos Tidak Sesuai',
+                text: msg,
+                confirmButtonColor: '#1e3a8a'
+            });
+        }
         return;
     }
     errorDiv.classList.add('hidden');
 
     hitBtn.disabled = true;
-    hitBtn.innerHTML = '<div class="inline-block animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Mengirim ke Biteship...';
+    hitBtn.innerHTML = '<div class="inline-block animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Menghubungi Vendor Ekspedisi...';
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
 
@@ -720,22 +867,47 @@ async function submitBiteshipForm(e) {
                 currentActiveOrderData.has_biteship_resi = true;
                 currentActiveOrderData.resi = res.data?.tracking_number;
             }
-            updateOrderUIElements(orderId, res.data);
-            if (typeof showToast === 'function') {
-                showToast('success', res.message || 'Resi Biteship berhasil dibuat!');
-            }
             closeResiModal();
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Resi Berhasil Diterbitkan!',
+                    html: `Nomor resi dari vendor ekspedisi:<br><b class="font-mono text-primary text-base">${res.data?.tracking_number || ''}</b><br><span class="text-xs text-gray-500">Ekspedisi: <b>${res.data?.courier_name || courierCompany.toUpperCase()}</b></span>`,
+                    confirmButtonColor: '#1e3a8a',
+                    timer: 2800,
+                    timerProgressBar: true
+                });
+            }
+            updateOrderUIElements(orderId, res.data);
         } else {
-            errorText.textContent = formatHumanErrorMessage(res.message || 'Gagal mengirim pesanan ke Biteship.');
+            const err = formatHumanErrorMessage(res.message || 'Gagal menerbitkan nomor resi dari pihak vendor ekspedisi.');
+            errorText.textContent = err;
             errorDiv.classList.remove('hidden');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Gagal Mendapatkan Resi',
+                    text: err,
+                    confirmButtonColor: '#1e3a8a'
+                });
+            }
         }
     } catch (err) {
         console.error(err);
-        errorText.textContent = 'Terjadi gangguan jaringan saat menghubungi server Biteship.';
+        const errMsg = 'Terjadi gangguan jaringan saat menghubungi sistem vendor ekspedisi.';
+        errorText.textContent = errMsg;
         errorDiv.classList.remove('hidden');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gangguan Koneksi',
+                text: errMsg,
+                confirmButtonColor: '#1e3a8a'
+            });
+        }
     } finally {
         hitBtn.disabled = false;
-        hitBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">rocket_launch</span><span>Hit Biteship & Buat Resi</span>';
+        hitBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">cloud_sync</span><span>Get Resi Otomatis</span>';
     }
 }
 
@@ -909,7 +1081,7 @@ function updateOrderUIElements(orderId, data) {
 
     // Reload page after brief delay if in show view to refresh entire order card
     if (window.location.pathname.includes('/orders/') && !window.location.pathname.endsWith('/orders')) {
-        setTimeout(() => { window.location.reload(); }, 900);
+        setTimeout(() => { window.location.reload(); }, 1800);
     }
 }
 

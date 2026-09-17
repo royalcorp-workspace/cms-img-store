@@ -365,27 +365,37 @@ class OrderController extends Controller
     {
         $order = Order::with(['customer', 'items.product', 'items.variant', 'courier', 'delivery', 'handover'])->findOrFail($id);
 
+        if ($order->isKurirToko() || ($order->courier && $order->courier->courier_type === 'toko') || strtolower((string)$order->courier?->code) === 'kurir_toko') {
+            return response()->json([
+                'success' => false,
+                'is_warning' => true,
+                'message' => 'Pesanan ini dikirim menggunakan armada Kurir Toko. Layanan resi ekspedisi otomatis tidak dapat digunakan untuk kurir toko. Silakan gunakan tab Input Resi Manual.',
+            ], 422);
+        }
+
         $hasBiteshipResi = !empty($order->meta['biteship_order_id'])
             || (!empty($order->resi) && ($order->meta['fulfillment_type'] ?? '') === 'biteship');
 
         if ($hasBiteshipResi) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pesanan ini sudah berhasil dibuat di Biteship dengan Nomor Resi ' . ($order->resi ?? $order->meta['biteship_order_id']) . '. Pengiriman tidak dapat di-hit ulang.',
+                'is_warning' => true,
+                'message' => 'Nomor resi untuk pesanan ini sudah berhasil diterbitkan (' . ($order->resi ?? $order->meta['biteship_order_id']) . '). Pengambilan resi otomatis tidak dapat diulang.',
             ], 422);
         }
 
         $biteshipService = app(\App\Services\BiteshipService::class);
         if (!$biteshipService->isConfigured()) {
-            $biteshipService->logStructured('warning', 'CONFIG', "Biteship API Key Belum Dikonfigurasi di .env (#{$order->order_number})", [
+            $biteshipService->logStructured('warning', 'CONFIG', "Layanan Ekspedisi Otomatis Belum Dikonfigurasi (#{$order->order_number})", [
                 'Nomor Order' => $order->order_number,
                 'Order ID' => $order->id,
-                'Keterangan' => 'Admin mencoba hit Biteship tetapi BITESHIP_API_KEY kosong di .env',
+                'Keterangan' => 'Layanan ekspedisi belum aktif.',
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Biteship API Key belum dikonfigurasi di .env (BITESHIP_API_KEY). Silakan isi Key terlebih dahulu atau gunakan Tab Input Resi Manual.',
+                'is_warning' => true,
+                'message' => 'Layanan pengambilan resi ekspedisi otomatis belum diaktifkan. Silakan gunakan tab Input Resi Manual untuk memasukkan nomor resi atau surat jalan.',
             ], 422);
         }
 
@@ -430,9 +440,11 @@ class OrderController extends Controller
         $biteshipRes = $biteshipService->createOrder($payload);
 
         if (!($biteshipRes['success'] ?? false)) {
+            $rawErrMsg = $biteshipRes['message'] ?? 'Gagal membuat pesanan pengiriman di vendor ekspedisi.';
+            $cleanErrMsg = str_ireplace('biteship', 'vendor ekspedisi', $rawErrMsg);
             return response()->json([
                 'success' => false,
-                'message' => 'Biteship Error: ' . ($biteshipRes['message'] ?? 'Gagal membuat pesanan pengiriman di Biteship.'),
+                'message' => $cleanErrMsg,
                 'raw' => $biteshipRes['raw'] ?? null,
             ], 422);
         }
@@ -527,7 +539,7 @@ class OrderController extends Controller
                 'event' => 'order.created',
                 'status' => 'allocated',
                 'location' => 'Gudang Pengirim',
-                'note' => 'Pesanan berhasil dibuat di Biteship (Order Created) - Menunggu penjemputan kurir',
+                'note' => 'Nomor resi berhasil diterbitkan dari pihak ekspedisi - Menunggu penjemputan kurir',
                 'payload' => $payload,
             ]);
         } catch (\Throwable $e) {
@@ -538,7 +550,7 @@ class OrderController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Pesanan berhasil dikirim ke Biteship! Nomor Resi: ' . ($waybillId ?: 'Terbit di Biteship'),
+            'message' => 'Nomor resi pengiriman berhasil diterbitkan otomatis dari vendor ekspedisi: ' . ($waybillId ?: ($order->resi ?: '-')),
             'data' => [
                 'order_id' => $order->id,
                 'tracking_number' => $order->resi,

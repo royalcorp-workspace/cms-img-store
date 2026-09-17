@@ -750,6 +750,11 @@ class ProductController extends Controller
         return back()->with('import_result', $result);
     }
 
+    public function export(Request $request, \App\Services\ProductExportService $exportService)
+    {
+        return $exportService->download($request);
+    }
+
     public function importTemplate()
     {
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();

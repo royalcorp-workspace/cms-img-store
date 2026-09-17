@@ -260,12 +260,17 @@ class Order extends Model
             $shippedAtText = \Carbon\Carbon::parse($this->meta['resi_updated_at'])->format('d M Y H:i');
         }
 
+        $isKurirToko = $this->isKurirToko();
+        $courierType = $isKurirToko ? 'toko' : ($this->courier?->courier_type ?? ($this->meta['courier_type'] ?? 'expedisi'));
+
         return [
             'id' => $this->id,
             'order_number' => $this->order_number ?? substr($this->id, 0, 8),
             'resi' => $this->resi,
             'courier_id' => $this->courier_id ?? ($this->relationLoaded('delivery') ? $this->delivery?->courier_id : null) ?? ($this->relationLoaded('handover') ? $this->handover?->courier_id : null),
             'courier_name' => $this->courier_name ?? 'Kurir Belum Ditentukan',
+            'is_kurir_toko' => $isKurirToko,
+            'courier_type' => $courierType,
             'status' => $this->status,
             'status_label' => $this->statusLabel(),
             'status_badge_class' => $this->statusBadgeClass,
@@ -288,6 +293,24 @@ class Order extends Model
             'delivery_last_location' => $this->latest_delivery_log?->location ?? ($this->meta['biteship_last_location'] ?? null),
             'delivery_updated_at' => $this->latest_delivery_log?->created_at?->format('d M Y H:i') ?? null,
         ];
+    }
+
+    public function isKurirToko(): bool
+    {
+        $courier = $this->relationLoaded('courier') ? $this->courier : $this->courier()->withoutGlobalScopes()->first();
+        if ($courier) {
+            if ($courier->courier_type === 'toko' || $courier->code === 'kurir_toko') {
+                return true;
+            }
+        }
+
+        $courierCode = strtolower(trim((string)($courier?->code ?? $this->meta['courier_code'] ?? '')));
+        $courierName = strtolower(trim((string)($this->courier_name ?? $this->meta['courier_name'] ?? '')));
+
+        return ($courierCode === 'kurir_toko') 
+            || str_contains($courierName, 'kurir toko') 
+            || str_contains($courierName, 'toko')
+            || (($this->meta['courier_type'] ?? '') === 'toko');
     }
 
     public function voucher(): BelongsTo
