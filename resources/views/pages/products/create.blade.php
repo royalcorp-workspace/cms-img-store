@@ -57,7 +57,7 @@
             'id' => $v->id,
             'sku' => $v->sku ?? '',
             'variant_name' => $v->variant_name ?? '',
-            'base_price' => $v->base_price !== null ? (float)$v->base_price : null,
+            'base_price' => $v->base_price !== null ? (float)$v->base_price : 0,
             'sell_price' => $v->sell_price !== null ? (float)$v->sell_price : ($v->base_price !== null ? (float)$v->base_price : 0),
             'shipping_cost' => $v->shipping_cost !== null ? (float)$v->shipping_cost : 0,
             'stock_qty' => $v->stock_quantity ?? 0,
@@ -1536,8 +1536,8 @@ function rebuildCombinations() {
                     variant_name: cached.variant_name || defaultName,
                     sku: cached.sku || defaultSku,
                     has_db_sku: cached.has_db_sku || false,
-                    base_price: cached.base_price !== undefined ? cached.base_price : (document.getElementById('batchBasePrice')?.value || ''),
-                    sell_price: cached.sell_price !== undefined ? cached.sell_price : (document.getElementById('batchSellPrice')?.value || ''),
+                    base_price: (cached.base_price !== undefined && cached.base_price !== '') ? cached.base_price : (document.getElementById('batchBasePrice')?.value || 0),
+                    sell_price: (cached.sell_price !== undefined && cached.sell_price !== '') ? cached.sell_price : (document.getElementById('batchSellPrice')?.value || 0),
                     shipping_cost: cached.shipping_cost !== undefined ? cached.shipping_cost : (document.getElementById('batchShippingCost')?.value || document.getElementById('productShippingCost')?.value || 0),
                     length: cached.length !== undefined && cached.length !== '' ? cached.length : (dims.length || 200),
                     width: cached.width !== undefined && cached.width !== '' ? cached.width : (dims.width || ''),
@@ -1847,10 +1847,10 @@ function renderVariantsTable() {
                         <input type="text" class="v-variant-name w-full min-w-[170px] px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all" value="${escapeHtml(v.variant_name || '')}" placeholder="Nama kombinasi" oninput="onRowNameChanged(this, ${globalIdx})">
                     </td>
                     <td class="px-3 py-2.5">
-                        <input type="number" step="0.01" class="v-base-price w-full min-w-[110px] px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0" value="${v.base_price !== null && v.base_price !== undefined ? v.base_price : ''}">
+                        <input type="number" step="0.01" class="v-base-price w-full min-w-[110px] px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0" value="${v.base_price !== null && v.base_price !== undefined && v.base_price !== '' ? v.base_price : 0}">
                     </td>
                     <td class="px-3 py-2.5">
-                        <input type="number" step="0.01" class="v-sell-price w-full min-w-[120px] px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0" value="${v.sell_price !== null && v.sell_price !== undefined ? v.sell_price : ''}" required>
+                        <input type="number" step="0.01" class="v-sell-price w-full min-w-[120px] px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0" value="${v.sell_price !== null && v.sell_price !== undefined && v.sell_price !== '' ? v.sell_price : 0}">
                     </td>
                     ${isFixedShipping ? `
                     <td class="px-3 py-2.5 bg-amber-50/30 border-l border-r border-amber-200/40">
@@ -2388,8 +2388,8 @@ function initVariantsFromBackend() {
                 variant_name: v.variant_name || '',
                 sku: v.sku || '',
                 has_db_sku: !!v.sku,
-                base_price: v.base_price ?? '',
-                sell_price: v.sell_price ?? '',
+                base_price: (v.base_price !== null && v.base_price !== undefined && v.base_price !== '') ? v.base_price : 0,
+                sell_price: (v.sell_price !== null && v.sell_price !== undefined && v.sell_price !== '') ? v.sell_price : 0,
                 shipping_cost: v.shipping_cost !== undefined && v.shipping_cost !== null ? v.shipping_cost : '',
                 length: v.length ?? dims.length ?? 200,
                 width: v.width ?? dims.width ?? '',
@@ -2435,8 +2435,8 @@ function initVariantsFromBackend() {
                 variant_name: v.variant_name || '',
                 sku: v.sku || '',
                 has_db_sku: !!v.sku,
-                base_price: v.base_price ?? '',
-                sell_price: v.sell_price ?? '',
+                base_price: (v.base_price !== null && v.base_price !== undefined && v.base_price !== '') ? v.base_price : 0,
+                sell_price: (v.sell_price !== null && v.sell_price !== undefined && v.sell_price !== '') ? v.sell_price : 0,
                 shipping_cost: v.shipping_cost !== undefined && v.shipping_cost !== null ? v.shipping_cost : '',
                 length: v.length ?? dims.length ?? 200,
                 width: v.width ?? dims.width ?? '',
@@ -2549,16 +2549,18 @@ async function submitProductForm() {
         return;
     }
 
-    // Validate active rows have sell_price and variant_name
+    // Ensure active rows have default 0 for sell_price & base_price if empty or invalid
     for (let i = 0; i < activeRows.length; i++) {
         const r = activeRows[i];
         if (!r.variant_name || !r.variant_name.trim()) {
             alert(`Nama kombinasi pada baris ke-${i + 1} tidak boleh kosong.`);
             return;
         }
-        if (r.sell_price === '' || isNaN(parseFloat(r.sell_price)) || parseFloat(r.sell_price) < 0) {
-            alert(`Harga Jual pada kombinasi "${r.variant_name}" wajib diisi dan bernilai minimal 0.`);
-            return;
+        if (r.sell_price === '' || r.sell_price === null || isNaN(parseFloat(r.sell_price)) || parseFloat(r.sell_price) < 0) {
+            r.sell_price = 0;
+        }
+        if (r.base_price === '' || r.base_price === null || isNaN(parseFloat(r.base_price)) || parseFloat(r.base_price) < 0) {
+            r.base_price = 0;
         }
     }
 
@@ -2629,10 +2631,9 @@ async function submitProductForm() {
             variantsData.push({
                 id: v.id || null,
                 variant_name: v.variant_name.trim(),
-                sku: v.sku || null,
-                base_price: (v.base_price !== '' && v.base_price !== null) ? parseFloat(v.base_price) : null,
-                sell_price: parseFloat(v.sell_price),
-                price: parseFloat(v.sell_price),
+                base_price: (v.base_price !== '' && v.base_price !== null && !isNaN(parseFloat(v.base_price))) ? parseFloat(v.base_price) : 0,
+                sell_price: (v.sell_price !== '' && v.sell_price !== null && !isNaN(parseFloat(v.sell_price))) ? parseFloat(v.sell_price) : 0,
+                price: (v.sell_price !== '' && v.sell_price !== null && !isNaN(parseFloat(v.sell_price))) ? parseFloat(v.sell_price) : 0,
                 shipping_cost: shippingVal,
                 length: finalLength,
                 width: finalWidth,
@@ -2691,7 +2692,12 @@ async function submitProductForm() {
             }
         });
 
-        let res = await fetch(form.action, {
+        let actionUrl = form.getAttribute('action') || form.action;
+        if (window.location.protocol === 'https:' && actionUrl.startsWith('http://')) {
+            actionUrl = actionUrl.replace('http://', 'https://');
+        }
+
+        let res = await fetch(actionUrl, {
             method: 'POST',
             body: formData,
             headers: {

@@ -252,6 +252,13 @@
                             <span>Lacak Pesanan (Log Pengiriman)</span>
                         </button>
                     @endif
+
+                    @if($order->delivery)
+                        <a href="{{ route('delivery.show', $order->delivery->id) }}" class="w-full py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs">
+                            <span class="material-symbols-outlined text-[16px] text-purple-600">terminal</span>
+                            <span>Delivery Order & Payload Biteship</span>
+                        </a>
+                    @endif
                 </div>
             </div>
 
@@ -395,16 +402,19 @@
                                     $meta = is_string($item->meta) ? json_decode($item->meta, true) : ($item->meta ?? []);
                                     $isBundleItem = $meta['is_bundle_item'] ?? false;
 
-                                    $price = (float) $item->unit_price;
-                                    $sub = $price * (int) $item->quantity;
+                                    $price = (float) ($item->unit_price ?? $meta['original_price'] ?? 0);
+                                    $qty = max(1, (int) $item->quantity);
+                                    $sub = $price * $qty;
                                     $originalSubtotal += $sub;
 
-                                    $disc_nom = (float) ($item->discount_nominal > 0 ? $item->discount_nominal : 0);
-                                    $disc_pct = (float) ($item->discount_percent > 0 ? $item->discount_percent : 0);
-                                    if ($disc_pct > 0) {
-                                        $disc_nom = ($price * $disc_pct / 100);
+                                    $disc_pct = (float) ($item->discount_percent ?? ($meta['discount_percent'] ?? 0));
+                                    $disc_nom = (float) ($item->discount_nominal ?? ($meta['discount_nominal'] ?? 0));
+                                    if ($disc_pct > 0 && $disc_nom <= 0) {
+                                        $disc_nom = ($sub * $disc_pct) / 100;
                                     }
-                                    $disc_total = $disc_nom * (int) $item->quantity;
+                                    if ($disc_nom > 0 && $disc_pct <= 0 && $sub > 0) {
+                                        $disc_pct = round(($disc_nom / $sub) * 100, 1);
+                                    }
 
                                     $product = $item->product;
                                     $variant = $item->variant;
@@ -450,9 +460,12 @@
                                         </div>
                                     </td>
 
-                                    <!-- Unit Price -->
+                                    <!-- Unit Price (Harga Asli) -->
                                     <td class="py-3 px-3 text-right font-medium text-on-surface align-top whitespace-nowrap">
-                                        Rp {{ number_format($price, 0, ',', '.') }}
+                                        <div>Rp {{ number_format($price, 0, ',', '.') }}</div>
+                                        @if($qty > 1)
+                                            <div class="text-[10px] text-on-surface-variant font-normal mt-0.5">Total Asli: Rp {{ number_format($sub, 0, ',', '.') }}</div>
+                                        @endif
                                     </td>
 
                                     <!-- Qty -->
@@ -462,10 +475,10 @@
 
                                     <!-- Discount -->
                                     <td class="py-3 px-3 text-right text-danger align-top whitespace-nowrap">
-                                        @if($disc_total > 0)
-                                            <span>-Rp {{ number_format($disc_total, 0, ',', '.') }}</span>
+                                        @if($disc_nom > 0)
+                                            <span class="font-bold">-Rp {{ number_format($disc_nom, 0, ',', '.') }}</span>
                                             @if($disc_pct > 0)
-                                                <span class="text-[10px] block opacity-75">({{ $disc_pct }}%)</span>
+                                                <span class="text-[10px] block font-semibold text-danger/80">({{ (float) $disc_pct }}%)</span>
                                             @endif
                                         @else
                                             <span class="text-on-surface-variant opacity-30">-</span>

@@ -28,6 +28,11 @@
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] material-symbols-outlined">search</span>
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search couriers..." class="pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none">
                 </div>
+                <select name="courier_type" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-white select2-enable">
+                    <option value="">All Courier Types</option>
+                    <option value="expedisi" {{ request('courier_type') == 'expedisi' ? 'selected' : '' }}>Ekspedisi</option>
+                    <option value="toko" {{ request('courier_type') == 'toko' ? 'selected' : '' }}>Kurir Toko</option>
+                </select>
                 <select name="type" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-white select2-enable">
                     <option value="">All Types</option>
                     <option value="1" {{ request('type') == '1' ? 'selected' : '' }}>Regular</option>
@@ -49,6 +54,7 @@
                     <tr class="bg-surface-gray">
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Code</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Name</th>
+                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Jenis Kurir</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Type Layanan</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Status</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Actions</th>
@@ -59,6 +65,17 @@
                     <tr class="hover:bg-surface-container/30 transition-colors {{ !$courier->is_active || $courier->deleted ? 'opacity-60' : '' }}">
                         <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-semibold">{{ $courier->code }}</td>
                         <td class="px-gutter py-4 font-body-md text-body-md text-on-surface">{{ $courier->name }}</td>
+                        <td class="px-gutter py-4">
+                            @if(($courier->courier_type ?? '') === 'toko')
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm bg-amber-100 text-amber-800 font-medium">
+                                    <span class="material-symbols-outlined text-[14px]">storefront</span> Kurir Toko
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm bg-blue-50 text-blue-700 font-medium">
+                                    <span class="material-symbols-outlined text-[14px]">local_shipping</span> Ekspedisi
+                                </span>
+                            @endif
+                        </td>
                         <td class="px-gutter py-4">
                             @php
                                 $typeLabel = match($courier->type) {

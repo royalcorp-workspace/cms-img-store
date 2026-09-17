@@ -276,7 +276,12 @@
             products: Object.values(products),
         };
 
-        fetch(form.action, {
+        let actionUrl = form.getAttribute('action') || form.action;
+        if (window.location.protocol === 'https:' && actionUrl.startsWith('http://')) {
+            actionUrl = actionUrl.replace('http://', 'https://');
+        }
+
+        fetch(actionUrl, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': formData.get('_token'),

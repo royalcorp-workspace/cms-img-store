@@ -5,9 +5,12 @@ namespace App\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Category extends Model
 {
+    use HasUuids;
+
     protected $table = 'product_category';
 
     protected $keyType = 'string';

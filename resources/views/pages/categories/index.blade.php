@@ -27,14 +27,21 @@
                 </ul>
             </div>
             
-            <button onclick="createCategory()" class="btn-save flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-sm active:scale-95">
+            <a href="{{ route('categories.create') }}" class="btn-save flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-sm active:scale-95">
                 <span class="material-symbols-outlined text-[18px]">add</span>
                 <span>Add Category</span>
-            </button>
+            </a>
         </div>
     </div>
 
     @include('layouts.partials.product-submenu')
+
+    @if(session('success'))
+    <div class="mb-6 p-4 bg-success/10 border border-success/20 rounded-xl text-success flex items-center gap-3">
+        <span class="material-symbols-outlined text-[20px]">check_circle</span>
+        <span class="text-sm font-semibold">{{ session('success') }}</span>
+    </div>
+    @endif
 
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden">
         <div class="p-4 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-end gap-4">
@@ -84,8 +91,8 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-center">
-                            <div class="flex gap-2 justify-center">
-                                <button onclick="editCategory('{{ $category->id }}')" class="text-on-surface-variant hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+                            <div class="flex gap-2 justify-center items-center">
+                                <a href="{{ route('categories.edit', $category->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
                                 <button onclick="deleteCategory('{{ $category->id }}')" class="text-on-surface-variant hover:text-danger transition-colors" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
                             </div>
                         </td>
@@ -104,178 +111,14 @@
         </div>
         @endif
     </div>
-
-    <div id="categoryModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-xl shadow-lg border border-outline-variant w-full max-w-md mx-4">
-            <div class="p-6 border-b border-outline-variant">
-                <h3 id="modalTitle" class="font-headline-md text-headline-md text-on-surface">Create Category</h3>
-            </div>
-            <form id="categoryForm" class="p-6 space-y-4">
-                <input type="hidden" id="categoryId" name="id">
-                <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Name <span class="text-danger">*</span></label>
-                    <input type="text" id="categoryName" name="name" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Category name" required>
-                </div>
-                <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Slug</label>
-                    <input type="text" id="categorySlug" name="slug" class="w-full px-3 py-2 border border-outline-variant rounded-lg bg-surface-container-low text-on-surface-variant cursor-not-allowed focus:outline-none" placeholder="auto-generated" readonly>
-                </div>
-                <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Description</label>
-                    <textarea id="categoryDesc" name="description" rows="3" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Optional description"></textarea>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Parent</label>
-                        <select id="categoryParent" name="parent_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
-                            <option value="">None (Top Level)</option>
-                        </select>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Sort Order</label>
-                        <input type="number" id="categorySort" name="sort_order" value="0" min="0" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Status</label>
-                        <select id="categoryStatus" name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
-                            <option value="1">Active</option>
-                            <option value="0">Inactive</option>
-                        </select>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Garansi</label>
-                        <select id="categoryWarranty" name="has_warranty" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
-                            <option value="1">Ya</option>
-                            <option value="0">Tidak</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Pengaturan Tipe Kurir Kategori -->
-                <div class="border-t border-outline-variant pt-4 mt-2 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <label class="block text-xs font-bold text-on-surface flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-primary text-[18px]">local_shipping</span>
-                            <span>Pengaturan Kurir Kategori</span>
-                        </label>
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">
-                            Tipe Pengaturan Kurir
-                        </label>
-                        <select id="categoryCourierSettingType" name="courier_setting_type" onchange="toggleCategoryCourierFields()" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white text-xs">
-                            <option value="detail">Detail / Kondisional (Pilihan tipe kurir ditentukan per masing-masing produk)</option>
-                            <option value="global">Global (Semua produk di kategori ini menggunakan tipe kurir seragam)</option>
-                        </select>
-                        <p class="text-[11px] text-on-surface-variant">Jika dipilih "Global", semua produk di bawah kategori ini menggunakan tipe kurir yang ditentukan di bawah.</p>
-                    </div>
-
-                    <div id="categoryCourierDetailsContainer" class="p-3 bg-surface-container-lowest rounded-xl border border-outline-variant/40 space-y-2">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Pilihan Tipe Kurir Kategori</label>
-                        <select id="categoryCourierType" name="courier_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white text-xs">
-                            <option value="keduanya">Keduanya (Toko & Expedisi)</option>
-                            <option value="toko">Pengiriman by Toko</option>
-                            <option value="expedisi">Pengiriman by Expedisi</option>
-                        </select>
-                        <p class="text-[11px] text-on-surface-variant">Tipe kurir yang berlaku untuk produk di kategori ini jika diset Global.</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 border-t border-outline-variant pt-4 mt-2">
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Banner Desktop (Web)</label>
-                        <div id="previewBannerWeb" class="hidden mb-2">
-                            <img src="" alt="Banner Web" class="h-20 object-cover rounded-lg border border-outline-variant">
-                        </div>
-                        <input type="file" id="categoryBannerWeb" name="banner_web" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Banner Mobile</label>
-                        <div id="previewBannerMobile" class="hidden mb-2">
-                            <img src="" alt="Banner Mobile" class="h-20 object-cover rounded-lg border border-outline-variant">
-                        </div>
-                        <input type="file" id="categoryBannerMobile" name="banner_mobile" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90">
-                    </div>
-                </div>
-            </form>
-            <div class="p-6 border-t border-outline-variant flex justify-end gap-3">
-                <button type="button" onclick="closeModal()" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors">Cancel</button>
-                <button type="submit" form="categoryForm" class="px-4 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">Save</button>
-            </div>
-        </div>
-    </div>
 @endsection
 
 @push('scripts')
 <script>
 const csrfToken = '{{ csrf_token() }}';
 
-function toggleCategoryCourierFields() {
-    const type = $('#categoryCourierSettingType').val();
-    if (type === 'global') {
-        $('#categoryCourierDetailsContainer').removeClass('opacity-50');
-    } else {
-        $('#categoryCourierDetailsContainer').addClass('opacity-50');
-    }
-}
-
-function createCategory(parentName = null, parentId = null) {
-    $('#categoryId').val('');
-    $('#categoryName').val(parentName ? '' : 'New Category');
-    $('#categorySlug').val('');
-    $('#categoryDesc').val('');
-    $('#categorySort').val(0);
-    $('#categoryStatus').val(1);
-    $('#categoryWarranty').val(1);
-    $('#categoryParent').val(parentId || '');
-    $('#categoryCourierSettingType').val('detail');
-    $('#categoryCourierType').val('keduanya');
-    toggleCategoryCourierFields();
-    $('#previewBannerWeb').addClass('hidden').find('img').attr('src', '');
-    $('#previewBannerMobile').addClass('hidden').find('img').attr('src', '');
-    $('#categoryBannerWeb').val('');
-    $('#categoryBannerMobile').val('');
-    $('#modalTitle').text('Create Category');
-    openModal();
-}
-
-function editCategory(id) {
-    $.getJSON('{{ url('categories') }}/' + id + '/edit', function (res) {
-        const cat = res.data;
-        $('#categoryId').val(cat.id);
-        $('#categoryName').val(cat.name);
-        $('#categorySlug').val(cat.slug);
-        $('#categoryDesc').val(cat.description);
-        $('#categorySort').val(cat.sort_order);
-        $('#categoryStatus').val(cat.status ? 1 : 0);
-        $('#categoryWarranty').val(cat.has_warranty ? 1 : 0);
-        $('#categoryParent').val(cat.parent_id || '');
-        $('#categoryCourierSettingType').val(cat.courier_setting_type || 'detail');
-        $('#categoryCourierType').val(cat.courier_type || 'keduanya');
-        toggleCategoryCourierFields();
-        
-        if (cat.banner_web_url) {
-            $('#previewBannerWeb').removeClass('hidden').find('img').attr('src', cat.banner_web_url);
-        } else {
-            $('#previewBannerWeb').addClass('hidden').find('img').attr('src', '');
-        }
-        
-        if (cat.banner_mobile_url) {
-            $('#previewBannerMobile').removeClass('hidden').find('img').attr('src', cat.banner_mobile_url);
-        } else {
-            $('#previewBannerMobile').addClass('hidden').find('img').attr('src', '');
-        }
-
-        $('#modalTitle').text('Edit Category');
-        openModal();
-    });
-}
-
 function deleteCategory(id) {
-    if (!confirm('Delete this category? Subcategories will also be removed.')) return;
+    if (!confirm('Hapus kategori ini? Subkategori juga akan terhapus jika ada.')) return;
     $.ajax({
         url: '{{ url('categories') }}/' + id,
         method: 'DELETE',
@@ -284,83 +127,9 @@ function deleteCategory(id) {
             window.location.reload();
         },
         error: function () {
-            alert('Failed to delete category');
+            alert('Gagal menghapus kategori');
         }
     });
 }
-
-$('#categoryName').on('input', function() {
-    let slug = $(this).val().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    $('#categorySlug').val(slug);
-});
-
-$('#categoryForm').on('submit', function (e) {
-    e.preventDefault();
-    const id = $('#categoryId').val();
-    
-    // Use FormData to support file uploads
-    const formData = new FormData(this);
-    if (!formData.get('parent_id')) {
-        formData.delete('parent_id');
-    }
-    
-    // For PUT request with file upload, Laravel requires POST with _method=PUT
-    const url = id ? '{{ url('categories') }}/' + id : '{{ url('categories') }}';
-    if (id) {
-        formData.append('_method', 'PUT');
-    }
-    
-    $.ajax({
-        url: url,
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': csrfToken },
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function () {
-            closeModal();
-            window.location.reload();
-        },
-        error: function (xhr) {
-            if (xhr.status === 422 && xhr.responseJSON?.errors?.slug) {
-                alert('Warning: Slug (URL) yang dihasilkan sudah digunakan oleh data lain. Silakan ubah nama atau slug secara manual.');
-            } else {
-                alert(xhr.responseJSON?.message || 'Error saving category');
-            }
-        }
-    });
-});
-
-function openModal() {
-    populateParentSelect();
-    $('#categoryModal').removeClass('hidden');
-}
-
-function closeModal() {
-    $('#categoryModal').addClass('hidden');
-}
-
-function populateParentSelect() {
-    const currentId = $('#categoryId').val();
-    $.getJSON('{{ route('categories.flat') }}', function (res) {
-        const allNodes = res.data || [];
-        const buildOptions = function (parentId, indent) {
-            let html = '';
-            allNodes.filter(n => (n.parent || '#') === parentId).forEach(function (n) {
-                html += '<option value="' + n.id + '">' + indent + n.text + '</option>';
-                html += buildOptions(n.id, indent + '\u00a0\u00a0\u00a0');
-            });
-            return html;
-        };
-        const options = '<option value="">None (Top Level)</option>' + buildOptions('#', '');
-        $('#categoryParent').html(options);
-    }).fail(function() {
-        $('#categoryParent').html('<option value="">None (Top Level)</option>');
-    });
-}
-
-$('#categoryModal').on('click', function (e) {
-    if (e.target === this) closeModal();
-});
 </script>
 @endpush

@@ -67,6 +67,12 @@ class CategoryController extends Controller
         return view('pages.categories.show', compact('category', 'products', 'grouped'));
     }
 
+    public function create()
+    {
+        $allCategories = Category::where('deleted', false)->orderBy('name')->get();
+        return view('pages.categories.create', compact('allCategories'));
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -81,8 +87,8 @@ class CategoryController extends Controller
                 ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
                 : 'nullable|string|max:1000',
             'sort_order' => 'nullable|integer|min:0',
-            'status' => 'boolean',
-            'has_warranty' => 'boolean',
+            'status' => 'nullable',
+            'has_warranty' => 'nullable',
             'courier_setting_type' => 'nullable|string|in:global,detail',
             'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
             'shipping_scheme' => 'nullable|string|in:dimension,fixed',
@@ -90,6 +96,12 @@ class CategoryController extends Controller
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
 
+        if (empty($validated['slug'])) {
+            $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
+        }
+        $validated['is_active'] = $request->has('status') ? (bool)$request->input('status') : true;
+        $validated['has_warranty'] = $request->has('has_warranty') ? (bool)$request->input('has_warranty') : true;
+        $validated['sort_order'] = (int)($validated['sort_order'] ?? 0);
         $validated['courier_setting_type'] = $validated['courier_setting_type'] ?? 'detail';
         $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
         $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
@@ -109,6 +121,11 @@ class CategoryController extends Controller
         }
         
         $category = Category::create($validated);
+
+        if (!$request->wantsJson() && !$request->ajax()) {
+            return redirect()->route('categories.index')->with('success', 'Kategori ' . $category->name . ' berhasil dibuat');
+        }
+
         return response()->json([
             'success' => true,
             'status_code' => 201,
@@ -117,15 +134,22 @@ class CategoryController extends Controller
         ], 201);
     }
 
-    public function edit($id)
+    public function edit(Request $request, $id)
     {
         $category = Category::findOrFail($id);
-        return response()->json([
-            'success' => true,
-            'status_code' => 200,
-            'message' => 'Success',
-            'data' => $category,
-        ]);
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'status_code' => 200,
+                'message' => 'Success',
+                'data' => $category,
+            ]);
+        }
+        $allCategories = Category::where('deleted', false)
+            ->where('id', '!=', $id)
+            ->orderBy('name')
+            ->get();
+        return view('pages.categories.edit', compact('category', 'allCategories'));
     }
 
     public function update(Request $request, $id)
@@ -143,8 +167,8 @@ class CategoryController extends Controller
                 ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,avif,ico|max:5120'
                 : 'nullable|string|max:1000',
             'sort_order' => 'nullable|integer|min:0',
-            'status' => 'boolean',
-            'has_warranty' => 'boolean',
+            'status' => 'nullable',
+            'has_warranty' => 'nullable',
             'courier_setting_type' => 'nullable|string|in:global,detail',
             'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
             'shipping_scheme' => 'nullable|string|in:dimension,fixed',
@@ -152,6 +176,12 @@ class CategoryController extends Controller
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
 
+        if (empty($validated['slug'])) {
+            $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
+        }
+        $validated['is_active'] = $request->has('status') ? (bool)$request->input('status') : false;
+        $validated['has_warranty'] = $request->has('has_warranty') ? (bool)$request->input('has_warranty') : false;
+        $validated['sort_order'] = (int)($validated['sort_order'] ?? 0);
         $validated['courier_setting_type'] = $validated['courier_setting_type'] ?? 'detail';
         $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
         $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
@@ -190,6 +220,11 @@ class CategoryController extends Controller
         }
 
         $category->update($validated);
+
+        if (!$request->wantsJson() && !$request->ajax()) {
+            return redirect()->route('categories.index')->with('success', 'Kategori ' . $category->name . ' berhasil diperbarui');
+        }
+
         return response()->json([
             'success' => true,
             'status_code' => 200,
@@ -198,7 +233,7 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $category = Category::findOrFail($id);
         if ($category->banner_web) {
@@ -208,6 +243,11 @@ class CategoryController extends Controller
             unlink_media($category->banner_mobile);
         }
         $category->delete();
+
+        if (!$request->wantsJson() && !$request->ajax()) {
+            return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus');
+        }
+
         return response()->json([
             'success' => true,
             'status_code' => 204,

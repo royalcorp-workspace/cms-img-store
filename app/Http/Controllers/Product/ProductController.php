@@ -69,14 +69,14 @@ class ProductController extends Controller
                             $vData[$field] = null;
                         }
                     }
-                    if (isset($vData['price']) && !isset($vData['sell_price'])) {
+                    if (isset($vData['price']) && (!isset($vData['sell_price']) || $vData['sell_price'] === null)) {
                         $vData['sell_price'] = $vData['price'];
                     }
-                    if (isset($vData['sell_price']) && !isset($vData['base_price'])) {
-                        $vData['base_price'] = $vData['sell_price'];
+                    if (!isset($vData['sell_price']) || $vData['sell_price'] === null) {
+                        $vData['sell_price'] = isset($vData['base_price']) && $vData['base_price'] !== null ? (float)$vData['base_price'] : 0;
                     }
-                    if (isset($vData['base_price']) && !isset($vData['sell_price'])) {
-                        $vData['sell_price'] = $vData['base_price'];
+                    if (!isset($vData['base_price']) || $vData['base_price'] === null) {
+                        $vData['base_price'] = isset($vData['sell_price']) && $vData['sell_price'] !== null ? (float)$vData['sell_price'] : 0;
                     }
                 }
             }
@@ -285,14 +285,14 @@ class ProductController extends Controller
                             $vData[$field] = null;
                         }
                     }
-                    if (isset($vData['price']) && !isset($vData['sell_price'])) {
+                    if (isset($vData['price']) && (!isset($vData['sell_price']) || $vData['sell_price'] === null)) {
                         $vData['sell_price'] = $vData['price'];
                     }
-                    if (isset($vData['sell_price']) && !isset($vData['base_price'])) {
-                        $vData['base_price'] = $vData['sell_price'];
+                    if (!isset($vData['sell_price']) || $vData['sell_price'] === null) {
+                        $vData['sell_price'] = isset($vData['base_price']) && $vData['base_price'] !== null ? (float)$vData['base_price'] : 0;
                     }
-                    if (isset($vData['base_price']) && !isset($vData['sell_price'])) {
-                        $vData['sell_price'] = $vData['base_price'];
+                    if (!isset($vData['base_price']) || $vData['base_price'] === null) {
+                        $vData['base_price'] = isset($vData['sell_price']) && $vData['sell_price'] !== null ? (float)$vData['sell_price'] : 0;
                     }
                 }
             }
