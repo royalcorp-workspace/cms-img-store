@@ -449,6 +449,8 @@ class OrderController extends Controller
         }
         $meta['biteship_order_id'] = $biteshipOrderId;
         $meta['biteship_shipment'] = $biteshipRes['raw'] ?? [];
+        $meta['biteship_payload'] = $payload;
+        $meta['biteship_request_payload'] = $payload;
         $meta['biteship_tracking_url'] = $trackingUrl;
         $meta['fulfillment_type'] = 'biteship';
         $meta['resi_updated_at'] = now()->toDateTimeString();
@@ -514,6 +516,24 @@ class OrderController extends Controller
             ]);
         }
 
+        // Record initial outgoing order.created log in delivery_logs
+        try {
+            DeliveryLog::create([
+                'order_id' => $order->id,
+                'delivery_id' => $order->delivery?->id,
+                'waybill_id' => $waybillId ?: ($order->resi),
+                'biteship_order_id' => $biteshipOrderId,
+                'courier_code' => $usedCompany ?: ($order->courier?->code),
+                'event' => 'order.created',
+                'status' => 'allocated',
+                'location' => 'Gudang Pengirim',
+                'note' => 'Pesanan berhasil dibuat di Biteship (Order Created) - Menunggu penjemputan kurir',
+                'payload' => $payload,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Gagal menyimpan log order.created ke delivery_logs #{$order->order_number}: " . $e->getMessage());
+        }
+
         $order->load(['courier', 'delivery.courier', 'handover.courier', 'pickingList', 'packingSlip', 'packingOut']);
 
         return response()->json([
@@ -539,14 +559,24 @@ class OrderController extends Controller
         $resi = $order->resi;
         $courierName = $order->courier_name ?? $order->courier?->name ?? 'Kurir';
         $courierCode = $order->courier?->code ?? strtolower(explode(' ', (string)$courierName)[0] ?? 'kurir');
+        $biteshipOrderId = $order->meta['biteship_order_id'] ?? null;
+        $deliveryId = $order->delivery?->id;
 
-        // Retrieve delivery logs from DB (sorted newest first, prioritized by stage weight)
-        $logs = DeliveryLog::where('order_id', $order->id)
-            ->when(!empty($resi), function ($query) use ($resi) {
+        // Retrieve delivery logs from DB (matching by order_id, waybill_id, biteship_order_id, or delivery_id)
+        $logs = DeliveryLog::where(function ($query) use ($order, $resi, $biteshipOrderId, $deliveryId) {
+            $query->where('order_id', $order->id);
+            if (!empty($resi)) {
                 $query->orWhere('waybill_id', $resi);
-            })
-            ->orderBy('created_at', 'desc')
-            ->get();
+            }
+            if (!empty($biteshipOrderId)) {
+                $query->orWhere('biteship_order_id', $biteshipOrderId);
+            }
+            if (!empty($deliveryId)) {
+                $query->orWhere('delivery_id', $deliveryId);
+            }
+        })
+        ->orderBy('created_at', 'desc')
+        ->get();
 
         if (empty($resi) && $logs->isEmpty()) {
             return response()->json([
@@ -569,11 +599,12 @@ class OrderController extends Controller
             $info = Order::deliveryStatusInfo($log->status, $log->event);
             $events[] = [
                 'time' => $log->created_at ? $log->created_at->format('d M Y H:i') : '-',
-                'status' => $info['label'],
+                'status' => $info['label'] ?? ($log->note ?: ($log->status ?: 'Status Checkpoint')),
                 'raw_status' => $log->status,
                 'event' => $log->event,
                 'location' => $log->location ?: null,
                 'description' => $log->note ?: ($info['label'] . ($log->location ? " di {$log->location}" : '')),
+                'payload' => $log->payload,
             ];
         }
 
@@ -588,6 +619,7 @@ class OrderController extends Controller
                 'event' => 'order.waybill_issued',
                 'location' => 'Gudang Pengirim',
                 'description' => 'Nomor resi ' . ($resi ?: '-') . ' telah diterbitkan. Menunggu pembaruan status log dari webhook kurir.',
+                'payload' => $order->meta['biteship_payload'] ?? null,
             ];
         }
 

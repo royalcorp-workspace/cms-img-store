@@ -17,7 +17,12 @@ class AppServiceProvider extends ServiceProvider
     {
         date_default_timezone_set(config('app.timezone', 'Asia/Jakarta'));
 
-        if (app()->environment('production') || env('FORCE_HTTPS', false)) {
+        if (
+            app()->environment('production') ||
+            env('FORCE_HTTPS', false) ||
+            str_starts_with(config('app.url', ''), 'https://') ||
+            (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+        ) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
 

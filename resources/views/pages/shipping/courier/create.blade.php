@@ -24,7 +24,7 @@
     <form method="POST" action="{{ route('couriers.store') }}" class="space-y-6">
         @csrf
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Code <span class="text-danger">*</span></label>
                     <input type="text" name="code" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g., JNE" required value="{{ old('code') }}">
@@ -35,9 +35,14 @@
                     <input type="text" name="name" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g., JNE Express" required value="{{ old('name') }}">
                     @error('name')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
-            </div>
-            <div class="hidden">
-                <input type="hidden" name="courier_type" value="expedisi">
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Jenis Kurir <span class="text-danger">*</span></label>
+                    <select name="courier_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
+                        <option value="expedisi" {{ old('courier_type', 'expedisi') == 'expedisi' ? 'selected' : '' }}>Ekspedisi</option>
+                        <option value="toko" {{ old('courier_type') == 'toko' ? 'selected' : '' }}>Kurir Toko</option>
+                    </select>
+                    @error('courier_type')<p class="text-danger text-sm">{{ $message }}</p>@enderror
+                </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="space-y-1.5">

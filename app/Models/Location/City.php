@@ -56,4 +56,9 @@ class City extends Model
     {
         return $this->hasMany(SubDistrict::class, 'city_id', 'id');
     }
+
+    public function shippingAddresses(): HasMany
+    {
+        return $this->hasMany(\App\Models\Shipping\ShippingAddress::class, 'city_id', 'id');
+    }
 }

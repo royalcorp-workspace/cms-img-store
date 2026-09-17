@@ -244,11 +244,14 @@
                                 <span class="material-symbols-outlined text-[15px]" id="trackingStatusIcon">local_shipping</span>
                                 <span id="trackingStatusText">Menunggu Log</span>
                             </span>
+                            <a id="externalTrackingLink" href="#" target="_blank" class="hidden px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors" title="Buka tautan tracking resmi Biteship">
+                                <span class="material-symbols-outlined text-[15px]">open_in_new</span>
+                                <span>Lacak di Biteship</span>
+                            </a>
                             <button type="button" onclick="fetchBiteshipTracking()" class="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors" title="Perbarui dari Log Webhook Sistem">
                                 <span class="material-symbols-outlined text-[15px]">refresh</span>
                                 <span>Muat Ulang</span>
                             </button>
-                            
                         </div>
                     </div>
                     <div class="flex items-center justify-between text-[11px] text-on-surface-variant pt-2.5 border-t border-outline-variant/30 flex-wrap gap-2">
@@ -369,7 +372,11 @@ function openResiModal(order, defaultTab = 'manual') {
         if (window.ordersCache && window.ordersCache[order]) {
             order = window.ordersCache[order];
         } else {
-            try { order = JSON.parse(order); } catch (e) { console.error(e); return; }
+            try { 
+                order = JSON.parse(order); 
+            } catch (e) { 
+                order = { id: order }; 
+            }
         }
     }
     if (!order) return;
@@ -734,20 +741,22 @@ async function submitBiteshipForm(e) {
 
 // 3. Fetch Tracking (Webhook Logs)
 async function fetchBiteshipTracking() {
-    const orderId = document.getElementById('formOrderId').value;
+    const orderId = document.getElementById('formOrderId')?.value;
+    if (!orderId) return;
+
     const loading = document.getElementById('trackingLoading');
     const empty = document.getElementById('trackingEmpty');
     const timeline = document.getElementById('trackingTimeline');
     const extLink = document.getElementById('externalTrackingLink');
 
-    loading.classList.remove('hidden');
-    empty.classList.add('hidden');
-    timeline.innerHTML = '';
+    if (loading) loading.classList.remove('hidden');
+    if (empty) empty.classList.add('hidden');
+    if (timeline) timeline.innerHTML = '';
 
     try {
         const response = await fetch(`/orders/${orderId}/biteship-tracking`);
         const result = await response.json();
-        loading.classList.add('hidden');
+        if (loading) loading.classList.add('hidden');
 
         if (response.ok && result.success && result.data) {
             const data = result.data;
@@ -773,38 +782,70 @@ async function fetchBiteshipTracking() {
                 document.getElementById('trackingLastUpdated').textContent = 'Pembaruan: ' + data.last_updated;
             }
 
-            if (data.link) {
-                extLink.href = data.link;
-                extLink.classList.remove('hidden');
-            } else {
-                extLink.classList.add('hidden');
+            if (extLink) {
+                if (data.link) {
+                    extLink.href = data.link;
+                    extLink.classList.remove('hidden');
+                } else {
+                    extLink.classList.add('hidden');
+                }
             }
 
             if (events.length === 0) {
-                empty.classList.remove('hidden');
-                document.getElementById('trackingEmptyText').textContent = 'Paket baru didaftarkan. Belum ada riwayat checkpoint dari webhook kurir.';
+                if (empty) {
+                    empty.classList.remove('hidden');
+                    const emptyText = document.getElementById('trackingEmptyText');
+                    if (emptyText) emptyText.textContent = 'Paket baru didaftarkan. Belum ada riwayat checkpoint dari webhook kurir.';
+                }
                 return;
             }
 
-            timeline.innerHTML = events.map(function(ev, index) {
-                const isLatest = index === 0;
-                return `
-                    <div class="relative pb-3">
-                        <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full ${isLatest ? 'bg-primary ring-4 ring-primary/20' : 'bg-outline'}"></div>
-                        <div class="text-[11px] font-bold ${isLatest ? 'text-primary' : 'text-on-surface'}">${ev.status || 'Status Checkpoint'}</div>
-                        <div class="text-[10px] text-on-surface-variant mt-0.5">${ev.time || '-'} ${ev.location ? ' &bull; ' + ev.location : ''}</div>
-                        <div class="text-xs text-on-surface mt-1 leading-snug">${ev.description || ''}</div>
-                    </div>
-                `;
-            }).join('');
+            if (timeline) {
+                timeline.innerHTML = events.map(function(ev, index) {
+                    const isLatest = index === 0;
+                    const dotClass = isLatest ? 'bg-primary ring-4 ring-primary/20' : 'bg-outline';
+                    const titleClass = isLatest ? 'text-primary font-extrabold' : 'text-on-surface font-bold';
+                    let payloadSection = '';
+                    if (ev.payload && typeof ev.payload === 'object' && Object.keys(ev.payload).length > 0) {
+                        payloadSection = `
+                            <details class="mt-2 text-[10px] text-on-surface-variant font-mono group">
+                                <summary class="cursor-pointer hover:underline text-primary inline-flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[12px] group-open:rotate-90 transition-transform">chevron_right</span>
+                                    <span>Lihat Payload Webhook (${ev.event || 'raw'})</span>
+                                </summary>
+                                <pre class="p-2.5 bg-surface-container-lowest border border-outline-variant/30 rounded-lg mt-1 overflow-x-auto text-[11px] leading-relaxed max-h-40">${JSON.stringify(ev.payload, null, 2)}</pre>
+                            </details>
+                        `;
+                    }
+                    return `
+                        <div class="relative pb-4 last:pb-0">
+                            <div class="absolute -left-[31px] top-0.5 w-3.5 h-3.5 rounded-full ${dotClass}"></div>
+                            <div class="flex items-center justify-between gap-2 flex-wrap">
+                                <div class="text-[12px] ${titleClass}">${ev.status || 'Status Checkpoint'}</div>
+                                ${ev.event ? `<span class="px-1.5 py-0.5 bg-surface-container text-on-surface-variant rounded text-[9px] font-mono">${ev.event}</span>` : ''}
+                            </div>
+                            <div class="text-[10px] text-on-surface-variant mt-0.5">${ev.time || '-'} ${ev.location ? ' &bull; ' + ev.location : ''}</div>
+                            <div class="text-xs text-on-surface mt-1 leading-snug">${ev.description || ''}</div>
+                            ${payloadSection}
+                        </div>
+                    `;
+                }).join('');
+            }
         } else {
-            empty.classList.remove('hidden');
-            document.getElementById('trackingEmptyText').textContent = result.message || 'Tidak ada data tracking untuk nomor resi ini.';
+            if (empty) {
+                empty.classList.remove('hidden');
+                const emptyText = document.getElementById('trackingEmptyText');
+                if (emptyText) emptyText.textContent = result.message || 'Tidak ada data tracking untuk nomor resi ini.';
+            }
         }
     } catch (err) {
-        loading.classList.add('hidden');
-        empty.classList.remove('hidden');
-        document.getElementById('trackingEmptyText').textContent = 'Gagal memuat status tracking dari log webhook.';
+        console.error('Biteship tracking error:', err);
+        if (loading) loading.classList.add('hidden');
+        if (empty) {
+            empty.classList.remove('hidden');
+            const emptyText = document.getElementById('trackingEmptyText');
+            if (emptyText) emptyText.textContent = 'Gagal memuat status tracking dari log webhook: ' + (err.message || 'Unknown error');
+        }
     }
 }
 

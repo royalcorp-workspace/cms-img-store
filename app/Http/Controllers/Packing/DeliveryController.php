@@ -36,8 +36,17 @@ class DeliveryController extends Controller
 
     public function show(string $id)
     {
-        $delivery = Delivery::with(['order.customer', 'order.items.product', 'courier', 'packingOut'])->findOrFail($id);
-        return view('pages.delivery.show', compact('delivery'));
+        $delivery = Delivery::with(['order.customer', 'order.items.product', 'order.courier', 'courier', 'packingOut'])->findOrFail($id);
+        
+        $deliveryLogs = \App\Models\Packing\DeliveryLog::where('delivery_id', $delivery->id)
+            ->orWhere('order_id', $delivery->order_id)
+            ->when(!empty($delivery->tracking_number), function ($q) use ($delivery) {
+                $q->orWhere('waybill_id', $delivery->tracking_number);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('pages.delivery.show', compact('delivery', 'deliveryLogs'));
     }
 
     public function create(string $packing_out_id)

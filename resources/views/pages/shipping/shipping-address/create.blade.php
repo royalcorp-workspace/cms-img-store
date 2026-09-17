@@ -26,19 +26,49 @@
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Sub District <span class="text-label-xs text-on-surface-variant/70">(Optional, empty for global rate)</span></label>
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Kota / Kabupaten (Scope Kurir Toko)</label>
+                    <select name="city_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
+                        <option value="">-- Pilih Kota (Khusus Kurir Toko) --</option>
+                        @foreach($cities as $city)
+                            <option value="{{ $city->id }}" {{ old('city_id') == $city->id ? 'selected' : '' }}>
+                                {{ $city->name }} ({{ $city->province->name ?? '' }})
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('city_id')<p class="text-danger text-sm">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Kecamatan / Kelurahan (Opsional)</label>
                     <select name="sub_district_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
-                        <option value="">All Sub Districts (Global)</option>
+                        <option value="">-- Kosongkan jika berbasis Kota / Global --</option>
                         @foreach($subDistricts as $subDistrict)
-                            <option value="{{ $subDistrict->id }}" {{ old('sub_district_id') == $subDistrict->id ? 'selected' : '' }}>{{ $subDistrict->sub_district }} ({{ $subDistrict->district }})</option>
+                            <option value="{{ $subDistrict->id }}" {{ old('sub_district_id') == $subDistrict->id ? 'selected' : '' }}>
+                                {{ $subDistrict->sub_district }} ({{ $subDistrict->district }})
+                            </option>
                         @endforeach
                     </select>
                     @error('sub_district_id')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Service Type <span class="text-danger">*</span></label>
-                    <select name="type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
-                        <option value="1" {{ old('type') == '1' ? 'selected' : '' }}>Regular</option>
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Kurir <span class="text-danger">*</span></label>
+                    <select name="courier_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
+                        @foreach($couriers as $courier)
+                            <option value="{{ $courier->id }}" {{ old('courier_id') == $courier->id ? 'selected' : '' }}>
+                                {{ $courier->name }} ({{ $courier->courier_type }})
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('courier_id')<p class="text-danger text-sm">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Tipe Layanan <span class="text-danger">*</span></label>
+                    <select name="type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" required>
+                        <option value="1" {{ old('type', '1') == '1' ? 'selected' : '' }}>Regular</option>
                         <option value="2" {{ old('type') == '2' ? 'selected' : '' }}>Express</option>
                         <option value="3" {{ old('type') == '3' ? 'selected' : '' }}>Same Day</option>
                         <option value="4" {{ old('type') == '4' ? 'selected' : '' }}>Instant</option>
@@ -47,45 +77,33 @@
                 </div>
             </div>
 
-            <div class="border-t border-outline-variant/30 pt-6">
-                <h3 class="font-headline-md text-headline-md text-on-surface mb-4">Courier Rates</h3>
-                <div class="overflow-x-auto border border-outline-variant/30 rounded-xl">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-surface-gray border-b border-outline-variant/30">
-                                <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/3">Courier</th>
-                                <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/4">Shipping Fee (Rp)</th>
-                                <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/6">Sort Order</th>
-                                <th class="px-gutter py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/6 text-center">Active</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-outline-variant/20">
-                            @foreach($couriers as $index => $courier)
-                                <tr class="hover:bg-surface-container/30 transition-colors">
-                                    <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-semibold">
-                                        <input type="hidden" name="rates[{{ $index }}][courier_id]" value="{{ $courier->id }}">
-                                        {{ $courier->name }}
-                                    </td>
-                                    <td class="px-gutter py-4">
-                                        <input type="number" name="rates[{{ $index }}][price]" value="{{ old("rates.{$index}.price") }}" min="0" placeholder="e.g. 10000 (leave blank to skip)" class="w-full px-3 py-1.5 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
-                                    </td>
-                                    <td class="px-gutter py-4">
-                                        <input type="number" name="rates[{{ $index }}][sort_order]" value="{{ old("rates.{$index}.sort_order", 0) }}" min="0" class="w-full px-3 py-1.5 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
-                                    </td>
-                                    <td class="px-gutter py-4 text-center">
-                                        <input type="hidden" name="rates[{{ $index }}][is_active]" value="0">
-                                        <input type="checkbox" name="rates[{{ $index }}][is_active]" value="1" {{ old("rates.{$index}.is_active", '1') == '1' ? 'checked' : '' }} class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary">
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Tarif Dasar / Flat (Rp) <span class="text-danger">*</span></label>
+                    <input type="number" name="price" value="{{ old('price') }}" min="0" required placeholder="e.g. 25000" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                    <span class="text-[11px] text-on-surface-variant block">Tarif trip pengiriman dasar / 1 kg pertama</span>
+                    @error('price')<p class="text-danger text-sm">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Biaya Tambahan / Kg (Rp)</label>
+                    <input type="number" name="additional_price_per_kg" value="{{ old('additional_price_per_kg', 0) }}" min="0" placeholder="0" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                    <span class="text-[11px] text-on-surface-variant block">Biaya per kg berikutnya jika berat > 1 kg (isi 0 jika tarif flat)</span>
+                    @error('additional_price_per_kg')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
             </div>
+
+            <div class="pt-2">
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_active" value="1" {{ old('is_active', '1') == '1' ? 'checked' : '' }} class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary">
+                    <span class="text-body-md font-medium text-on-surface">Aktifkan Tarif Ini</span>
+                </label>
+            </div>
         </div>
+
         <div class="flex justify-end gap-4">
             <a href="{{ route('shipping-addresses.index') }}" class="px-8 py-3 border border-outline-variant text-primary font-bold rounded-lg hover:bg-surface-container transition-colors">Cancel</a>
-            <button type="submit" class="px-10 py-3 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Save Rates</button>
+            <button type="submit" class="px-10 py-3 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Simpan Tarif</button>
         </div>
     </form>
 @endsection
