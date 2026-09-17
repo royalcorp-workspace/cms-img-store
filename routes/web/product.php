@@ -10,6 +10,7 @@ Route::get('/products', [ProductController::class, 'index'])->name('products.ind
 Route::get('/products/import', [ProductController::class, 'importForm'])->name('products.import.form');
 Route::post('/products/import', [ProductController::class, 'importStore'])->name('products.import.store');
 Route::get('/products/import/template', [ProductController::class, 'importTemplate'])->name('products.import.template');
+Route::get('/products/export', [ProductController::class, 'export'])->name('products.export');
 Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
 Route::post('/products', [ProductController::class, 'store'])->name('products.store');
 Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');

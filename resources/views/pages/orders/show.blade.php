@@ -25,15 +25,20 @@
             </button>
         @endif
 
-        @if(!empty($resiModalData['has_biteship_resi']))
-            <button type="button" disabled title="Pesanan sudah diproses di Biteship (Resi: {{ $order->resi }}). Tombol dinonaktifkan untuk mencegah pemesanan ganda." class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-not-allowed">
+        @if(!empty($resiModalData['is_kurir_toko']))
+            <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-200 dark:border-blue-800" title="Pesanan dikirim dengan armada Kurir Toko (Hanya Resi Manual)">
+                <span class="material-symbols-outlined text-[16px]">store</span>
+                <span>Kurir Toko (Manual)</span>
+            </span>
+        @elseif(!empty($resiModalData['has_biteship_resi']))
+            <button type="button" disabled title="Resi ekspedisi sudah diterbitkan (Resi: {{ $order->resi }})." class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-not-allowed">
                 <span class="material-symbols-outlined text-[16px] text-slate-400">check_circle</span>
-                <span>Biteship Aktif</span>
+                <span>Resi Ekspedisi Aktif</span>
             </button>
         @else
             <button type="button" onclick='openResiModal(@json($resiModalData), "biteship")' class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors">
-                <span class="material-symbols-outlined text-[16px]">rocket_launch</span>
-                <span>Hit Biteship</span>
+                <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
+                <span>Get Resi Otomatis</span>
             </button>
         @endif
 
@@ -176,9 +181,9 @@
                         <span class="text-[10px] text-on-surface-variant font-semibold block mb-0.5">Kurir Pesanan</span>
                         <div class="flex items-center justify-between p-2 bg-surface-container-low rounded-lg border border-outline-variant/40">
                             <span class="font-bold text-primary" id="show-order-courier-name">{{ $order->courier_name ?? 'Kurir Belum Diatur' }}</span>
-                            @if(!empty($order->meta['fulfillment_type']))
-                                <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase {{ $order->meta['fulfillment_type'] === 'biteship' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
-                                    {{ $order->meta['fulfillment_type'] }}
+                            @if(!empty($order->meta['fulfillment_type']) || $order->isKurirToko())
+                                <span class="text-[10px] px-1.5 py-0.5 rounded font-bold {{ $order->isKurirToko() ? 'bg-blue-100 text-blue-800' : (($order->meta['fulfillment_type'] ?? '') === 'biteship' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700') }}">
+                                    {{ $order->isKurirToko() ? 'Kurir Toko' : (($order->meta['fulfillment_type'] ?? '') === 'biteship' ? 'Ekspedisi Otomatis' : 'Input Manual') }}
                                 </span>
                             @endif
                         </div>
@@ -233,15 +238,20 @@
                                 <span>{{ $order->resi ? 'Ubah Resi' : 'Input Resi' }}</span>
                             </button>
                         @endif
-                        @if(!empty($resiModalData['has_biteship_resi']))
-                            <button type="button" disabled title="Pesanan sudah diproses di Biteship" class="py-2 px-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border border-slate-200 dark:border-slate-700 cursor-not-allowed">
+                        @if(!empty($resiModalData['is_kurir_toko']))
+                            <div class="py-2 px-2 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-bold flex items-center justify-center gap-1 text-center" title="Pesanan dikirimkan melalui armada Kurir Toko (Hanya Resi Manual)">
+                                <span class="material-symbols-outlined text-[15px]">store</span>
+                                <span>Kurir Toko (Manual)</span>
+                            </div>
+                        @elseif(!empty($resiModalData['has_biteship_resi']))
+                            <button type="button" disabled title="Resi otomatis dari vendor ekspedisi sudah terbit" class="py-2 px-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border border-slate-200 dark:border-slate-700 cursor-not-allowed">
                                 <span class="material-symbols-outlined text-[15px] text-slate-400">check_circle</span>
-                                <span>Biteship Aktif</span>
+                                <span>Resi Ekspedisi Aktif</span>
                             </button>
                         @else
                             <button type="button" onclick='openResiModal(@json($resiModalData), "biteship")' class="py-2 px-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 shadow-xs">
-                                <span class="material-symbols-outlined text-[15px]">rocket_launch</span>
-                                <span>Hit Biteship</span>
+                                <span class="material-symbols-outlined text-[15px]">cloud_sync</span>
+                                <span>Get Resi Otomatis</span>
                             </button>
                         @endif
                     </div>
@@ -255,8 +265,8 @@
 
                     @if($order->delivery)
                         <a href="{{ route('delivery.show', $order->delivery->id) }}" class="w-full py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs">
-                            <span class="material-symbols-outlined text-[16px] text-purple-600">terminal</span>
-                            <span>Delivery Order & Payload Biteship</span>
+                            <span class="material-symbols-outlined text-[16px] text-purple-600">local_shipping</span>
+                            <span>Detail Pengiriman & Log Ekspedisi</span>
                         </a>
                     @endif
                 </div>
@@ -673,17 +683,42 @@ async function handleQuickStatusSubmit(e) {
     const targetStatus = parseInt(select.value);
     const orderData = @json($resiModalData);
 
-    // If changing to Shipped (4) or Delivered (5) and there's no resi yet, open the modal to choose Manual or Biteship
+    // If changing to Shipped (4) or Delivered (5) and there's no resi yet, open the modal to input resi
     if ((targetStatus === 4 || targetStatus === 5) && !orderData.resi) {
         const statusName = targetStatus === 5 ? 'Selesai (Delivered)' : 'Dikirim (Shipped)';
-        if (confirm('Pesanan ini belum memiliki resi. Untuk mengubah status menjadi ' + statusName + ', pilih opsi Input Resi Manual atau Hit Biteship. Buka form pengiriman sekarang?')) {
+        const confirmMsg = orderData.is_kurir_toko
+            ? 'Pesanan ini belum memiliki nomor resi / surat jalan. Untuk mengubah status menjadi ' + statusName + ', silakan masukkan nomor resi pengiriman terlebih dahulu. Buka form input resi sekarang?'
+            : 'Pesanan ini belum memiliki nomor resi. Untuk mengubah status menjadi ' + statusName + ', silakan masukkan nomor resi atau dapatkan resi ekspedisi otomatis. Buka form pengiriman sekarang?';
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Nomor Resi Diperlukan',
+                text: confirmMsg,
+                showCancelButton: true,
+                confirmButtonColor: '#1e3a8a',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Buka Form Resi',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const formStatusTarget = document.getElementById('formStatusTarget');
+                    const biteshipFinalStatus = document.getElementById('biteshipFinalStatus');
+                    if (formStatusTarget) formStatusTarget.value = targetStatus;
+                    if (biteshipFinalStatus) biteshipFinalStatus.value = targetStatus;
+                    openResiModal(orderData, 'manual');
+                }
+            });
+            return;
+        } else if (confirm(confirmMsg)) {
             const formStatusTarget = document.getElementById('formStatusTarget');
             const biteshipFinalStatus = document.getElementById('biteshipFinalStatus');
             if (formStatusTarget) formStatusTarget.value = targetStatus;
             if (biteshipFinalStatus) biteshipFinalStatus.value = targetStatus;
-            openResiModal(orderData);
+            openResiModal(orderData, 'manual');
             return;
         }
+        return;
     }
 
     const btn = document.getElementById('quickStatusBtn');
