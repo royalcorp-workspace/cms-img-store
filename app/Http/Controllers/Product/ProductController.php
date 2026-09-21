@@ -88,6 +88,7 @@ class ProductController extends Controller
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:255',
             'slug' => 'nullable|string|max:255|unique:products,slug',
             'thumbnail' => 'nullable|string|max:255',
             'alt_text' => 'nullable|string|max:255',
@@ -108,6 +109,7 @@ class ProductController extends Controller
             'is_new' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'boolean',
+            'show_on_web' => 'nullable|boolean',
             'category_id' => 'nullable|string|exists:product_category,id',
             'brand_id' => 'nullable|string|exists:brands,id',
             'colors' => 'nullable|array',
@@ -146,6 +148,7 @@ class ProductController extends Controller
             $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
             $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
             $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
+            $validated['show_on_web'] = $request->has('show_on_web') ? (bool)$request->input('show_on_web') : true;
             $product = Product::create($validated);
 
             if (!empty($validated['thumbnail'])) {
@@ -306,6 +309,7 @@ class ProductController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:255',
             'slug' => 'nullable|string|max:255|unique:products,slug,' . $id,
             'thumbnail' => 'nullable|string|max:255',
             'alt_text' => 'nullable|string|max:255',
@@ -322,6 +326,7 @@ class ProductController extends Controller
             'best_seller' => 'boolean',
             'is_new' => 'boolean',
             'status' => 'boolean',
+            'show_on_web' => 'nullable|boolean',
             'category_id' => 'nullable|string|exists:product_category,id',
             'brand_id' => 'nullable|string|exists:brands,id',
             'colors' => 'nullable|array',
@@ -369,6 +374,7 @@ class ProductController extends Controller
             $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
             $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
             $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
+            $validated['show_on_web'] = $request->has('show_on_web') ? (bool)$request->input('show_on_web') : ($product->show_on_web ?? true);
 
             $product->update($validated);
 
