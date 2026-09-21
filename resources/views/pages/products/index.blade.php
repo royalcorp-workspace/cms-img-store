@@ -77,7 +77,6 @@
                         <th class="px-6 py-4">Kode</th>
                         <th class="px-6 py-4">Category</th>
                         <th class="px-6 py-4">Price</th>
-                        <th class="px-6 py-4">Stock</th>
                         <th class="px-6 py-4">Status</th>
                         <th class="px-6 py-4 text-center">Actions</th>
                     </tr>
@@ -123,23 +122,22 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="flex-1 h-1.5 bg-surface-container rounded-full overflow-hidden max-w-[80px]">
-                                        <div class="h-full bg-success rounded-full" style="width: {{ min(($product->stock ?? 0) / 10, 100) }}%;"></div>
-                                    </div>
-                                    <span class="text-label-sm font-bold text-on-surface-variant">{{ $product->stock ?? 0 }}</span>
+                                <div class="flex flex-col gap-1 items-start">
+                                    @if($product->status)
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-success/10 text-success border border-success/20 rounded-full text-[11px] font-semibold">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-success"></span> Aktif
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-danger/10 text-danger border border-danger/20 rounded-full text-[11px] font-semibold">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-danger"></span> Nonaktif
+                                        </span>
+                                    @endif
+                                    @if($product->show_on_web)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[10px] font-bold">
+                                            <span class="material-symbols-outlined text-[12px]">public</span> Web
+                                        </span>
+                                    @endif
                                 </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                @if(($product->stock ?? 0) > 0)
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-success/10 text-success border border-success/20 rounded-full text-[11px] font-semibold uppercase tracking-wider">
-                                        In Stock
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-danger/10 text-danger border border-danger/20 rounded-full text-[11px] font-semibold uppercase tracking-wider">
-                                        Out of Stock
-                                    </span>
-                                @endif
                             </td>
                             <td class="px-6 py-4 text-on-surface-variant">
                                 <div class="flex items-center gap-1.5 justify-center">

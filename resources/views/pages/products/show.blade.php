@@ -19,7 +19,7 @@
         }
     }
 
-    // Group variants by Ukuran Kasur
+    // Group variants by Ukuran Produk
     $groupedVariants = $validVariants->groupBy(function($v) {
         if (!empty($v->attributes['Ukuran'])) {
             return strtoupper(trim($v->attributes['Ukuran']));
@@ -84,6 +84,9 @@
                         <span class="material-symbols-outlined text-[14px]">auto_awesome</span> New
                     </span>
                 @endif
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold {{ ($product->show_on_web ?? true) ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-surface-container-high text-on-surface-variant border border-outline-variant/60' }}">
+                    <span class="material-symbols-outlined text-[14px]">public</span> {{ ($product->show_on_web ?? true) ? 'Tampil di Web' : 'Sembunyi di Web' }}
+                </span>
             </div>
             <nav class="flex items-center gap-2 text-xs text-on-surface-variant">
                 <a href="{{ route('dashboard') }}" class="text-primary hover:underline">Dashboard</a>
@@ -445,7 +448,7 @@
         @endif
     </div>
 
-    <!-- 4. VARIASI PRODUK & HARGA PER UKURAN KASUR -->
+    <!-- 4. VARIASI PRODUK & HARGA PER UKURAN PRODUK -->
     <div class="w-full bg-white rounded-2xl shadow-sm border border-outline-variant/30 p-6 space-y-6">
         <div class="border-b border-outline-variant/20 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="space-y-1">
@@ -454,7 +457,7 @@
                     Variasi Produk & Harga
                 </h2>
                 <p class="text-xs text-on-surface-variant">
-                    Dikelompokkan berdasarkan ukuran kasur untuk kemudahan pengecekan harga, kelengkapan (Mattress Only & Fullset), dan ketebalan.
+                    Dikelompokkan berdasarkan ukuran produk untuk kemudahan pengecekan harga, kelengkapan, dan ketebalan/tinggi.
                 </p>
             </div>
             

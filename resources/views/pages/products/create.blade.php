@@ -90,6 +90,22 @@
     })->values()->all();
 
     $productCode = $product->code ?? '';
+    if (empty($productCode)) {
+        $datePrefix = 'PRD' . date('dmy');
+        $lastProduct = \App\Models\Product\Product::withoutGlobalScope('not-deleted')
+            ->where('code', 'like', $datePrefix . '%')
+            ->orderBy('code', 'desc')
+            ->first();
+            
+        if ($lastProduct && preg_match('/(\d{5})$/', $lastProduct->code, $matches)) {
+            $lastNumber = (int) $matches[1];
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+        
+        $productCode = $datePrefix . str_pad((string)$newNumber, 5, '0', STR_PAD_LEFT);
+    }
 @endphp
 
 <div class="w-full space-y-6 pb-16">
@@ -100,10 +116,10 @@
                 <h1 class="font-headline-lg text-2xl font-bold text-on-surface">
                     {{ $isEdit ? 'Edit Produk' : 'Tambah Produk Baru' }}
                 </h1>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-primary/10 text-primary border border-primary/20">
+                    {{ $productCode }}
+                </span>
                 @if($isEdit)
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-primary/10 text-primary border border-primary/20">
-                        {{ $product->code ?? 'PROD' }}
-                    </span>
                     <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold {{ ($product->status ?? 1) ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger' }}">
                         <span class="w-1.5 h-1.5 rounded-full bg-current"></span> {{ ($product->status ?? 1) ? 'Aktif' : 'Nonaktif' }}
                     </span>
@@ -142,6 +158,7 @@
     <form id="productForm" method="POST" action="{{ $isEdit ? route('products.update', $product->id) : route('products.store') }}" enctype="multipart/form-data" class="w-full space-y-6">
         @csrf
         @if($isEdit) @method('PUT') @endif
+        <input type="hidden" name="code" id="productCodeHidden" value="{{ $productCode }}">
         <input type="hidden" name="variants" id="variantsInput" value="">
         <input type="hidden" name="colors" id="colorsInput" value="{{ json_encode($colorData) }}">
 
@@ -172,7 +189,7 @@
                         <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">
                             Nama Produk <span class="text-danger">*</span>
                         </label>
-                        <input type="text" name="name" id="productNameInput" value="{{ old('name', $product->name ?? '') }}" required placeholder="Contoh: Kasur Busa Royal Exclusive" class="w-full px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all">
+                        <input type="text" name="name" id="productNameInput" value="{{ old('name', $product->name ?? '') }}" required placeholder="Contoh: Royal Foam Exclusive / Nama Produk" class="w-full px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all">
                     </div>
 
                     <!-- Slug Produk (Disabled / Otomatis) -->
@@ -422,7 +439,7 @@
                                 <span class="material-symbols-outlined text-primary text-[18px]">payments</span>
                                 <span>Ongkos Kirim Tetap (Fixed Rate)</span>
                             </div>
-                            <p class="text-[11px] text-on-surface-variant">Langsung di-set harga ongkir tetap (misal: Rp 500.000 untuk kasur Fullset).</p>
+                            <p class="text-[11px] text-on-surface-variant">Langsung di-set harga ongkir tetap (misal: Rp 500.000 untuk unit produk).</p>
                         </div>
                     </label>
                 </div>
@@ -437,7 +454,7 @@
                             <span>Tarif Ongkos Kirim Tetap Default (Rp)</span>
                         </label>
                         <p class="text-[11px] text-amber-900">
-                            Tarif dasar/default pengiriman. <strong>Ongkos kirim tetap dapat diset berbeda per varian kasur</strong> (misal: Mattress Only Rp 150rb, Fullset Rp 500rb) pada tabel variasi di bawah.
+                            Tarif dasar/default pengiriman. <strong>Ongkos kirim tetap dapat diset berbeda per varian produk</strong> (misal: Satuan Rp 150rb, Fullset Rp 500rb) pada tabel variasi di bawah.
                         </p>
                     </div>
                 </div>
@@ -636,7 +653,7 @@
                         <span class="material-symbols-outlined text-primary text-[20px]">tune</span>
                         <div>
                             <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider">
-                                Konfigurasi Penentu Harga Kasur
+                                Konfigurasi Penentu Harga Produk
                             </h3>
                             <p class="text-[11px] text-on-surface-variant">
                                 Tentukan faktor variasi yang memiliki perbedaan harga jual. Tabel di bawah akan otomatis menyesuaikan kombinasinya.
@@ -649,17 +666,17 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <!-- 1. UKURAN KASUR (WAJIB) -->
+                    <!-- 1. UKURAN PRODUK (WAJIB) -->
                     <div class="bg-surface-container-lowest/70 border border-outline-variant/50 rounded-2xl p-4 flex flex-col justify-between space-y-3">
                         <div class="space-y-2.5">
                             <div class="flex items-center justify-between">
                                 <label class="text-xs font-bold text-on-surface uppercase tracking-wider flex items-center gap-1.5">
                                     <span class="w-5 h-5 rounded-full bg-primary text-white text-[11px] flex items-center justify-center font-bold">1</span>
-                                    Ukuran Kasur <span class="text-danger">*</span>
+                                    Ukuran Produk <span class="text-danger">*</span>
                                 </label>
                                 <span id="sizeCountBadge" class="text-[11px] font-bold text-primary">0 Ukuran</span>
                             </div>
-                            <p class="text-[11px] text-on-surface-variant">Klik untuk mengaktifkan / menonaktifkan ukuran kasur:</p>
+                            <p class="text-[11px] text-on-surface-variant">Klik untuk mengaktifkan / menonaktifkan ukuran produk:</p>
 
                             <!-- Size toggle chips container -->
                             <div id="standardSizesContainer" class="flex flex-wrap gap-1.5 pt-0.5">
@@ -690,7 +707,7 @@
                             <div class="flex items-center justify-between">
                                 <label class="text-xs font-bold text-on-surface uppercase tracking-wider flex items-center gap-1.5">
                                     <span class="w-5 h-5 rounded-full bg-primary text-white text-[11px] flex items-center justify-center font-bold">2</span>
-                                    Kelengkapan Paket
+                                    Kelengkapan / Opsi Tambahan
                                 </label>
                                 <!-- Switch toggle -->
                                 <label class="relative inline-flex items-center cursor-pointer">
@@ -700,21 +717,30 @@
                             </div>
 
                             <p class="text-[11px] text-on-surface-variant">
-                                Aktifkan jika produk memiliki opsi kelengkapan dengan harga berbeda (Mattress Only vs Fullset).
+                                Aktifkan jika produk memiliki opsi kelengkapan/tipe (misal: Satuan vs Paket Lengkap, atau Feel: Plush vs Firm).
                             </p>
 
                             <div id="completenessDisabledNotice" class="p-3 bg-surface-container/40 rounded-xl text-[11px] text-on-surface-variant italic text-center">
-                                Opsi dinonaktifkan. Seluruh ukuran diasumsikan sebagai <strong>Mattress Only</strong> (1 paket tunggal).
+                                Opsi dinonaktifkan. Seluruh ukuran diasumsikan sebagai <strong>Satuan/Standar</strong> (1 paket produk tunggal).
                             </div>
 
                             <div id="completenessOptionsContainer" class="space-y-2 hidden">
+                                <!-- Dynamic Title for Web -->
+                                <div class="mb-2.5 pb-2 border-b border-outline-variant/30">
+                                    <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Judul Atribut di Web:</label>
+                                    <div class="relative">
+                                        <input type="text" id="completenessTitleInput" value="Kelengkapan" placeholder="Contoh: Kelengkapan, Feel, Tipe..." class="w-full px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none" oninput="onCompletenessTitleChanged(this.value)">
+                                    </div>
+                                    <p class="text-[10px] text-on-surface-variant mt-1">Dinamis disesuaikan di toko online (misal: <em>Kelengkapan</em> atau <em>Feel</em>).</p>
+                                </div>
+
                                 <div class="space-y-1.5" id="completenessCheckboxesList">
                                     <!-- Populated dynamically by JS -->
                                 </div>
 
                                 <!-- Add custom completeness -->
                                 <div class="flex items-center gap-1.5 pt-2 border-t border-outline-variant/20">
-                                    <input type="text" id="customCompletenessInput" placeholder="Kelengkapan lain..." class="flex-1 px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:outline-none" onkeydown="if(event.key==='Enter'){ event.preventDefault(); addCustomCompleteness(); }">
+                                    <input type="text" id="customCompletenessInput" placeholder="Kelengkapan / opsi lain..." class="flex-1 px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:outline-none" onkeydown="if(event.key==='Enter'){ event.preventDefault(); addCustomCompleteness(); }">
                                     <button type="button" onclick="addCustomCompleteness()" class="px-2.5 py-1.5 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-lg text-xs font-bold shrink-0 border border-outline-variant/60 transition-colors">
                                         + Tambah
                                     </button>
@@ -724,59 +750,78 @@
 
                         <div class="text-[10px] text-on-surface-variant flex items-center gap-1 pt-2 border-t border-outline-variant/10">
                             <span class="material-symbols-outlined text-[14px] text-primary">sell</span>
-                            <span>Tiap kelengkapan memiliki harga & SKU tersendiri</span>
+                            <span>Tiap opsi memiliki harga & SKU tersendiri</span>
                         </div>
                     </div>
 
-                    <!-- 3. KETEBALAN / TINGGI KASUR (OPSIONAL) -->
+                    <!-- 3. KETEBALAN / TINGGI PRODUK (OPSIONAL) -->
                     <div class="bg-surface-container-lowest/70 border border-outline-variant/50 rounded-2xl p-4 flex flex-col justify-between space-y-3">
                         <div class="space-y-2.5">
                             <div class="flex items-center justify-between">
                                 <label class="text-xs font-bold text-on-surface uppercase tracking-wider flex items-center gap-1.5">
                                     <span class="w-5 h-5 rounded-full bg-primary text-white text-[11px] flex items-center justify-center font-bold">3</span>
-                                    Ketebalan Kasur (T)
+                                    Ketebalan / Tinggi Produk (T)
                                 </label>
-                                <!-- Mode toggle pills -->
-                                <div class="inline-flex rounded-lg border border-outline-variant/60 p-0.5 bg-surface-container-low text-[10px]">
-                                    <button type="button" id="thModeSingleBtn" onclick="setThicknessMode('single')" class="px-2 py-0.5 rounded-md font-bold transition-all bg-white text-primary shadow-2xs">1 Tebal</button>
-                                    <button type="button" id="thModeMultiBtn" onclick="setThicknessMode('multi')" class="px-2 py-0.5 rounded-md font-medium text-on-surface-variant hover:text-on-surface transition-all">Multi-Tebal</button>
-                                </div>
+                                <!-- Switch toggle -->
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="thicknessToggle" class="sr-only peer" checked onchange="toggleThicknessSwitch(this.checked)">
+                                    <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
                             </div>
 
-                            <!-- Single thickness panel -->
-                            <div id="singleThicknessPanel" class="space-y-2">
-                                <p class="text-[11px] text-on-surface-variant">Satu ketebalan standar untuk semua ukuran kasur:</p>
-                                <div class="relative">
-                                    <input type="number" step="0.1" min="0" id="singleThicknessInput" value="25" placeholder="Misal: 25" class="w-full px-3 py-2 bg-white border border-outline-variant rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary/20 focus:outline-none pr-10" oninput="onSingleThicknessChange(this.value)">
-                                    <span class="absolute right-3 top-2 text-[11px] text-on-surface-variant font-medium">cm</span>
-                                </div>
-                                <div class="flex items-center gap-1 flex-wrap pt-0.5">
-                                    <span class="text-[10px] text-on-surface-variant">Pilihan tebal:</span>
-                                    <button type="button" onclick="setSingleThicknessQuick(20)" class="text-[10px] px-2 py-0.5 bg-white border border-outline-variant rounded-md hover:border-primary font-medium">20 cm</button>
-                                    <button type="button" onclick="setSingleThicknessQuick(25)" class="text-[10px] px-2 py-0.5 bg-white border border-outline-variant rounded-md hover:border-primary font-medium">25 cm</button>
-                                    <button type="button" onclick="setSingleThicknessQuick(30)" class="text-[10px] px-2 py-0.5 bg-white border border-outline-variant rounded-md hover:border-primary font-medium">30 cm</button>
-                                    <button type="button" onclick="setSingleThicknessQuick(35)" class="text-[10px] px-2 py-0.5 bg-white border border-outline-variant rounded-md hover:border-primary font-medium">35 cm</button>
-                                </div>
+                            <p class="text-[11px] text-on-surface-variant">
+                                Aktifkan jika produk memiliki spesifikasi atau variasi ketebalan / tinggi (T).
+                            </p>
+
+                            <div id="thicknessDisabledNotice" class="p-3 bg-surface-container/40 rounded-xl text-[11px] text-on-surface-variant italic text-center hidden">
+                                Opsi dinonaktifkan. Produk tidak memiliki variasi ketebalan/tinggi.
                             </div>
 
-                            <!-- Multi thickness panel -->
-                            <div id="multiThicknessPanel" class="space-y-2 hidden">
-                                <p class="text-[11px] text-on-surface-variant">Pilih beberapa ketebalan dengan harga berbeda:</p>
-                                <div id="multiThicknessChipsContainer" class="flex flex-wrap gap-1.5 pt-0.5">
-                                    <!-- Populated dynamically by JS -->
+                            <div id="thicknessOptionsContainer" class="space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[11px] font-semibold text-on-surface">Pilihan Mode:</span>
+                                    <!-- Mode toggle pills -->
+                                    <div class="inline-flex rounded-lg border border-outline-variant/60 p-0.5 bg-surface-container-low text-[10px]">
+                                        <button type="button" id="thModeSingleBtn" onclick="setThicknessMode('single')" class="px-2 py-0.5 rounded-md font-bold transition-all bg-white text-primary shadow-2xs">1 Tebal</button>
+                                        <button type="button" id="thModeMultiBtn" onclick="setThicknessMode('multi')" class="px-2 py-0.5 rounded-md font-medium text-on-surface-variant hover:text-on-surface transition-all">Multi-Tebal</button>
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-1.5 pt-1">
-                                    <input type="number" step="0.1" min="0" id="customThicknessInput" placeholder="Tebal lain (cm)..." class="flex-1 px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:outline-none" onkeydown="if(event.key==='Enter'){ event.preventDefault(); addCustomThickness(); }">
-                                    <button type="button" onclick="addCustomThickness()" class="px-2.5 py-1.5 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-lg text-xs font-bold shrink-0 border border-outline-variant/60 transition-colors">
-                                        + Tambah
-                                    </button>
+
+                                <!-- Single thickness panel -->
+                                <div id="singleThicknessPanel" class="space-y-2">
+                                    <p class="text-[11px] text-on-surface-variant">Satu ketebalan / tinggi standar untuk semua ukuran produk:</p>
+                                    <div class="relative">
+                                        <input type="number" step="0.1" min="0" id="singleThicknessInput" value="25" placeholder="Misal: 25" class="w-full px-3 py-2 bg-white border border-outline-variant rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary/20 focus:outline-none pr-10" oninput="onSingleThicknessChange(this.value)">
+                                        <span class="absolute right-3 top-2 text-[11px] text-on-surface-variant font-medium">cm</span>
+                                    </div>
+                                    <div class="flex items-center gap-1 flex-wrap pt-0.5">
+                                        <span class="text-[10px] text-on-surface-variant">Pilihan tebal/tinggi:</span>
+                                        <button type="button" onclick="setSingleThicknessQuick(20)" class="text-[10px] px-2 py-0.5 bg-white border border-outline-variant rounded-md hover:border-primary font-medium">20 cm</button>
+                                        <button type="button" onclick="setSingleThicknessQuick(25)" class="text-[10px] px-2 py-0.5 bg-white border border-outline-variant rounded-md hover:border-primary font-medium">25 cm</button>
+                                        <button type="button" onclick="setSingleThicknessQuick(30)" class="text-[10px] px-2 py-0.5 bg-white border border-outline-variant rounded-md hover:border-primary font-medium">30 cm</button>
+                                        <button type="button" onclick="setSingleThicknessQuick(35)" class="text-[10px] px-2 py-0.5 bg-white border border-outline-variant rounded-md hover:border-primary font-medium">35 cm</button>
+                                    </div>
+                                </div>
+
+                                <!-- Multi thickness panel -->
+                                <div id="multiThicknessPanel" class="space-y-2 hidden">
+                                    <p class="text-[11px] text-on-surface-variant">Pilih beberapa ketebalan/tinggi dengan harga berbeda:</p>
+                                    <div id="multiThicknessChipsContainer" class="flex flex-wrap gap-1.5 pt-0.5">
+                                        <!-- Populated dynamically by JS -->
+                                    </div>
+                                    <div class="flex items-center gap-1.5 pt-1">
+                                        <input type="number" step="0.1" min="0" id="customThicknessInput" placeholder="Tebal lain (cm)..." class="flex-1 px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:outline-none" onkeydown="if(event.key==='Enter'){ event.preventDefault(); addCustomThickness(); }">
+                                        <button type="button" onclick="addCustomThickness()" class="px-2.5 py-1.5 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-lg text-xs font-bold shrink-0 border border-outline-variant/60 transition-colors">
+                                            + Tambah
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="text-[10px] text-on-surface-variant flex items-center gap-1 pt-2 border-t border-outline-variant/10">
                             <span class="material-symbols-outlined text-[14px] text-primary">height</span>
-                            <span id="thicknessFooterNote">Tinggi kasur otomatis tersinkron ke kolom T (cm)</span>
+                            <span id="thicknessFooterNote">Tinggi / tebal produk otomatis tersinkron ke kolom T (cm)</span>
                         </div>
                     </div>
                 </div>
@@ -816,8 +861,8 @@
                         <input type="number" step="1000" min="0" id="batchShippingCost" placeholder="0" class="w-full px-2.5 py-1.5 border border-amber-300 rounded-lg text-xs font-bold text-amber-950 bg-amber-50/50 focus:ring-2 focus:ring-amber-400/20 focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Prefix SKU</label>
-                        <input type="text" id="batchSkuPrefix" placeholder="Misal: KBR1000..." class="w-full px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                        <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Kode SKU</label>
+                        <input type="text" id="batchSkuPrefix" value="{{ $productCode }}" readonly disabled class="w-full px-2.5 py-1.5 border border-outline-variant/60 rounded-lg text-xs font-mono font-bold bg-surface-container/60 text-on-surface-variant cursor-not-allowed" title="Prefix SKU otomatis dari kode produk">
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">P (cm)</label>
@@ -843,7 +888,7 @@
                 </div>
             </div>
 
-            <!-- BAGIAN 4: DAFTAR VARIASI TERKELOMPOK PER UKURAN KASUR -->
+            <!-- BAGIAN 4: DAFTAR VARIASI TERKELOMPOK PER UKURAN PRODUK -->
             <div class="space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/30 pb-3">
                     <div class="flex items-center gap-2.5">
@@ -851,11 +896,11 @@
                         <div>
                             <div class="flex items-center gap-2">
                                 <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider">
-                                    Daftar Variasi per Ukuran Kasur
+                                    Daftar Variasi per Ukuran Produk
                                 </h3>
                                 <span id="variantRowCountBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary">0 Ukuran</span>
                             </div>
-                            <p class="text-[11px] text-on-surface-variant mt-0.5">Tampilan terkelompok rapi per ukuran kasur. Setiap ukuran memuat pilihan ketebalan, kelengkapan, dan harga tanpa duplikasi.</p>
+                            <p class="text-[11px] text-on-surface-variant mt-0.5">Tampilan terkelompok rapi per ukuran produk. Setiap ukuran memuat pilihan ketebalan/tinggi, kelengkapan, dan harga tanpa duplikasi.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 self-start sm:self-auto">
@@ -872,7 +917,7 @@
                 <div id="variantsGroupedContainer" class="space-y-4">
                     <!-- Dynamic grouped cards injected by JS -->
                 </div>
-                <p id="noVariantsWarning" class="text-xs text-danger font-medium hidden">Mohon tentukan minimal 1 kombinasi variasi produk kasur.</p>
+                <p id="noVariantsWarning" class="text-xs text-danger font-medium hidden">Mohon tentukan minimal 1 kombinasi variasi produk.</p>
             </div>
         </div>
 
@@ -887,7 +932,7 @@
             </div>
 
             <!-- Status & Visibilitas -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
                 <!-- Status Produk -->
                 <div class="space-y-1.5">
                     <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">
@@ -896,6 +941,17 @@
                     <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-xl text-xs bg-white focus:ring-2 focus:ring-primary/20 focus:outline-none">
                         <option value="1" {{ old('status', $product->status ?? 1) == 1 ? 'selected' : '' }}>Aktif (Tampil di Katalog)</option>
                         <option value="0" {{ old('status', $product->status ?? 1) == 0 ? 'selected' : '' }}>Nonaktif (Disembunyikan)</option>
+                    </select>
+                </div>
+
+                <!-- Tampilkan di Web -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                        Tampilkan di Web
+                    </label>
+                    <select name="show_on_web" class="w-full px-3 py-2 border border-outline-variant rounded-xl text-xs bg-white focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                        <option value="1" {{ old('show_on_web', (isset($product) && $product->exists ? ($product->show_on_web ? '1' : '0') : '1')) == '1' ? 'selected' : '' }}>Ya (Tampil di Web)</option>
+                        <option value="0" {{ old('show_on_web', (isset($product) && $product->exists ? ($product->show_on_web ? '1' : '0') : '1')) == '0' ? 'selected' : '' }}>Tidak (Sembunyikan dari Web)</option>
                     </select>
                 </div>
 
@@ -992,14 +1048,16 @@ let selectedSizes = ['160 X 200', '180 X 200', '200 X 200'];
 
 // Completeness Configuration
 let hasCompleteness = false;
+let completenessAttributeTitle = 'Kelengkapan';
 const PRESET_COMPLETENESS = [
-    { name: 'Mattress Only', short: 'Mattress Only', code: 'MO' },
-    { name: 'Fullset', short: 'Fullset', code: 'FS' }
+    { name: 'Kasur Saja', short: 'Kasur Saja', code: 'KS' },
+    { name: 'Set Kasur + Divan', short: 'Set Kasur + Divan', code: 'SD' }
 ];
 let completenessList = [...PRESET_COMPLETENESS];
-let activeCompleteness = ['Mattress Only', 'Fullset'];
+let activeCompleteness = ['Kasur Saja', 'Set Kasur + Divan'];
 
 // Thickness Configuration
+let hasThickness = true;
 let thicknessMode = 'single'; // 'single' or 'multi'
 let singleThickness = 25;
 const PRESET_THICKNESSES = [20, 25, 30, 35, 40];
@@ -1057,31 +1115,37 @@ function formatStandardSize(str) {
     return str.trim().toUpperCase();
 }
 
-// Auto-generate official ERP SKU with optional completeness and thickness codes
+// Auto-generate official ERP SKU from Product Code + Ukuran - Kelengkapan / Ketebalan
 function generateAutoSku(sizeStr, compCode, tebalNum) {
     const dims = parseSizeDimensions(sizeStr);
-    const prodCode = (window.productCode || '').trim();
+    const prodCode = (window.productCode || document.getElementById('productCodeHidden')?.value || '').trim() || 'PRD';
 
     let suffix = '';
     if (compCode) {
-        suffix += `-${compCode}`;
+        suffix += `-${compCode.toUpperCase()}`;
     }
     if (tebalNum) {
         const cleanT = String(tebalNum).replace(/\D+/g, '');
         if (cleanT) suffix += `-T${cleanT}`;
     }
 
-    if (prodCode && dims.width && dims.length) {
-        const wStr = dims.width < 100 ? '0' + dims.width : String(dims.width);
-        const lStr = String(dims.length);
-        return `${prodCode}S${lStr}${wStr}${suffix}`;
+    let sizePart = '';
+    if (dims.width && dims.length) {
+        sizePart = `${dims.width}X${dims.length}`;
+    } else if (sizeStr) {
+        sizePart = slugify(sizeStr).toUpperCase().replace(/-+/g, '');
+    } else {
+        sizePart = 'STD';
     }
 
-    const bPrefix = document.getElementById('batchSkuPrefix')?.value?.trim() || '';
-    const prodName = document.getElementById('productNameInput')?.value?.trim() || '';
-    const initials = bPrefix || (prodCode ? prodCode + '-' : (prodName ? prodName.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 4) + '-' : 'RYL-'));
-    const cleanPrefix = initials.endsWith('-') ? initials : initials + '-';
-    return `${cleanPrefix}${slugify(sizeStr).toUpperCase()}${suffix}`.replace(/--+/g, '-');
+    return `${prodCode}-${sizePart}${suffix}`.replace(/--+/g, '-');
+}
+
+function getCombinationKey(sizeStr, compName, thVal) {
+    const s = (sizeStr || '').trim();
+    const c = (compName || '').trim();
+    const t = (hasThickness && thicknessMode === 'multi' && thVal) ? String(thVal).trim() : '';
+    return `${s}__${c}__${t}`;
 }
 
 // ==================== PRODUCT COLORS MANAGEMENT (product_colors) ====================
@@ -1356,7 +1420,7 @@ function setThicknessMode(mode) {
         sBtn?.classList.remove('text-on-surface-variant');
         mPanel?.classList.add('hidden');
         sPanel?.classList.remove('hidden');
-        if (note) note.textContent = 'Tinggi kasur otomatis tersinkron ke kolom T (cm)';
+        if (note) note.textContent = 'Tinggi / tebal produk otomatis tersinkron ke kolom T (cm)';
     }
 
     rebuildCombinations();
@@ -1445,6 +1509,35 @@ function addCustomThickness() {
     showToast('success', `Tebal "${val} cm" berhasil ditambahkan!`);
 }
 
+// ==================== 3B. TOGGLES & DYNAMIC ATTRIBUTE LABELS ====================
+function toggleThicknessSwitch(isChecked) {
+    saveCurrentTableInputs();
+    hasThickness = !!isChecked;
+
+    const notice = document.getElementById('thicknessDisabledNotice');
+    const container = document.getElementById('thicknessOptionsContainer');
+    const toggle = document.getElementById('thicknessToggle');
+    if (toggle) toggle.checked = hasThickness;
+
+    if (hasThickness) {
+        notice?.classList.add('hidden');
+        container?.classList.remove('hidden');
+        if (thicknessMode === 'multi' && activeThicknesses.length === 0 && availableThicknesses.length > 0) {
+            activeThicknesses = [availableThicknesses[0]];
+        }
+    } else {
+        notice?.classList.remove('hidden');
+        container?.classList.add('hidden');
+    }
+
+    rebuildCombinations();
+}
+
+function onCompletenessTitleChanged(val) {
+    completenessAttributeTitle = val.trim() || 'Kelengkapan';
+    renderVariantsTable();
+}
+
 // ==================== 4. COMBINATION ENGINE & BATCH APPLY ====================
 function saveCurrentTableInputs() {
     const rows = document.querySelectorAll('tr.variant-row');
@@ -1464,21 +1557,46 @@ function saveCurrentTableInputs() {
         const stat = row.querySelector('.v-status')?.value ?? '1';
         const excl = row.dataset.excluded === '1';
 
+        const parsedBPrice = (bPrice !== '' && !isNaN(parseFloat(bPrice))) ? parseFloat(bPrice) : 0;
+        const parsedSPrice = (sPrice !== '' && !isNaN(parseFloat(sPrice))) ? parseFloat(sPrice) : 0;
+        const parsedSCost = (sCost !== '' && !isNaN(parseFloat(sCost))) ? parseFloat(sCost) : 0;
+        const parsedLen = (len !== '' && !isNaN(parseFloat(len))) ? parseFloat(len) : null;
+        const parsedWid = (wid !== '' && !isNaN(parseFloat(wid))) ? parseFloat(wid) : null;
+        const parsedHei = (hei !== '' && !isNaN(parseFloat(hei))) ? parseFloat(hei) : null;
+        const parsedWei = (wei !== '' && !isNaN(parseFloat(wei))) ? parseFloat(wei) : null;
+
         rowCache[key] = {
             variant_name: vName,
             sku: vSku,
-            base_price: bPrice,
-            sell_price: sPrice,
-            shipping_cost: sCost,
-            length: len,
-            width: wid,
-            height: hei,
-            weight: wei,
+            base_price: parsedBPrice,
+            sell_price: parsedSPrice,
+            shipping_cost: parsedSCost,
+            length: parsedLen,
+            width: parsedWid,
+            height: parsedHei,
+            weight: parsedWei,
             status: stat,
             excluded: excl,
             has_db_sku: row.dataset.hasDbSku === '1',
             id: row.dataset.id || null
         };
+
+        // CRITICAL FIX: Directly update matching variantRows item so individual edits are saved
+        const gIdx = parseInt(row.dataset.index);
+        let target = (!isNaN(gIdx) && variantRows[gIdx]) ? variantRows[gIdx] : variantRows.find(r => r.key === key);
+        if (target) {
+            target.variant_name = vName;
+            target.sku = vSku;
+            target.base_price = parsedBPrice;
+            target.sell_price = parsedSPrice;
+            target.shipping_cost = parsedSCost;
+            target.length = parsedLen;
+            target.width = parsedWid;
+            target.height = parsedHei;
+            target.weight = parsedWei;
+            target.status = stat;
+            target.excluded = excl;
+        }
     });
 }
 
@@ -1487,16 +1605,18 @@ function rebuildCombinations() {
 
     const sizes = selectedSizes.length > 0 ? selectedSizes : [];
     const comps = (hasCompleteness && activeCompleteness.length > 0) ? activeCompleteness : [null];
-    const tebals = (thicknessMode === 'multi' && activeThicknesses.length > 0) ? activeThicknesses : [singleThickness || 25];
+    const tebals = (hasThickness && thicknessMode === 'multi' && activeThicknesses.length > 0) 
+        ? activeThicknesses 
+        : (hasThickness ? [singleThickness || 25] : [null]);
 
-    const totalCombinations = sizes.length * comps.length * (thicknessMode === 'multi' ? tebals.length : 1);
+    const totalCombinations = sizes.length * comps.length * (hasThickness && thicknessMode === 'multi' ? tebals.length : 1);
 
     // Update Badges
     const badge = document.getElementById('combinationSummaryBadge');
     if (badge) {
         let label = `${sizes.length} Ukuran`;
-        if (hasCompleteness) label += ` × ${comps.length} Kelengkapan`;
-        if (thicknessMode === 'multi') label += ` × ${tebals.length} Tebal`;
+        if (hasCompleteness) label += ` × ${comps.length} ${completenessAttributeTitle || 'Kelengkapan'}`;
+        if (hasThickness && thicknessMode === 'multi') label += ` × ${tebals.length} Tebal`;
         badge.textContent = `${label} = ${totalCombinations} Baris`;
     }
 
@@ -1511,28 +1631,37 @@ function rebuildCombinations() {
             const compCode = compObj ? compObj.code : null;
 
             tebals.forEach(thVal => {
-                const key = `${sizeStr}__${compName || ''}__${thicknessMode === 'multi' ? thVal : ''}`;
-                const cached = rowCache[key] || {};
+                const key = getCombinationKey(sizeStr, compName, thVal);
+                const altKey1 = `${sizeStr}__${compName || ''}__${thVal || ''}`;
+                const altKey2 = `${sizeStr}__${compName || ''}__`;
+                const altKey3 = `${sizeStr}____`;
+
+                const cached = rowCache[key] 
+                    || rowCache[altKey1] 
+                    || rowCache[altKey2] 
+                    || rowCache[altKey3] 
+                    || variantRows.find(r => r.key === key || (r.size === sizeStr && (r.kelengkapan || '') === (compShort || compName || '')))
+                    || {};
 
                 // Default Variant Name
                 let defaultName = sizeStr;
-                if (compShort && thicknessMode === 'multi') {
+                if (compShort && hasThickness && thicknessMode === 'multi' && thVal) {
                     defaultName = `${sizeStr} - ${compShort} - T.${thVal}cm`;
                 } else if (compShort) {
                     defaultName = `${sizeStr} - ${compShort}`;
-                } else if (thicknessMode === 'multi') {
+                } else if (hasThickness && thicknessMode === 'multi' && thVal) {
                     defaultName = `${sizeStr} - T.${thVal}cm`;
                 }
 
                 // Default SKU
-                const defaultSku = generateAutoSku(sizeStr, compCode, thicknessMode === 'multi' ? thVal : null);
+                const defaultSku = generateAutoSku(sizeStr, compCode, (hasThickness && thicknessMode === 'multi') ? thVal : null);
 
                 newRows.push({
                     key: key,
                     id: cached.id || null,
                     size: sizeStr,
                     kelengkapan: compShort || compName || null,
-                    tebal: thicknessMode === 'multi' ? thVal : (singleThickness || 25),
+                    tebal: hasThickness ? (thicknessMode === 'multi' ? thVal : (singleThickness || 25)) : null,
                     variant_name: cached.variant_name || defaultName,
                     sku: cached.sku || defaultSku,
                     has_db_sku: cached.has_db_sku || false,
@@ -1541,7 +1670,7 @@ function rebuildCombinations() {
                     shipping_cost: cached.shipping_cost !== undefined ? cached.shipping_cost : (document.getElementById('batchShippingCost')?.value || document.getElementById('productShippingCost')?.value || 0),
                     length: cached.length !== undefined && cached.length !== '' ? cached.length : (dims.length || 200),
                     width: cached.width !== undefined && cached.width !== '' ? cached.width : (dims.width || ''),
-                    height: cached.height !== undefined && cached.height !== '' ? cached.height : (thicknessMode === 'multi' ? thVal : (singleThickness || 25)),
+                    height: cached.height !== undefined && cached.height !== '' ? cached.height : (hasThickness ? (thicknessMode === 'multi' ? thVal : (singleThickness || 25)) : (document.getElementById('productHeight')?.value || 25)),
                     weight: cached.weight !== undefined && cached.weight !== '' ? cached.weight : (document.getElementById('productWeight')?.value || ''),
                     status: cached.status !== undefined ? cached.status : 1,
                     image: cached.image || null,
@@ -1567,7 +1696,7 @@ function updateBatchTargetSelector() {
 
     if (hasCompleteness && activeCompleteness.length > 0) {
         const groupOpt = document.createElement('optgroup');
-        groupOpt.label = 'Filter Kelengkapan Paket';
+        groupOpt.label = `Filter ${completenessAttributeTitle || 'Kelengkapan Paket'}`;
         activeCompleteness.forEach(compName => {
             const compObj = completenessList.find(c => c.name === compName);
             const shortName = compObj ? compObj.short : compName;
@@ -1580,7 +1709,7 @@ function updateBatchTargetSelector() {
         selector.appendChild(groupOpt);
     }
 
-    if (thicknessMode === 'multi' && activeThicknesses.length > 0) {
+    if (hasThickness && thicknessMode === 'multi' && activeThicknesses.length > 0) {
         const thGroup = document.createElement('optgroup');
         thGroup.label = 'Filter Ketebalan';
         activeThicknesses.forEach(th => {
@@ -1658,8 +1787,6 @@ function applyBatchSettings() {
 
 // ==================== 5. GROUPED VARIANT CARDS RENDERING ====================
 function renderVariantsTable() {
-    saveCurrentTableInputs();
-
     const container = document.getElementById('variantsGroupedContainer');
     const warning = document.getElementById('noVariantsWarning');
     const badge = document.getElementById('variantRowCountBadge');
@@ -1683,9 +1810,9 @@ function renderVariantsTable() {
         if (warning) warning.classList.remove('hidden');
         container.innerHTML = `
             <div class="p-8 text-center rounded-2xl border-2 border-dashed border-outline-variant/40 bg-white">
-                <span class="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-2">bed</span>
-                <p class="text-sm font-semibold text-on-surface">Belum ada kombinasi variasi kasur yang aktif</p>
-                <p class="text-xs text-on-surface-variant mt-1">Aktifkan ukuran kasur pada panel konfigurasi di atas untuk menghasilkan daftar variasi.</p>
+                <span class="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-2">category</span>
+                <p class="text-sm font-semibold text-on-surface">Belum ada kombinasi variasi produk yang aktif</p>
+                <p class="text-xs text-on-surface-variant mt-1">Aktifkan ukuran produk pada panel konfigurasi di atas untuk menghasilkan daftar variasi.</p>
             </div>
         `;
         return;
@@ -1713,6 +1840,18 @@ function renderVariantsTable() {
 
         const baseSku = generateAutoSku(sizeStr, null, null);
         const cardSlug = slugify(sizeStr);
+
+        // Calculate common sell price for this size if all active rows share the same price
+        const activeSizeRows = sizeRows.filter(sr => !sr.item.excluded);
+        let commonSellPrice = '';
+        if (activeSizeRows.length > 0) {
+            const firstPrice = activeSizeRows[0].item.sell_price;
+            if (firstPrice !== undefined && firstPrice !== null && firstPrice !== '' && parseFloat(firstPrice) > 0) {
+                if (activeSizeRows.every(sr => parseFloat(sr.item.sell_price) === parseFloat(firstPrice))) {
+                    commonSellPrice = firstPrice;
+                }
+            }
+        }
 
         // Unique thicknesses and completeness in this size
         const sizeTebals = Array.from(new Set(sizeRows.map(sr => sr.item.tebal).filter(Boolean)));
@@ -1760,7 +1899,7 @@ function renderVariantsTable() {
                     <!-- Quick Price Setter for this specific size -->
                     <div class="flex items-center gap-1.5 bg-surface-container-low px-2.5 py-1 rounded-xl border border-outline-variant/40 shadow-2xs">
                         <span class="text-[10px] font-bold text-on-surface-variant uppercase">Harga:</span>
-                        <input type="number" id="quickPrice_${cardSlug}" placeholder="Rp Jual" class="w-24 px-2 py-0.5 text-xs font-bold text-primary bg-white border border-outline-variant/60 rounded-lg focus:ring-1 focus:ring-primary focus:outline-none" onkeydown="if(event.key==='Enter'){ event.preventDefault(); applyPriceToSize('${escapeHtml(sizeStr)}'); }">
+                        <input type="number" id="quickPrice_${cardSlug}" placeholder="Rp Jual" value="${commonSellPrice}" class="w-24 px-2 py-0.5 text-xs font-bold text-primary bg-white border border-outline-variant/60 rounded-lg focus:ring-1 focus:ring-primary focus:outline-none" onkeydown="if(event.key==='Enter'){ event.preventDefault(); applyPriceToSize('${escapeHtml(sizeStr)}'); }">
                         <button type="button" onclick="applyPriceToSize('${escapeHtml(sizeStr)}')" class="px-2.5 py-1 bg-primary text-white rounded-lg text-[10px] font-bold hover:opacity-90 shadow-2xs transition-all" title="Terapkan harga ini ke semua varian ukuran ${escapeHtml(sizeStr)}">
                             Set
                         </button>
@@ -1822,7 +1961,7 @@ function renderVariantsTable() {
             rowsHtml += `
                 <tr class="variant-row hover:bg-surface-container/20 transition-colors ${v.excluded ? ' opacity-40 bg-surface-container-low' : ''}"
                     data-index="${globalIdx}"
-                    data-key="${v.key || `${v.size}__${v.kelengkapan || ''}__${v.tebal || ''}`}"
+                    data-key="${v.key || getCombinationKey(v.size, v.kelengkapan, v.tebal)}"
                     data-id="${v.id || ''}"
                     data-has-db-sku="${v.has_db_sku ? '1' : '0'}"
                     data-excluded="${v.excluded ? '1' : '0'}">
@@ -1835,13 +1974,15 @@ function renderVariantsTable() {
                             </span>
                         </td>
                     ` : ''}
+                    ${hasThickness ? `
                     <td class="px-3 py-2.5">
                         <span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-bold text-xs border border-emerald-200/70 inline-block font-mono">
-                            ${escapeHtml(String(v.tebal || heightVal))} cm
+                            ${escapeHtml(String(v.tebal || heightVal || ''))} cm
                         </span>
                     </td>
+                    ` : ''}
                     <td class="px-3 py-2.5">
-                        <input type="text" class="v-sku w-full min-w-[200px] px-2.5 py-1.5 border border-outline-variant/60 bg-surface-container-low text-on-surface rounded-lg text-xs font-mono font-semibold select-all focus:outline-none focus:bg-white focus:border-primary transition-all" value="${escapeHtml(v.sku || '')}" title="SKU Resmi ERP / Katalog" oninput="onRowSkuChanged(this, ${globalIdx})">
+                        <input type="text" class="v-sku w-full min-w-[200px] px-2.5 py-1.5 border border-outline-variant/60 bg-surface-container/60 text-on-surface-variant rounded-lg text-xs font-mono font-bold cursor-not-allowed select-all focus:outline-none" value="${escapeHtml(v.sku || '')}" title="SKU otomatis terisi (Kode Produk + Ukuran - Kelengkapan/Tebal)" readonly tabindex="-1">
                     </td>
                     <td class="px-3 py-2.5">
                         <input type="text" class="v-variant-name w-full min-w-[170px] px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all" value="${escapeHtml(v.variant_name || '')}" placeholder="Nama kombinasi" oninput="onRowNameChanged(this, ${globalIdx})">
@@ -1859,15 +2000,19 @@ function renderVariantsTable() {
                     ` : `
                     <input type="hidden" class="v-shipping-cost" value="${shippingCostVal}">
                     `}
-                    <td class="px-2 py-2.5">
-                        <input type="number" step="0.1" min="0" class="v-height w-16 px-2 py-1.5 border border-outline-variant rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="T" value="${escapeHtml(String(heightVal))}" title="Tinggi (cm)">
+                    <!-- Variant-Level Dimensions Inputs (P, L, T, Berat) -->
+                    <td class="px-1.5 py-2.5 text-center">
+                        <input type="number" step="1" min="0" class="v-length w-16 px-1.5 py-1.5 border border-outline-variant rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="P" value="${escapeHtml(String(lengthVal))}" title="Panjang (cm)">
                     </td>
-                    <td class="px-2 py-2.5">
-                        <input type="number" step="0.01" min="0" class="v-weight w-16 px-2 py-1.5 border border-outline-variant rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="0" value="${escapeHtml(String(weightVal))}" title="Berat (kg)">
+                    <td class="px-1.5 py-2.5 text-center">
+                        <input type="number" step="1" min="0" class="v-width w-16 px-1.5 py-1.5 border border-outline-variant rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="L" value="${escapeHtml(String(widthVal))}" title="Lebar (cm)">
                     </td>
-                    <!-- Hidden inputs so saveCurrentTableInputs still reads dimensions -->
-                    <input type="hidden" class="v-length" value="${escapeHtml(String(lengthVal))}">
-                    <input type="hidden" class="v-width" value="${escapeHtml(String(widthVal))}">
+                    <td class="px-1.5 py-2.5 text-center">
+                        <input type="number" step="0.1" min="0" class="v-height w-16 px-1.5 py-1.5 border border-outline-variant rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="T" value="${escapeHtml(String(heightVal))}" title="Tinggi (cm)">
+                    </td>
+                    <td class="px-1.5 py-2.5 text-center">
+                        <input type="number" step="0.01" min="0" class="v-weight w-16 px-1.5 py-1.5 border border-outline-variant rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="0" value="${escapeHtml(String(weightVal))}" title="Berat (kg)">
+                    </td>
                     <td class="px-3 py-2.5">
                         <select class="v-status w-full px-2 py-1.5 border border-outline-variant rounded-lg text-xs bg-white focus:ring-2 focus:ring-primary/20 focus:outline-none">
                             <option value="1" ${v.status == 1 ? 'selected' : ''}>Aktif</option>
@@ -1895,15 +2040,17 @@ function renderVariantsTable() {
                         <tr class="bg-surface-gray/50 border-b border-outline-variant/20 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
                             <th class="px-3 py-2 text-center w-9">#</th>
                             <th class="px-2 py-2 w-12 text-center">Foto</th>
-                            ${hasCompleteness ? '<th class="px-3 py-2 min-w-[130px]">Kelengkapan</th>' : ''}
-                            <th class="px-3 py-2 min-w-[85px]">Ketebalan</th>
+                            ${hasCompleteness ? `<th class="px-3 py-2 min-w-[130px]">${escapeHtml(completenessAttributeTitle || 'Kelengkapan')}</th>` : ''}
+                            ${hasThickness ? '<th class="px-3 py-2 min-w-[85px]">Ketebalan</th>' : ''}
                             <th class="px-3 py-2 min-w-[210px]">SKU</th>
                             <th class="px-3 py-2 min-w-[180px]">Nama Kombinasi</th>
                             <th class="px-3 py-2 min-w-[120px]">Harga Modal (Rp)</th>
                             <th class="px-3 py-2 min-w-[130px]">Harga Jual (Rp) <span class="text-danger">*</span></th>
                             ${isFixedShipping ? '<th class="px-3 py-2 min-w-[130px] text-amber-900 bg-amber-50/50 border-l border-r border-amber-200/50">Ongkir Tetap (Rp)</th>' : ''}
-                            <th class="px-2 py-2 min-w-[70px] text-center">T (cm)</th>
-                            <th class="px-2 py-2 min-w-[70px] text-center">Berat (kg)</th>
+                            <th class="px-1.5 py-2 min-w-[65px] text-center">P (cm)</th>
+                            <th class="px-1.5 py-2 min-w-[65px] text-center">L (cm)</th>
+                            <th class="px-1.5 py-2 min-w-[65px] text-center">T (cm)</th>
+                            <th class="px-1.5 py-2 min-w-[65px] text-center">Berat (kg)</th>
                             <th class="px-3 py-2 min-w-[85px]">Status</th>
                             <th class="px-2 py-2 text-center w-10">Aksi</th>
                         </tr>
@@ -2302,25 +2449,39 @@ function initVariantsFromBackend() {
 
         existingVariants.forEach(v => {
             const rawAttrs = v.attributes || {};
-            if (rawAttrs.Kelengkapan) {
-                let cName = rawAttrs.Kelengkapan;
+
+            // Detect custom completeness / attribute title (e.g. Feel or Kelengkapan)
+            if (rawAttrs._completeness_title) {
+                completenessAttributeTitle = rawAttrs._completeness_title;
+            } else {
+                for (const k in rawAttrs) {
+                    if (!['width', 'length', 'height', 'weight', 'status', 'image', 'image_url', 'Ukuran', 'Ketebalan', 'thickness'].includes(k)) {
+                        completenessAttributeTitle = k;
+                        break;
+                    }
+                }
+            }
+
+            const compVal = rawAttrs._completeness_title ? rawAttrs[rawAttrs._completeness_title] : (rawAttrs.Kelengkapan || rawAttrs[completenessAttributeTitle] || null);
+            if (compVal) {
+                let cName = compVal;
                 if (cName.toLowerCase().includes('kasur saja') || cName.toLowerCase().includes('mattress')) {
-                    cName = 'Mattress Only';
-                } else if (cName.toLowerCase().includes('divan') || cName.toLowerCase().includes('full')) {
-                    cName = 'Fullset';
+                    cName = 'Kasur Saja';
+                } else if (cName.toLowerCase().includes('divan') || cName.toLowerCase().includes('full') || cName.toLowerCase().includes('set')) {
+                    cName = 'Set Kasur + Divan';
                 }
                 detectedComps.add(cName);
             } else if (v.variant_name) {
                 if (v.variant_name.includes('Kasur Saja') || v.variant_name.includes('Mattress Only')) {
-                    detectedComps.add('Mattress Only');
-                } else if (v.variant_name.includes('Fullset') || v.variant_name.includes('Full Set') || v.variant_name.includes('Divan')) {
-                    detectedComps.add('Fullset');
+                    detectedComps.add('Kasur Saja');
+                } else if (v.variant_name.includes('Fullset') || v.variant_name.includes('Full Set') || v.variant_name.includes('Divan') || v.variant_name.includes('Set Kasur')) {
+                    detectedComps.add('Set Kasur + Divan');
                 }
             }
             if (rawAttrs.Ketebalan) {
                 const num = parseFloat(String(rawAttrs.Ketebalan).replace(/\D+/g, ''));
                 if (num) detectedHeights.add(num);
-            } else if (v.height) {
+            } else if (v.height && parseFloat(v.height) > 0) {
                 detectedHeights.add(parseFloat(v.height));
             }
 
@@ -2337,7 +2498,7 @@ function initVariantsFromBackend() {
             // Ensure they exist in completenessList
             activeCompleteness.forEach(cName => {
                 if (!completenessList.some(c => c.name === cName || c.short === cName)) {
-                    completenessList.push({ name: cName, short: cName, code: cName === 'Mattress Only' ? 'MO' : (cName === 'Fullset' ? 'FS' : cName.substring(0, 2).toUpperCase()) });
+                    completenessList.push({ name: cName, short: cName, code: (cName.toLowerCase().includes('kasur') ? 'KS' : 'SD') });
                 }
             });
         } else {
@@ -2367,87 +2528,119 @@ function initVariantsFromBackend() {
             });
         }
 
-        // Cache existing variants by their combination key
-        existingVariants.forEach(v => {
-            const rawAttrs = v.attributes || {};
-            const dims = parseSizeDimensions(v.variant_name);
-            const sizeStr = rawAttrs.Ukuran || formatStandardSize(v.variant_name);
-            let compStr = rawAttrs.Kelengkapan || '';
-            if (compStr) {
-                if (compStr.toLowerCase().includes('kasur saja') || compStr.toLowerCase().includes('mattress')) compStr = 'Mattress Only';
-                else if (compStr.toLowerCase().includes('divan') || compStr.toLowerCase().includes('full')) compStr = 'Fullset';
-            } else if (hasCompleteness && v.variant_name) {
-                if (v.variant_name.includes('Kasur Saja') || v.variant_name.includes('Mattress Only')) compStr = 'Mattress Only';
-                else if (v.variant_name.includes('Fullset') || v.variant_name.includes('Full Set') || v.variant_name.includes('Divan')) compStr = 'Fullset';
-            }
-            const thStr = thicknessMode === 'multi' ? (v.height || singleThickness) : '';
-            const key = `${sizeStr}__${compStr}__${thStr}`;
-
-            rowCache[key] = {
-                id: v.id || null,
-                variant_name: v.variant_name || '',
-                sku: v.sku || '',
-                has_db_sku: !!v.sku,
-                base_price: (v.base_price !== null && v.base_price !== undefined && v.base_price !== '') ? v.base_price : 0,
-                sell_price: (v.sell_price !== null && v.sell_price !== undefined && v.sell_price !== '') ? v.sell_price : 0,
-                shipping_cost: v.shipping_cost !== undefined && v.shipping_cost !== null ? v.shipping_cost : '',
-                length: v.length ?? dims.length ?? 200,
-                width: v.width ?? dims.width ?? '',
-                height: v.height ?? singleThickness,
-                weight: v.weight ?? '',
-                status: v.status ?? 1,
-                image: v.image || null,
-                image_url: v.image_url || null,
-                image_file: null,
-                excluded: false
-            };
-        });
-
-        // Setup Controls UI
+        // Setup Controls UI silently without triggering rebuildCombinations
         renderStandardSizes();
         const compToggle = document.getElementById('completenessToggle');
         if (compToggle) compToggle.checked = hasCompleteness;
-        toggleCompletenessMode(hasCompleteness);
-        setThicknessMode(thicknessMode);
+        const compTitleInput = document.getElementById('completenessTitleInput');
+        if (compTitleInput) compTitleInput.value = completenessAttributeTitle || 'Kelengkapan';
 
-        // Load into variantRows directly preserving exact backend order if keys match
+        const compNotice = document.getElementById('completenessDisabledNotice');
+        const compContainer = document.getElementById('completenessOptionsContainer');
+        if (hasCompleteness) {
+            compNotice?.classList.add('hidden');
+            compContainer?.classList.remove('hidden');
+        } else {
+            compNotice?.classList.remove('hidden');
+            compContainer?.classList.add('hidden');
+        }
+        renderCompletenessCheckboxes();
+
+        // Setup Thickness UI silently
+        hasThickness = (detectedHeights.size > 0 || existingVariants.some(v => v.height && parseFloat(v.height) > 0));
+        const thToggle = document.getElementById('thicknessToggle');
+        if (thToggle) thToggle.checked = hasThickness;
+        const thNotice = document.getElementById('thicknessDisabledNotice');
+        const thContainer = document.getElementById('thicknessOptionsContainer');
+        if (hasThickness) {
+            thNotice?.classList.add('hidden');
+            thContainer?.classList.remove('hidden');
+        } else {
+            thNotice?.classList.remove('hidden');
+            thContainer?.classList.add('hidden');
+        }
+
+        const sBtn = document.getElementById('thModeSingleBtn');
+        const mBtn = document.getElementById('thModeMultiBtn');
+        const sPanel = document.getElementById('singleThicknessPanel');
+        const mPanel = document.getElementById('multiThicknessPanel');
+        const note = document.getElementById('thicknessFooterNote');
+        if (thicknessMode === 'multi') {
+            sBtn?.classList.remove('bg-white', 'text-primary', 'shadow-2xs');
+            sBtn?.classList.add('text-on-surface-variant');
+            mBtn?.classList.add('bg-white', 'text-primary', 'shadow-2xs');
+            mBtn?.classList.remove('text-on-surface-variant');
+            sPanel?.classList.add('hidden');
+            mPanel?.classList.remove('hidden');
+            if (note) note.textContent = 'Setiap ketebalan menghasilkan variasi harga & SKU tersendiri';
+            renderMultiThicknessChips();
+        } else {
+            mBtn?.classList.remove('bg-white', 'text-primary', 'shadow-2xs');
+            mBtn?.classList.add('text-on-surface-variant');
+            sBtn?.classList.add('bg-white', 'text-primary', 'shadow-2xs');
+            sBtn?.classList.remove('text-on-surface-variant');
+            mPanel?.classList.add('hidden');
+            sPanel?.classList.remove('hidden');
+            if (note) note.textContent = 'Tinggi / tebal produk otomatis tersinkron ke kolom T (cm)';
+        }
+
+        // Direct load from existingVariants into variantRows preserving exact backend prices
         variantRows = existingVariants.map(v => {
             const rawAttrs = v.attributes || {};
             const dims = parseSizeDimensions(v.variant_name);
             const sizeStr = rawAttrs.Ukuran || formatStandardSize(v.variant_name);
-            let compStr = rawAttrs.Kelengkapan || '';
+            let compStr = rawAttrs.Kelengkapan || (completenessAttributeTitle ? rawAttrs[completenessAttributeTitle] : '') || '';
             if (compStr) {
-                if (compStr.toLowerCase().includes('kasur saja') || compStr.toLowerCase().includes('mattress')) compStr = 'Mattress Only';
-                else if (compStr.toLowerCase().includes('divan') || compStr.toLowerCase().includes('full')) compStr = 'Fullset';
+                if (compStr.toLowerCase().includes('kasur saja') || compStr.toLowerCase().includes('mattress')) compStr = 'Kasur Saja';
+                else if (compStr.toLowerCase().includes('divan') || compStr.toLowerCase().includes('full') || compStr.toLowerCase().includes('set')) compStr = 'Set Kasur + Divan';
             } else if (hasCompleteness && v.variant_name) {
-                if (v.variant_name.includes('Kasur Saja') || v.variant_name.includes('Mattress Only')) compStr = 'Mattress Only';
-                else if (v.variant_name.includes('Fullset') || v.variant_name.includes('Full Set') || v.variant_name.includes('Divan')) compStr = 'Fullset';
+                if (v.variant_name.includes('Kasur Saja') || v.variant_name.includes('Mattress Only')) compStr = 'Kasur Saja';
+                else if (v.variant_name.includes('Fullset') || v.variant_name.includes('Full Set') || v.variant_name.includes('Divan') || v.variant_name.includes('Set Kasur')) compStr = 'Set Kasur + Divan';
             }
-            const thStr = thicknessMode === 'multi' ? (v.height || singleThickness) : '';
-            const key = `${sizeStr}__${compStr}__${thStr}`;
 
-            return {
+            const thVal = (thicknessMode === 'multi') ? (v.height || singleThickness) : (singleThickness || v.height || 25);
+            const key = getCombinationKey(sizeStr, compStr, thVal);
+
+            const compObj = compStr ? completenessList.find(c => c.name === compStr || c.short === compStr) : null;
+            const autoSku = generateAutoSku(sizeStr, compObj ? compObj.code : null, thicknessMode === 'multi' ? thVal : null);
+            const resolvedSku = (v.sku && String(v.sku).trim()) ? String(v.sku).trim() : autoSku;
+
+            const basePrice = (v.base_price !== null && v.base_price !== undefined && v.base_price !== '') ? parseFloat(v.base_price) : 0;
+            const sellPrice = (v.sell_price !== null && v.sell_price !== undefined && v.sell_price !== '') ? parseFloat(v.sell_price) : 0;
+            const shippingCost = (v.shipping_cost !== undefined && v.shipping_cost !== null && v.shipping_cost !== '') ? parseFloat(v.shipping_cost) : '';
+
+            const rowObj = {
                 key: key,
                 id: v.id || null,
                 size: sizeStr,
                 kelengkapan: compStr || null,
-                tebal: v.height ?? singleThickness,
+                tebal: hasThickness ? thVal : null,
                 variant_name: v.variant_name || '',
-                sku: v.sku || '',
-                has_db_sku: !!v.sku,
-                base_price: (v.base_price !== null && v.base_price !== undefined && v.base_price !== '') ? v.base_price : 0,
-                sell_price: (v.sell_price !== null && v.sell_price !== undefined && v.sell_price !== '') ? v.sell_price : 0,
-                shipping_cost: v.shipping_cost !== undefined && v.shipping_cost !== null ? v.shipping_cost : '',
+                sku: resolvedSku,
+                has_db_sku: !!(v.sku && String(v.sku).trim()),
+                base_price: basePrice,
+                sell_price: sellPrice,
+                shipping_cost: shippingCost,
                 length: v.length ?? dims.length ?? 200,
                 width: v.width ?? dims.width ?? '',
-                height: v.height ?? singleThickness,
+                height: v.height ?? thVal,
                 weight: v.weight ?? '',
-                status: v.status ?? 1,
+                status: v.status !== undefined ? (v.status == 1 || v.status === true ? 1 : 0) : 1,
                 image: v.image || null,
                 image_url: v.image_url || null,
                 image_file: null,
                 excluded: false
             };
+
+            // Register multiple key aliases into rowCache
+            rowCache[key] = rowObj;
+            rowCache[`${sizeStr}__${compStr || ''}__${thVal || ''}`] = rowObj;
+            rowCache[`${sizeStr}__${compStr || ''}__`] = rowObj;
+            rowCache[`${sizeStr}____`] = rowObj;
+            if (v.id) rowCache[`id_${v.id}`] = rowObj;
+            if (v.variant_name) rowCache[`name_${v.variant_name}`] = rowObj;
+
+            return rowObj;
         });
 
         updateBatchTargetSelector();
@@ -2545,7 +2738,7 @@ async function submitProductForm() {
 
     const activeRows = variantRows.filter(r => !r.excluded);
     if (activeRows.length === 0) {
-        alert('Mohon tentukan minimal 1 kombinasi variasi produk kasur yang aktif.');
+        alert('Mohon tentukan minimal 1 kombinasi variasi produk yang aktif.');
         return;
     }
 
@@ -2610,15 +2803,21 @@ async function submitProductForm() {
                 status: true
             };
 
-            // If kelengkapan is enabled, pass Kelengkapan & Ukuran attributes for pos-dealer-web
+            // If kelengkapan/custom option is enabled, pass dynamic attribute title & Ukuran attributes for pos-dealer-web
             if (hasCompleteness && v.kelengkapan) {
-                attrObj['Kelengkapan'] = v.kelengkapan;
+                const compTitle = (document.getElementById('completenessTitleInput')?.value || completenessAttributeTitle || 'Kelengkapan').trim();
+                attrObj[compTitle] = v.kelengkapan;
+                attrObj['_completeness_title'] = compTitle;
                 attrObj['Ukuran'] = v.size ? formatStandardSize(v.size) : (finalWidth + ' x ' + finalLength);
             }
 
-            // If multi-thickness is enabled, pass Ketebalan & Ukuran attributes for pos-dealer-web
-            if (thicknessMode === 'multi' && v.tebal) {
-                attrObj['Ketebalan'] = String(v.tebal) + ' cm';
+            // If thickness is enabled, pass Ketebalan & Ukuran attributes for pos-dealer-web
+            if (hasThickness) {
+                if (thicknessMode === 'multi' && v.tebal) {
+                    attrObj['Ketebalan'] = String(v.tebal) + ' cm';
+                } else if (singleThickness) {
+                    attrObj['Ketebalan'] = String(singleThickness) + ' cm';
+                }
                 if (!attrObj['Ukuran']) {
                     attrObj['Ukuran'] = v.size ? formatStandardSize(v.size) : (finalWidth + ' x ' + finalLength);
                 }
@@ -2630,6 +2829,7 @@ async function submitProductForm() {
 
             variantsData.push({
                 id: v.id || null,
+                sku: (v.sku || '').trim(),
                 variant_name: v.variant_name.trim(),
                 base_price: (v.base_price !== '' && v.base_price !== null && !isNaN(parseFloat(v.base_price))) ? parseFloat(v.base_price) : 0,
                 sell_price: (v.sell_price !== '' && v.sell_price !== null && !isNaN(parseFloat(v.sell_price))) ? parseFloat(v.sell_price) : 0,
@@ -2880,6 +3080,43 @@ $(document).ready(function() {
     initVariantsFromBackend();
     renderGalleryImages();
 
+    // Live sync for variant table row inputs to prevent any unsaved data
+    $(document).on('input change', 'tr.variant-row input, tr.variant-row select', function() {
+        const row = this.closest('tr.variant-row');
+        if (!row) return;
+        const gIdx = parseInt(row.dataset.index);
+        const key = row.dataset.key;
+        const target = (!isNaN(gIdx) && variantRows[gIdx]) ? variantRows[gIdx] : variantRows.find(r => r.key === key);
+        if (!target) return;
+
+        if (this.classList.contains('v-sell-price')) {
+            const val = parseFloat(this.value);
+            target.sell_price = isNaN(val) ? 0 : val;
+        } else if (this.classList.contains('v-base-price')) {
+            const val = parseFloat(this.value);
+            target.base_price = isNaN(val) ? 0 : val;
+        } else if (this.classList.contains('v-shipping-cost')) {
+            const val = parseFloat(this.value);
+            target.shipping_cost = isNaN(val) ? 0 : val;
+        } else if (this.classList.contains('v-length')) {
+            const val = parseFloat(this.value);
+            target.length = isNaN(val) ? null : val;
+        } else if (this.classList.contains('v-width')) {
+            const val = parseFloat(this.value);
+            target.width = isNaN(val) ? null : val;
+        } else if (this.classList.contains('v-height')) {
+            const val = parseFloat(this.value);
+            target.height = isNaN(val) ? null : val;
+        } else if (this.classList.contains('v-weight')) {
+            const val = parseFloat(this.value);
+            target.weight = isNaN(val) ? null : val;
+        } else if (this.classList.contains('v-variant-name')) {
+            target.variant_name = this.value;
+        } else if (this.classList.contains('v-status')) {
+            target.status = this.value;
+        }
+    });
+
     // Initialize shipping UI state
     calculateVolumetricWeight();
     onShippingSchemeChanged();
@@ -2914,6 +3151,8 @@ $(document).ready(function() {
     window.toggleCompleteness = toggleCompletenessOption;
     window.toggleCompletenessOption = toggleCompletenessOption;
     window.addCustomCompleteness = addCustomCompleteness;
+    window.onCompletenessTitleChanged = onCompletenessTitleChanged;
+    window.toggleThicknessSwitch = toggleThicknessSwitch;
     window.setThicknessMode = setThicknessMode;
     window.onSingleThicknessChange = onSingleThicknessChange;
     window.setSingleThicknessQuick = setSingleThicknessQuick;

@@ -752,14 +752,63 @@
     </script>
     @stack('scripts')
 
+    <!-- Popup Alert Helper Functions & Handlers -->
+    <script>
+        window.showSuccessPopup = function(message, title = 'Berhasil!') {
+            return Swal.fire({
+                icon: 'success',
+                title: title,
+                html: message,
+                confirmButtonText: 'Selesai',
+                confirmButtonColor: '#1e3a8a',
+                timer: 3500,
+                timerProgressBar: true,
+                customClass: {
+                    popup: 'rounded-2xl shadow-xl border border-outline-variant/30',
+                    confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs'
+                }
+            });
+        };
+
+        window.showWarningPopup = function(message, title = 'Peringatan') {
+            return Swal.fire({
+                icon: 'warning',
+                title: title,
+                html: message,
+                confirmButtonText: 'Mengerti',
+                confirmButtonColor: '#d97706',
+                customClass: {
+                    popup: 'rounded-2xl shadow-xl border border-outline-variant/30',
+                    confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs'
+                }
+            });
+        };
+
+        window.showErrorPopup = function(message, title = 'Terjadi Kesalahan!') {
+            return Swal.fire({
+                icon: 'error',
+                title: title,
+                html: message,
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#dc2626',
+                customClass: {
+                    popup: 'rounded-2xl shadow-xl border border-outline-variant/30',
+                    confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs'
+                }
+            });
+        };
+    </script>
+
     <!-- Toast Container -->
     <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
 
-    <!-- Render Session Flashes & Validation Errors as Toasts -->
+    <!-- Render Session Flashes & Validation Errors as Popups & Toasts -->
     @if(session('success'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                showToast('success', {!! json_encode(session('success')) !!});
+                const msg = {!! json_encode(session('success')) !!};
+                showToast('success', msg);
+                showSuccessPopup(msg);
             });
         </script>
     @endif
@@ -767,7 +816,9 @@
     @if(session('error'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                showToast('error', {!! json_encode(session('error')) !!});
+                const msg = {!! json_encode(session('error')) !!};
+                showToast('error', msg);
+                showErrorPopup(msg);
             });
         </script>
     @endif
@@ -775,7 +826,9 @@
     @if(session('warning'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                showToast('warning', {!! json_encode(session('warning')) !!});
+                const msg = {!! json_encode(session('warning')) !!};
+                showToast('warning', msg);
+                showWarningPopup(msg);
             });
         </script>
     @endif
@@ -783,7 +836,8 @@
     @if(session('info'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                showToast('info', {!! json_encode(session('info')) !!});
+                const msg = {!! json_encode(session('info')) !!};
+                showToast('info', msg);
             });
         </script>
     @endif
@@ -791,7 +845,9 @@
     @if(session('status'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                showToast('info', {!! json_encode(session('status')) !!});
+                const msg = {!! json_encode(session('status')) !!};
+                showToast('info', msg);
+                showSuccessPopup(msg);
             });
         </script>
     @endif
@@ -799,9 +855,9 @@
     @if($errors->any())
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                @foreach($errors->all() as $error)
-                    showToast('error', {!! json_encode($error) !!});
-                @endforeach
+                const errList = {!! json_encode($errors->all()) !!};
+                const errHtml = '<ul class="text-left text-xs list-disc pl-5 space-y-1">' + errList.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                showErrorPopup(errHtml, 'Validasi Gagal');
             });
         </script>
     @endif
