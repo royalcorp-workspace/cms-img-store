@@ -263,6 +263,33 @@ class Order extends Model
         $isKurirToko = $this->isKurirToko();
         $courierType = $isKurirToko ? 'toko' : ($this->courier?->courier_type ?? ($this->meta['courier_type'] ?? 'expedisi'));
 
+        $serviceCode = strtolower(trim((string)(
+            $this->meta['courier_service_type'] 
+            ?? $this->meta['shipping_service_code'] 
+            ?? $this->meta['biteship_shipment']['courier']['type']
+            ?? $this->meta['biteship_payload']['courier_type'] 
+            ?? $this->meta['shipping_address']['courier_service_code'] 
+            ?? 'reg'
+        )));
+
+        $serviceName = $this->meta['shipping_service_name'] 
+            ?? $this->meta['service_name'] 
+            ?? $this->meta['shipping_address']['courier_service_name'] 
+            ?? null;
+
+        if (!$serviceName) {
+            $serviceName = match($serviceCode) {
+                'reg', 'standard' => 'Reguler / Standard',
+                'ez' => 'EZ (J&T Regular)',
+                'siuntung' => 'SiUntung (SiCepat)',
+                'yes' => 'YES / Next Day',
+                'cargo', 'trucking' => 'Kargo / Trucking',
+                'instant' => 'Instant',
+                'same_day', 'sameday' => 'Same Day',
+                default => strtoupper($serviceCode),
+            };
+        }
+
         return [
             'id' => $this->id,
             'order_number' => $this->order_number ?? substr($this->id, 0, 8),
@@ -271,6 +298,9 @@ class Order extends Model
             'courier_name' => $this->courier_name ?? 'Kurir Belum Ditentukan',
             'is_kurir_toko' => $isKurirToko,
             'courier_type' => $courierType,
+            'shipping_service_code' => $serviceCode,
+            'shipping_service_name' => $serviceName,
+            'courier_service_type' => $serviceCode,
             'status' => $this->status,
             'status_label' => $this->statusLabel(),
             'status_badge_class' => $this->statusBadgeClass,
@@ -292,6 +322,13 @@ class Order extends Model
             'delivery_last_note' => $this->latest_delivery_log?->note ?? ($this->meta['biteship_last_note'] ?? null),
             'delivery_last_location' => $this->latest_delivery_log?->location ?? ($this->meta['biteship_last_location'] ?? null),
             'delivery_updated_at' => $this->latest_delivery_log?->created_at?->format('d M Y H:i') ?? null,
+            'estimated_delivery_at' => $this->delivery?->estimated_delivery_at?->format('Y-m-d\TH:i') ?? null,
+            'estimated_delivery_at_label' => $this->delivery?->estimated_delivery_at?->format('d M Y H:i') ?? null,
+            'estimated_delivery_duration' => $this->delivery?->estimated_delivery_duration ?? ($this->meta['shipping_duration'] ?? null),
+            'eta_source' => $this->delivery?->eta_source ?? null,
+            'eta_source_label' => $this->delivery?->eta_source_label ?? null,
+            'eta_label' => $this->delivery?->eta_label ?? ($this->meta['biteship_eta']['formatted_label'] ?? ($this->meta['shipping_eta_label'] ?? ($this->meta['shipping_duration'] ?? null))),
+            'eta_notes' => $this->delivery?->eta_notes ?? null,
         ];
     }
 

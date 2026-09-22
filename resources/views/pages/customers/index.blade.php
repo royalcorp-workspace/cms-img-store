@@ -87,10 +87,6 @@
                                     <span class="material-symbols-outlined text-[16px]">dashboard</span> Riwayat
                                 </a>
                                 <a href="{{ route('customers.edit', $customer->id) }}" class="text-on-surface-variant hover:text-primary transition-colors ml-2" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
-                                <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this customer?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="text-on-surface-variant hover:text-danger transition-colors" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
-                                </form>
                             </div>
                         </td>
                     </tr>

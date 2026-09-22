@@ -78,16 +78,19 @@ class AuthController extends ApiController
         ]);
 
         // --- Upsert user ke database ---
-        // Cari berdasarkan email atau firebase_uid (whichever matches first)
-        $user = User::where('email', $email)
-                    ->orWhere('firebase_uid', $firebaseUid)
+        // Cari berdasarkan firebase_uid, google_id, atau email (case-insensitive)
+        $normalizedEmail = strtolower(trim($email));
+        $user = User::where('firebase_uid', $firebaseUid)
+                    ->orWhere('google_id', $firebaseUid)
+                    ->orWhereRaw('LOWER(email) = ?', [$normalizedEmail])
                     ->first();
 
         if ($user) {
-            // Update data Firebase yang mungkin berubah (nama, foto, uid)
+            // Update data Firebase/Google yang mungkin berubah
             $user->update([
                 'name'              => $displayName ?? $user->name,
                 'firebase_uid'      => $firebaseUid,
+                'google_id'         => $isGoogleLogin ? $firebaseUid : ($user->google_id ?? $firebaseUid),
                 'auth_provider'     => $authProvider,
                 'photo_url'         => $photoUrl ?? $user->photo_url,
                 'email_verified'    => true,
@@ -96,15 +99,16 @@ class AuthController extends ApiController
 
             Log::info('User updated from Firebase', ['user_id' => $user->id, 'email' => $email]);
         } else {
-            // Buat user baru
+            // Buat user baru dengan UUID valid
             $user = User::create([
-                'id'                => $firebaseUid,
+                'id'                => (string) Str::uuid(),
                 'name'              => $displayName ?? $email,
                 'email'             => $email,
                 'password_hash'     => Hash::make(Str::random(32)),
                 'email_verified'    => true,
                 'email_verified_at' => now(),
                 'firebase_uid'      => $firebaseUid,
+                'google_id'         => $isGoogleLogin ? $firebaseUid : null,
                 'auth_provider'     => $authProvider,
                 'photo_url'         => $photoUrl,
             ]);

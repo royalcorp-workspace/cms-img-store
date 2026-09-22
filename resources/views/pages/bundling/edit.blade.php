@@ -5,13 +5,15 @@
 @section('content')
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-            <h1 class="font-headline-lg text-headline-lg text-on-surface">Edit Product Bundle</h1>
+            <h1 class="font-headline-lg text-headline-lg text-on-surface">Edit Setting Product Bundling</h1>
             <nav class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-1 font-medium">
                 <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">eCommerce</a>
                 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                <a href="{{ route('vouchers.index') }}" class="hover:text-primary transition-colors">Promotions</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
                 <a href="{{ route('bundlings.index') }}" class="hover:text-primary transition-colors">Bundling</a>
                 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-                <span class="text-on-surface">Edit: {{ $bundling->name }}</span>
+                <span class="text-on-surface">Edit</span>
             </nav>
         </div>
         <div class="flex items-center gap-3">
@@ -21,180 +23,360 @@
             </a>
             <button type="submit" form="bundleForm" class="btn-save inline-flex items-center gap-2 px-5 py-2 bg-primary text-white hover:opacity-90 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95">
                 <span class="material-symbols-outlined text-[18px]">save</span>
-                <span>Simpan Perubahan</span>
+                <span>Perbarui Bundling</span>
             </button>
         </div>
     </div>
 
-    @include('layouts.partials.promotions-submenu')
+    @if($errors->any())
+        <div class="mb-6 p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-body-md">
+            <div class="font-bold flex items-center gap-2 mb-1">
+                <span class="material-symbols-outlined text-[20px]">error</span>
+                <span>Mohon periksa kesalahan input berikut:</span>
+            </div>
+            <ul class="list-disc list-inside text-xs space-y-1">
+                @foreach($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @php
+        $firstItem = $bundling->bundleItems->where('is_suggest', false)->first();
+        $mainProductInit = [
+            'product_id' => $firstItem?->product_id ?? '',
+            'variant_id' => $firstItem?->variant_id ?? '',
+            'search' => $firstItem?->product?->name ?? '',
+        ];
+
+        $suggestItemsInit = $bundling->bundleItems->where('is_suggest', true)->map(fn($item) => [
+            'product_id' => $item->product_id,
+            'variant_id' => $item->variant_id ?? '',
+            'bundle_price' => $item->bundle_price !== null ? (float)$item->bundle_price : '',
+            'discount_percent' => $item->discount_percent !== null ? (float)$item->discount_percent : '',
+            'search' => $item->product?->name ?? '',
+        ])->values();
+
+        if ($suggestItemsInit->isEmpty()) {
+            $suggestItemsInit = collect([[
+                'product_id' => '',
+                'variant_id' => '',
+                'bundle_price' => '',
+                'discount_percent' => '',
+                'search' => '',
+            ]]);
+        }
+    @endphp
 
     <form id="bundleForm" action="{{ route('bundlings.update', $bundling->id) }}" method="POST" enctype="multipart/form-data" class="w-full space-y-6"
          x-data="{ 
              products: @js($products),
-             items: @js(old('items', $bundling->items->map(fn($i) => ['product_id' => $i->product_id, 'variant_id' => $i->variant_id ?? '', 'quantity' => $i->quantity])->toArray())),
-             bundlePrice: {{ old('price', $bundling->price) }},
-             addItem() {
-                 this.items.push({ product_id: '', variant_id: '', quantity: 1 });
+             bundleableProducts: @js($bundleableProducts),
+             mainProduct: @js($mainProductInit),
+             suggestItems: @js($suggestItemsInit),
+             bundleName: '{{ old('name', $bundling->name) }}',
+             isNameCustom: true,
+
+             addSuggestItem() {
+                 this.suggestItems.push({ product_id: '', variant_id: '', bundle_price: '', discount_percent: '', search: '' });
              },
-             get itemSum() {
-                 return this.items.reduce((sum, item) => {
-                     const p = this.products.find(prod => String(prod.id) === String(item.product_id));
-                     if (!p) return sum;
-                     
-                     let price = Number(p.base_price || 0);
-                     if (item.variant_id) {
-                         const v = p.variants.find(va => String(va.id) === String(item.variant_id));
-                         if (v) price = Number(v.price || 0);
+             removeSuggestItem(index) {
+                 if (this.suggestItems.length > 1) {
+                     this.suggestItems.splice(index, 1);
+                 }
+             },
+
+             getProduct(id) {
+                 return this.products.find(p => String(p.id) === String(id)) || this.bundleableProducts.find(p => String(p.id) === String(id));
+             },
+             getItemPrice(productId, variantId) {
+                 const p = this.getProduct(productId);
+                 if (!p) return 0;
+                 if (variantId) {
+                     const v = p.variants?.find(v => String(v.id) === String(variantId));
+                     if (v && Number(v.sell_price) > 0) return Number(v.sell_price);
+                     if (v && Number(v.price) > 0) return Number(v.price);
+                 }
+                 if (p.variants && p.variants.length > 0) {
+                     const firstWithSell = p.variants.find(v => Number(v.sell_price) > 0);
+                     if (firstWithSell) return Number(firstWithSell.sell_price);
+                     const firstWithPrice = p.variants.find(v => Number(v.price) > 0);
+                     if (firstWithPrice) return Number(firstWithPrice.price);
+                 }
+                 return Number(p.single_price || p.min_price || 0);
+             },
+
+             get mainProductPriceDisplay() {
+                 const p = this.getProduct(this.mainProduct.product_id);
+                 if (!p) return '-';
+                 if (this.mainProduct.variant_id) {
+                     const v = p.variants?.find(v => String(v.id) === String(this.mainProduct.variant_id));
+                     if (v && Number(v.sell_price || v.price) > 0) {
+                         return 'Rp ' + Number(v.sell_price || v.price).toLocaleString('id-ID');
                      }
-                     
-                     return sum + (price * Number(item.quantity || 1));
+                 }
+                 return p.price_range_text || ('Rp ' + Number(p.min_price || 0).toLocaleString('id-ID'));
+             },
+             get mainProductPrice() {
+                 return this.getItemPrice(this.mainProduct.product_id, this.mainProduct.variant_id);
+             },
+             get suggestTotalNormal() {
+                 return this.suggestItems.reduce((sum, item) => {
+                     return sum + this.getItemPrice(item.product_id, item.variant_id);
                  }, 0);
              },
-             validateSubmit(e) {
-                 if (this.bundlePrice > this.itemSum) {
-                     e.preventDefault();
-                     alert('Harga bundling (Rp' + this.bundlePrice.toLocaleString('id-ID') + ') tidak boleh lebih mahal dari total harga item (Rp' + this.itemSum.toLocaleString('id-ID') + ')');
+             get suggestTotalBundle() {
+                 return this.suggestItems.reduce((sum, item) => {
+                     const normal = this.getItemPrice(item.product_id, item.variant_id);
+                     const bPrice = (item.bundle_price !== '' && item.bundle_price !== null) ? Number(item.bundle_price) : normal;
+                     return sum + bPrice;
+                 }, 0);
+             },
+             get totalComboPrice() {
+                 return this.mainProductPrice + this.suggestTotalBundle;
+             },
+             get totalComboPriceDisplay() {
+                 const p = this.getProduct(this.mainProduct.product_id);
+                 if (!p) return 'Rp ' + this.suggestTotalBundle.toLocaleString('id-ID');
+                 if (this.mainProduct.variant_id) {
+                     return 'Rp ' + this.totalComboPrice.toLocaleString('id-ID');
                  }
+                 if (p.has_price_range && p.min_price > 0 && p.max_price > p.min_price) {
+                     const minCombo = p.min_price + this.suggestTotalBundle;
+                     const maxCombo = p.max_price + this.suggestTotalBundle;
+                     return 'Rp ' + minCombo.toLocaleString('id-ID') + ' - Rp ' + maxCombo.toLocaleString('id-ID');
+                 }
+                 return 'Rp ' + this.totalComboPrice.toLocaleString('id-ID');
+             },
+             get totalSavings() {
+                 return Math.max(0, this.suggestTotalNormal - this.suggestTotalBundle);
+             },
+
+             onSuggestDiscountChange(item) {
+                 const normal = this.getItemPrice(item.product_id, item.variant_id);
+                 if (normal > 0 && item.discount_percent !== '') {
+                     item.bundle_price = Math.round(normal * (1 - Number(item.discount_percent) / 100));
+                 }
+             },
+             onSuggestPriceChange(item) {
+                 const normal = this.getItemPrice(item.product_id, item.variant_id);
+                 if (normal > 0 && item.bundle_price !== '' && item.bundle_price !== null) {
+                     item.discount_percent = Math.max(0, Math.round(((normal - Number(item.bundle_price)) / normal) * 100));
+                 }
+             },
+
+             updateAutoName() {
+                 if (this.isNameCustom) return;
+                 const mainP = this.getProduct(this.mainProduct.product_id);
+                 if (!mainP) return;
+                 const suggestNames = this.suggestItems
+                     .map(item => this.getProduct(item.product_id)?.name)
+                     .filter(Boolean);
+                 if (suggestNames.length > 0) {
+                     this.bundleName = 'Bundling ' + mainP.name + ' + ' + suggestNames.join(' & ');
+                 } else {
+                     this.bundleName = 'Bundling ' + mainP.name;
+                 }
+             },
+
+             get slug() {
+                 return (this.bundleName || '')
+                     .toLowerCase()
+                     .trim()
+                     .replace(/[^a-z0-9\s-]/g, '')
+                     .replace(/[\s-]+/g, '-')
+                     .replace(/^-+|-+$/g, '');
              }
-         }"
-         @submit="validateSubmit">
+         }">
         @csrf
         @method('PUT')
 
-        <div class="w-full bg-white rounded-2xl shadow-sm border border-outline-variant/30 p-6 space-y-6">
-            <div class="border-b border-outline-variant/20 pb-3">
-                <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary text-[20px]">package_2</span>
-                    Informasi Paket Bundling
-                </h2>
-                <p class="text-xs text-on-surface-variant mt-0.5">Edit nama paket, slug URL, harga bundling, dan status aktif.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Name <span class="text-danger">*</span></label>
-                    <input type="text" name="name" value="{{ old('name', $bundling->name) }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-body-md" required>
-                    @error('name') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
+        <!-- 1. Produk Utama (Trigger Bundling) -->
+        <div class="bg-white rounded-xl shadow-xs border border-outline-variant/40 p-5 space-y-4">
+            <div class="border-b border-outline-variant/30 pb-3 flex items-center justify-between">
+                <div>
+                    <h2 class="text-sm font-bold text-on-surface">1. Produk Utama</h2>
+                    <p class="text-xs text-on-surface-variant">Produk yang memicu penawaran bundling murah (Contoh: Kasur Matras).</p>
                 </div>
-
-                <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Slug (URL Name)</label>
-                    <input type="text" name="slug" value="{{ old('slug', $bundling->slug) }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-body-md">
-                    @error('slug') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
+                <div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="is_active" value="1" {{ $bundling->status ? 'checked' : '' }} class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-success"></div>
+                        <span class="ml-2 text-xs font-medium text-on-surface">Aktif</span>
+                    </label>
                 </div>
             </div>
 
-            <div class="space-y-1.5">
-                <label class="block text-label-sm font-medium text-on-surface-variant">Description</label>
-                <textarea name="description" rows="3" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-body-md">{{ old('description', $bundling->description) }}</textarea>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-outline-variant/30">
-                <div class="space-y-4">
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Main Image (Square)</label>
-                        @if($bundling->image_url)
-                            <div class="mb-2 w-20 h-20 bg-surface-container rounded-xl overflow-hidden border border-outline-variant/20 flex items-center justify-center bg-white p-1">
-                                <img class="max-w-full max-h-full object-contain" src="{{ media_url($bundling->image_url) }}" alt="Bundle image">
-                            </div>
-                        @endif
-                        <input type="file" name="image" accept="image/*" data-folder="bundlings" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Autocomplete Produk Utama -->
+                <div class="relative" x-data="{ open: false }">
+                    <label class="block text-xs font-semibold text-on-surface-variant mb-1">Cari & Pilih Produk Utama <span class="text-danger">*</span></label>
+                    <div class="relative">
+                        <input type="text" 
+                               x-model="mainProduct.search" 
+                               @focus="open = true" 
+                               @click.outside="open = false" 
+                               placeholder="Ketik untuk mencari produk utama..." 
+                               class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:outline-none focus:border-primary bg-white">
+                        <span x-show="mainProduct.product_id" @click="mainProduct.product_id = ''; mainProduct.search = ''; mainProduct.variant_id = ''; updateAutoName()" class="absolute right-2.5 top-2 text-gray-400 hover:text-gray-600 cursor-pointer text-xs">✕</span>
                     </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Banner Image (Landscape)</label>
-                        @if($bundling->banner_image)
-                            <div class="mb-2 w-32 h-16 bg-surface-container rounded-xl overflow-hidden border border-outline-variant/20 flex items-center justify-center bg-white p-1">
-                                <img class="max-w-full max-h-full object-contain" src="{{ media_url($bundling->banner_image) }}" alt="Bundle banner">
+                    <input type="hidden" name="items[0][product_id]" :value="mainProduct.product_id" required>
+                    <input type="hidden" name="items[0][quantity]" value="1">
+
+                    <div x-show="open" class="absolute z-20 w-full mt-1 bg-white border border-outline-variant rounded-lg shadow-md max-h-48 overflow-y-auto">
+                        <template x-for="p in products.filter(item => !mainProduct.search || item.name.toLowerCase().includes(mainProduct.search.toLowerCase()))" :key="p.id">
+                            <div @click="mainProduct.product_id = p.id; mainProduct.search = p.name; mainProduct.variant_id = ''; open = false; updateAutoName()" 
+                                 class="px-3 py-2 text-xs hover:bg-surface-gray cursor-pointer flex justify-between items-center border-b border-outline-variant/10">
+                                <span x-text="p.name" class="font-medium text-on-surface"></span>
+                                <span class="text-primary font-bold ml-2 shrink-0" x-text="p.price_range_text || ('Rp ' + Number(p.min_price || 0).toLocaleString('id-ID'))"></span>
                             </div>
-                        @endif
-                        <input type="file" name="banner_image" accept="image/*" data-folder="bundlings" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:opacity-90 cursor-pointer">
+                        </template>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Bundle Price (Rp) <span class="text-danger">*</span></label>
-                        <input type="number" step="0.01" name="price" x-model.number="bundlePrice" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none text-body-md font-bold" required>
-                        <div class="text-xs text-on-surface-variant mt-1">
-                            Total Harga Item: <span class="font-bold text-primary" x-text="'Rp ' + itemSum.toLocaleString('id-ID')"></span>
-                            <div x-show="bundlePrice > itemSum" class="text-danger font-bold mt-0.5 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[14px]">error</span>
-                                <span>Harga melebihi total item!</span>
+                <!-- Varian Produk Utama (Opsional) -->
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant mb-1">Varian Produk Utama (Opsional)</label>
+                    <select name="items[0][variant_id]" x-model="mainProduct.variant_id" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:outline-none focus:border-primary bg-white">
+                        <option value="">-- Berlaku untuk Semua Varian --</option>
+                        <template x-if="mainProduct.product_id">
+                            <template x-for="v in (getProduct(mainProduct.product_id)?.variants || [])" :key="v.id">
+                                <option :value="v.id" :selected="v.id == mainProduct.variant_id" x-text="`${v.variant_name} (Rp ${Number(v.sell_price || v.price || 0).toLocaleString('id-ID')})`"></option>
+                            </template>
+                        </template>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Harga Produk Utama -->
+            <div x-show="mainProduct.product_id" class="text-xs text-on-surface-variant flex items-center gap-2">
+                <span>Harga Produk Utama:</span>
+                <strong class="text-primary font-bold" x-text="mainProductPriceDisplay"></strong>
+            </div>
+        </div>
+
+        <!-- 2. Produk Pelengkap yang Di-bundling (Hanya Produk Variasi <= 1) -->
+        <div class="bg-white rounded-xl shadow-xs border border-outline-variant/40 p-5 space-y-4">
+            <div class="border-b border-outline-variant/30 pb-3 flex items-center justify-between">
+                <div>
+                    <h2 class="text-sm font-bold text-on-surface">2. Produk Tambahan / Pelengkap (Harga Turun)</h2>
+                    <p class="text-xs text-on-surface-variant">Produk pelengkap dengan harga khusus jika dibeli bersama produk utama (Pasti 1 harga).</p>
+                </div>
+                <button type="button" @click="addSuggestItem()" class="px-3 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded-lg text-xs font-semibold transition-colors">
+                    + Tambah Produk
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <template x-for="(sItem, sIdx) in suggestItems" :key="'s-' + sIdx">
+                    <div class="p-3.5 rounded-lg border border-amber-200/70 bg-amber-50/20 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-amber-900" x-text="`Produk Tambahan #${sIdx + 1}`"></span>
+                            <button type="button" x-show="suggestItems.length > 1" @click="removeSuggestItem(sIdx)" class="text-danger hover:underline text-xs">
+                                Hapus
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <!-- Autocomplete Produk Tambahan -->
+                            <div class="relative md:col-span-1" x-data="{ open: false }">
+                                <label class="block text-xs font-medium text-on-surface-variant mb-1">Pilih Produk <span class="text-danger">*</span></label>
+                                <div class="relative">
+                                    <input type="text" 
+                                           x-model="sItem.search" 
+                                           @focus="open = true" 
+                                           @click.outside="open = false" 
+                                           placeholder="Ketik nama produk pelengkap..." 
+                                           class="w-full px-3 py-2 text-xs border border-amber-300 rounded-lg focus:outline-none focus:border-amber-500 bg-white">
+                                    <span x-show="sItem.product_id" @click="sItem.product_id = ''; sItem.search = ''; sItem.variant_id = ''; updateAutoName()" class="absolute right-2.5 top-2 text-gray-400 hover:text-gray-600 cursor-pointer text-xs">✕</span>
+                                </div>
+                                <input type="hidden" :name="`suggest_items[${sIdx}][product_id]`" :value="sItem.product_id" required>
+                                <input type="hidden" :name="`suggest_items[${sIdx}][variant_id]`" :value="sItem.variant_id">
+                                <input type="hidden" :name="`suggest_items[${sIdx}][quantity]`" value="1">
+
+                                <div x-show="open" class="absolute z-20 w-full mt-1 bg-white border border-outline-variant rounded-lg shadow-md max-h-48 overflow-y-auto">
+                                    <template x-for="p in bundleableProducts.filter(item => !sItem.search || item.name.toLowerCase().includes(sItem.search.toLowerCase()))" :key="p.id">
+                                        <div @click="
+                                                sItem.product_id = p.id; 
+                                                sItem.variant_id = (p.variants && p.variants[0]) ? p.variants[0].id : ''; 
+                                                sItem.search = p.name; 
+                                                open = false; 
+                                                onSuggestDiscountChange(sItem); 
+                                                updateAutoName()
+                                             " 
+                                             class="px-3 py-2 text-xs hover:bg-surface-gray cursor-pointer flex justify-between items-center border-b border-outline-variant/10">
+                                            <span x-text="p.name" class="font-medium text-on-surface"></span>
+                                            <span class="text-primary font-bold ml-2 shrink-0" x-text="p.price_range_text || ('Rp ' + Number(p.single_price || p.min_price || 0).toLocaleString('id-ID'))"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Harga Normal -->
+                            <div>
+                                <label class="block text-xs font-medium text-on-surface-variant mb-1">Harga Asli (1 Harga)</label>
+                                <div class="px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs text-gray-500 font-semibold line-through" x-text="'Rp ' + getItemPrice(sItem.product_id, sItem.variant_id).toLocaleString('id-ID')"></div>
+                            </div>
+
+                            <!-- Harga Bundling -->
+                            <div>
+                                <label class="block text-xs font-semibold text-amber-900 mb-1">Harga Bundling Turun Menjadi (Rp) <span class="text-danger">*</span></label>
+                                <input type="number" step="100" min="0" :name="`suggest_items[${sIdx}][bundle_price]`" x-model.number="sItem.bundle_price" @input="onSuggestPriceChange(sItem)" placeholder="Misal: 150000" class="w-full px-3 py-2 text-xs font-bold text-amber-900 border border-amber-300 rounded-lg focus:outline-none focus:border-amber-500 bg-white" required>
                             </div>
                         </div>
-                        @error('price') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
-                    </div>
 
-                    <div class="flex items-center pt-6">
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" name="is_active" value="1" {{ $bundling->is_active ? 'checked' : '' }} class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-                            <span class="ml-3 text-label-md font-medium text-on-surface-variant">Active Bundle</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Items Section -->
-            <div class="space-y-4 pt-6 border-t border-outline-variant/30">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="font-headline-md text-headline-md text-on-surface">Bundle Items <span class="text-danger">*</span></h3>
-                        <p class="text-xs text-on-surface-variant">Edit produk dan jumlah yang termasuk di paket bundling ini.</p>
-                    </div>
-                    <button type="button" @click="addItem()" class="px-3.5 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[18px]">add</span>
-                        <span>Add Product</span>
-                    </button>
-                </div>
-
-                <div class="space-y-3">
-                    <template x-for="(item, index) in items" :key="index">
-                        <div class="flex flex-col md:flex-row items-start md:items-center gap-3 bg-surface-gray/40 p-4 rounded-xl border border-outline-variant/30">
-                            <!-- Product Select -->
-                            <div class="flex-1 w-full">
-                                <label class="block text-label-sm font-medium text-on-surface-variant mb-1">Product</label>
-                                <select :name="`items[${index}][product_id]`" x-model="item.product_id" @change="item.variant_id = ''" required class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 text-body-md bg-white">
-                                    <option value="">-- Choose Product --</option>
-                                    <template x-for="prod in products" :key="prod.id">
-                                        <option :value="prod.id" x-text="`${prod.name} (Base Price: Rp${Number(prod.base_price || 0).toLocaleString('id-ID')})`" :selected="prod.id == item.product_id"></option>
-                                    </template>
-                                </select>
-                            </div>
-                            <div class="w-full md:w-56">
-                                <label class="block text-label-sm font-medium text-on-surface-variant mb-1">Variant (Optional)</label>
-                                <select :name="`items[${index}][variant_id]`" x-model="item.variant_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 text-body-md bg-white">
-                                    <option value="">-- Bebas Pilih di Web --</option>
-                                    <template x-if="item.product_id">
-                                        <template x-for="variant in (products.find(p => p.id == item.product_id)?.variants || [])" :key="variant.id">
-                                            <option :value="variant.id" x-text="`${variant.variant_name} (Rp${Number(variant.price || 0).toLocaleString('id-ID')})`" :selected="String(variant.id) === String(item.variant_id)"></option>
-                                        </template>
-                                    </template>
-                                </select>
-                            </div>
-
-                            <!-- Quantity -->
-                            <div class="w-full md:w-24">
-                                <label class="block text-label-sm font-medium text-on-surface-variant mb-1">Qty</label>
-                                <input type="number" :name="`items[${index}][quantity]`" x-model="item.quantity" min="1" placeholder="Qty" required class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 text-body-md bg-white">
-                            </div>
-
-                            <!-- Delete button -->
-                            <div class="pt-0 md:pt-6">
-                                <button type="button" @click="if (items.length > 1) items.splice(index, 1)" class="w-10 h-10 rounded-xl bg-danger/10 text-danger hover:bg-danger/20 transition-all flex items-center justify-center" title="Hapus Item">
-                                    <span class="material-symbols-outlined text-[18px]">delete</span>
-                                </button>
-                            </div>
+                        <!-- Info Diskon -->
+                        <div x-show="sItem.product_id && sItem.bundle_price > 0 && getItemPrice(sItem.product_id, sItem.variant_id) > sItem.bundle_price" class="text-xs text-emerald-700 font-medium">
+                            ✓ Hemat Rp <span class="font-bold" x-text="(getItemPrice(sItem.product_id, sItem.variant_id) - sItem.bundle_price).toLocaleString('id-ID')"></span> (<span x-text="sItem.discount_percent"></span>%) saat dibeli bersama produk utama.
                         </div>
-                    </template>
-                </div>
-                @error('items') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- 3. Ringkasan Promo -->
+        <div class="bg-white rounded-xl shadow-xs border border-outline-variant/40 p-5 space-y-4">
+            <div class="border-b border-outline-variant/30 pb-3">
+                <h2 class="text-sm font-bold text-on-surface">3. Nama Promo & Ringkasan</h2>
             </div>
 
-            <div class="flex items-center justify-end gap-3 pt-6 border-t border-outline-variant/30">
-                <a href="{{ route('bundlings.index') }}" class="px-6 py-2.5 border border-outline-variant text-on-surface-variant rounded-xl text-xs font-semibold hover:bg-surface-container transition-colors">Batal</a>
-                <button type="submit" class="btn-save px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-sm active:scale-95">Simpan Perubahan</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant mb-1">Nama Promo Bundling <span class="text-danger">*</span></label>
+                    <input type="text" name="name" x-model="bundleName" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:outline-none focus:border-primary font-semibold" placeholder="Contoh: Bundling Kasur Matras + Sprei" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant mb-1">Slug URL (Otomatis)</label>
+                    <input type="text" :value="slug" disabled class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg bg-surface-gray/80 text-gray-500 font-mono cursor-not-allowed" placeholder="otomatis-berdasarkan-nama">
+                    <input type="hidden" name="slug" :value="slug">
+                </div>
             </div>
+
+            <!-- Ringkasan Total Bersahabat -->
+            <div class="p-4 rounded-lg bg-surface-gray/50 border border-outline-variant/30 space-y-1.5 text-xs">
+                <div class="flex justify-between text-on-surface-variant">
+                    <span>Produk Utama:</span>
+                    <span class="font-bold text-on-surface" x-text="mainProductPriceDisplay"></span>
+                </div>
+                <div class="flex justify-between text-on-surface-variant">
+                    <span>Produk Tambahan (Harga Bundling):</span>
+                    <span class="font-bold text-amber-800" x-text="'Rp ' + suggestTotalBundle.toLocaleString('id-ID')"></span>
+                </div>
+                <div class="pt-2 border-t border-outline-variant/30 flex justify-between font-bold text-sm text-primary">
+                    <span>Total Paket Bundling:</span>
+                    <span x-text="totalComboPriceDisplay"></span>
+                </div>
+                <div x-show="totalSavings > 0" class="text-right text-xs text-emerald-600 font-semibold">
+                    (Hemat Rp <span x-text="totalSavings.toLocaleString('id-ID')"></span> pada produk pelengkap)
+                </div>
+                <input type="hidden" name="price" :value="totalComboPrice">
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+            <a href="{{ route('bundlings.index') }}" class="px-5 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-xs font-semibold hover:bg-surface-container">Batal</a>
+            <button type="submit" class="btn-save px-5 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:opacity-90">Perbarui Bundling</button>
         </div>
     </form>
 @endsection

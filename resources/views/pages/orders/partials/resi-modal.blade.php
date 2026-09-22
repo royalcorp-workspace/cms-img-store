@@ -20,18 +20,18 @@
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="px-6 pt-3 pb-0 bg-surface-container-low border-b border-outline-variant/30 flex items-center gap-2">
-            <button type="button" id="tabBtnManual" onclick="switchFulfillmentTab('manual')" class="px-4 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-primary text-primary bg-white flex items-center gap-1.5 transition-all">
+        <div class="px-6 pt-3 pb-0 bg-slate-100 border-b border-slate-200 flex items-center gap-2">
+            <button type="button" id="tabBtnManual" onclick="switchFulfillmentTab('manual')" class="px-4 py-2.5 text-xs font-bold rounded-t-lg bg-blue-600 text-white shadow-sm flex items-center gap-1.5 transition-all">
                 <span class="material-symbols-outlined text-[16px]">edit_document</span>
                 <span>1. Input Resi Manual</span>
-                <span id="tabBadgeKurirToko" class="hidden text-[10px] px-1.5 py-0.2 rounded font-bold bg-amber-100 text-amber-800">Kurir Toko</span>
+                <span id="tabBadgeKurirToko" class="hidden text-[10px] px-1.5 py-0.5 rounded font-bold bg-white/20 text-white">Kurir Toko</span>
             </button>
-            <button type="button" id="tabBtnBiteship" onclick="switchFulfillmentTab('biteship')" class="px-4 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-on-surface-variant hover:text-primary hover:bg-white/50 flex items-center gap-1.5 transition-all">
+            <button type="button" id="tabBtnBiteship" onclick="switchFulfillmentTab('biteship')" class="px-4 py-2.5 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-blue-600 hover:bg-slate-200/60 flex items-center gap-1.5 transition-all">
                 <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
                 <span>2. Ambil Resi Otomatis (Get Resi)</span>
-                <span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-blue-100 text-blue-800">Vendor Ekspedisi</span>
+                
             </button>
-            <button type="button" id="tabBtnTracking" onclick="switchFulfillmentTab('tracking')" class="px-4 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-on-surface-variant hover:text-primary hover:bg-white/50 flex items-center gap-1.5 transition-all hidden">
+            <button type="button" id="tabBtnTracking" onclick="switchFulfillmentTab('tracking')" class="px-4 py-2.5 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-blue-600 hover:bg-slate-200/60 flex items-center gap-1.5 transition-all hidden">
                 <span class="material-symbols-outlined text-[16px]">radar</span>
                 <span>3. Lacak Pengiriman</span>
             </button>
@@ -75,13 +75,17 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="space-y-1.5">
-                            <label for="formCourierId" class="block text-xs font-semibold text-on-surface flex items-center justify-between">
-                                <span>Kurir Ekspedisi</span>
-                                <span class="text-[10px] text-on-surface-variant font-normal">Data Kurir Aktif</span>
+                            <label class="block text-xs font-semibold text-on-surface">
+                                Kurir Pengiriman
                             </label>
-                            <select id="formCourierId" name="courier_id" class="w-full px-3.5 py-2.5 border border-outline-variant rounded-xl text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                                <!-- Opsi kurir akan diisi otomatis dari database -->
-                            </select>
+                            <div class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant/60 rounded-xl text-xs font-medium text-on-surface flex items-center gap-2.5 shadow-2xs">
+                                <span class="material-symbols-outlined text-[18px] text-primary">local_shipping</span>
+                                <div>
+                                    <div id="displayManualCourierName" class="font-semibold text-on-surface">-</div>
+                                    <div id="displayManualCourierService" class="text-[11px] text-on-surface-variant font-normal"></div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="formCourierId" name="courier_id" value="">
                         </div>
 
                         <div class="space-y-1.5">
@@ -105,6 +109,46 @@
                                 <span class="material-symbols-outlined text-[16px]" id="copyResiIcon">content_copy</span>
                                 <span id="copyResiText">Salin</span>
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Section ETA (Estimasi Tiba) -->
+                    <div class="p-3.5 bg-surface-container-low/70 border border-outline-variant/30 rounded-xl space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px] text-primary">schedule</span>
+                                <span>Estimasi Tiba (ETA)</span>
+                            </span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold" id="etaModeBadge">Kurir Toko / Manual</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label for="formEstimatedDeliveryAt" class="block text-[11px] font-semibold text-on-surface">
+                                    Target Tanggal & Jam Tiba
+                                </label>
+                                <input type="datetime-local" id="formEstimatedDeliveryAt" class="w-full px-3 py-2 border border-outline-variant rounded-lg text-xs bg-white focus:ring-1 focus:ring-primary focus:outline-none">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="formEstimatedDuration" class="block text-[11px] font-semibold text-on-surface">
+                                    Durasi Estimasi Pengiriman
+                                </label>
+                                <select id="formEstimatedDuration" class="w-full px-3 py-2 border border-outline-variant rounded-lg text-xs bg-white focus:ring-1 focus:ring-primary focus:outline-none" onchange="onDurationPresetChange(this.value)">
+                                    <option value="1-2 hari">1-2 Hari (Standar Pengiriman)</option>
+                                    <option value="1 hari">1 Hari (Besok Tiba)</option>
+                                    <option value="Same Day">Same Day (Hari Ini)</option>
+                                    <option value="2-3 hari">2-3 Hari</option>
+                                    <option value="3-5 hari">3-5 Hari</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label for="formEtaNotes" class="block text-[11px] font-semibold text-on-surface">
+                                Catatan Jadwal / Estimasi (Opsional)
+                            </label>
+                            <input type="text" id="formEtaNotes" placeholder="Contoh: Diantar armada toko kloter pagi (10:00 - 13:00)" class="w-full px-3 py-2 border border-outline-variant rounded-lg text-xs bg-white focus:ring-1 focus:ring-primary focus:outline-none">
                         </div>
                     </div>
 
@@ -189,27 +233,25 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div class="space-y-1">
-                            <label for="biteshipCourierCompany" class="block text-xs font-semibold text-on-surface flex items-center justify-between">
-                                <span>Pilih Vendor Ekspedisi</span>
-                                <span class="text-[10px] text-on-surface-variant font-normal">Data Vendor Aktif</span>
+                            <label class="block text-xs font-semibold text-on-surface">
+                                Vendor Ekspedisi
                             </label>
-                            <select id="biteshipCourierCompany" onchange="onBiteshipCourierSelected(this.value)" class="w-full px-3 py-2 border border-outline-variant rounded-xl text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                                <!-- Opsi ekspedisi akan diisi otomatis dari database -->
-                            </select>
+                            <div class="w-full px-3 py-2 bg-surface-container-low border border-outline-variant/60 rounded-xl text-xs font-medium text-on-surface flex items-center gap-2 shadow-2xs">
+                                <span class="material-symbols-outlined text-[16px] text-primary">local_shipping</span>
+                                <span id="displayBiteshipCourierName" class="font-semibold text-on-surface">-</span>
+                            </div>
+                            <input type="hidden" id="biteshipCourierCompany" value="">
                         </div>
 
                         <div class="space-y-1">
-                            <label for="biteshipCourierType" class="block text-xs font-semibold text-on-surface">
+                            <label class="block text-xs font-semibold text-on-surface">
                                 Tipe Layanan
                             </label>
-                            <select id="biteshipCourierType" class="w-full px-3 py-2 border border-outline-variant rounded-xl text-xs focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                                <option value="reg" selected>Reguler / Standard</option>
-                                <option value="standard">Standard</option>
-                                <option value="ez">EZ (J&T Regular)</option>
-                                <option value="siuntung">SiUntung (SiCepat)</option>
-                                <option value="yes">YES / Next Day</option>
-                                <option value="cargo">Kargo / Trucking</option>
-                            </select>
+                            <div class="w-full px-3 py-2 bg-surface-container-low border border-outline-variant/60 rounded-xl text-xs font-medium text-on-surface flex items-center gap-2 shadow-2xs">
+                                <span class="material-symbols-outlined text-[16px] text-primary">category</span>
+                                <span id="displayBiteshipCourierType" class="font-semibold text-on-surface">-</span>
+                            </div>
+                            <input type="hidden" id="biteshipCourierType" value="reg">
                         </div>
 
                         <div class="space-y-1">
@@ -353,11 +395,27 @@ function switchFulfillmentTab(tab) {
     const panelBiteship = document.getElementById('panelBiteship');
     const panelTracking = document.getElementById('panelTracking');
 
+    const badgeKurirToko = document.getElementById('tabBadgeKurirToko');
+    const badgeEkspedisi = document.getElementById('tabBadgeEkspedisi');
+
+    const inactiveClass = 'px-4 py-2.5 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-blue-600 hover:bg-slate-200/60 flex items-center gap-1.5 transition-all';
+    const activeBlueClass = 'px-4 py-2.5 text-xs font-bold rounded-t-lg bg-blue-600 text-white shadow-sm flex items-center gap-1.5 transition-all';
+    const activeGreenClass = 'px-4 py-2.5 text-xs font-bold rounded-t-lg bg-emerald-600 text-white shadow-sm flex items-center gap-1.5 transition-all';
+
     [tabManual, tabBiteship, tabTracking].forEach(el => {
         if (!el) return;
-        el.classList.remove('border-primary', 'text-primary', 'bg-white');
-        el.classList.add('border-transparent', 'text-on-surface-variant');
+        const wasHidden = el.classList.contains('hidden');
+        el.className = inactiveClass;
+        if (wasHidden) el.classList.add('hidden');
     });
+
+    if (badgeKurirToko) {
+        badgeKurirToko.className = 'hidden text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-800 transition-colors';
+        if (currentActiveOrderData?.is_kurir_toko) badgeKurirToko.classList.remove('hidden');
+    }
+    if (badgeEkspedisi) {
+        badgeEkspedisi.className = 'text-[10px] px-1.5 py-0.5 rounded font-bold bg-blue-100 text-blue-800 transition-colors';
+    }
 
     [panelManual, panelBiteship, panelTracking].forEach(el => {
         if (!el) return;
@@ -365,25 +423,27 @@ function switchFulfillmentTab(tab) {
     });
 
     if (tab === 'biteship') {
-        tabBiteship.classList.add('border-primary', 'text-primary', 'bg-white');
-        tabBiteship.classList.remove('border-transparent', 'text-on-surface-variant');
+        tabBiteship.className = activeBlueClass;
+        if (badgeEkspedisi) {
+            badgeEkspedisi.className = 'text-[10px] px-1.5 py-0.5 rounded font-bold bg-white/20 text-white transition-colors';
+        }
         panelBiteship.classList.remove('hidden');
     } else if (tab === 'tracking') {
-        tabTracking.classList.add('border-primary', 'text-primary', 'bg-white');
-        tabTracking.classList.remove('border-transparent', 'text-on-surface-variant');
+        tabTracking.className = activeGreenClass;
         panelTracking.classList.remove('hidden');
         fetchBiteshipTracking();
     } else {
-        tabManual.classList.add('border-primary', 'text-primary', 'bg-white');
-        tabManual.classList.remove('border-transparent', 'text-on-surface-variant');
+        tabManual.className = activeBlueClass;
+        if (badgeKurirToko && currentActiveOrderData?.is_kurir_toko) {
+            badgeKurirToko.className = 'text-[10px] px-1.5 py-0.5 rounded font-bold bg-white/20 text-white transition-colors';
+        }
         panelManual.classList.remove('hidden');
     }
 }
 
-function onBiteshipCourierSelected(courierKey) {
-    const typeSelect = document.getElementById('biteshipCourierType');
-    if (!typeSelect) return;
-    typeSelect.innerHTML = '';
+function onBiteshipCourierSelected(courierKey, targetServiceCode = null) {
+    const typeInput = document.getElementById('biteshipCourierType');
+    const displayType = document.getElementById('displayBiteshipCourierType');
 
     const cleanKey = (courierKey || '').toLowerCase();
     let courierConfig = biteshipCouriersCatalog[cleanKey] || null;
@@ -396,16 +456,14 @@ function onBiteshipCourierSelected(courierKey) {
         }
     }
 
-    if (courierConfig && courierConfig.services && Object.keys(courierConfig.services).length > 0) {
-        Object.entries(courierConfig.services).forEach(([svcKey, svcName]) => {
-            const opt = document.createElement('option');
-            opt.value = svcKey;
-            opt.textContent = svcName;
-            if (svcKey === courierConfig.default_service) opt.selected = true;
-            typeSelect.appendChild(opt);
-        });
-    } else {
-        typeSelect.innerHTML = '<option value="reg" selected>Reguler / Standard</option>';
+    let resolvedCode = (targetServiceCode || courierConfig?.default_service || 'reg').toLowerCase();
+    let resolvedName = courierConfig?.services?.[resolvedCode] || resolvedCode.toUpperCase();
+
+    if (typeInput) {
+        typeInput.value = resolvedCode;
+    }
+    if (displayType) {
+        displayType.textContent = resolvedName;
     }
 }
 
@@ -462,31 +520,51 @@ function openResiModal(order, defaultTab = 'manual') {
     const courierName = order.courier_name || 'Kurir Pesanan';
     const courierCode = (order.courier_code || order.courier_name || '').toLowerCase();
 
-    // 1. Populate Manual Courier Select (#formCourierId) dari katalog DB
-    const manualCourierSelect = document.getElementById('formCourierId');
-    if (manualCourierSelect) {
-        manualCourierSelect.innerHTML = '';
-        let foundManualMatch = false;
-        Object.entries(biteshipCouriersCatalog).forEach(([key, item]) => {
-            const opt = document.createElement('option');
-            opt.value = item.id || key;
-            opt.textContent = item.name + (item.courier_type === 'toko' ? ' (Kurir Toko)' : '');
-            if (item.id === order.courier_id || (item.code && item.code.toLowerCase() === courierCode)) {
-                opt.selected = true;
-                foundManualMatch = true;
-            } else if (isKurirToko && !foundManualMatch && item.courier_type === 'toko') {
-                opt.selected = true;
-                foundManualMatch = true;
-            }
-            manualCourierSelect.appendChild(opt);
-        });
-        if (!foundManualMatch && order.courier_name) {
-            const opt = document.createElement('option');
-            opt.value = order.courier_id || '';
-            opt.textContent = order.courier_name;
-            opt.selected = true;
-            manualCourierSelect.prepend(opt);
+    // 1. Lock Manual Courier to Checkout Courier
+    const manualCourierIdInput = document.getElementById('formCourierId');
+    const displayManualCourier = document.getElementById('displayManualCourierName');
+    const displayManualService = document.getElementById('displayManualCourierService');
+    if (manualCourierIdInput) {
+        manualCourierIdInput.value = order.courier_id || '';
+    }
+    if (displayManualCourier) {
+        displayManualCourier.textContent = (order.courier_name || '-') + (isKurirToko ? ' (Kurir Toko)' : '');
+    }
+    if (displayManualService) {
+        displayManualService.textContent = order.shipping_service_name || (order.shipping_service_code ? order.shipping_service_code.toUpperCase() : '');
+    }
+
+    // Prefill ETA fields for Manual / Kurir Toko
+    const etaInput = document.getElementById('formEstimatedDeliveryAt');
+    const etaDuration = document.getElementById('formEstimatedDuration');
+    const etaNotes = document.getElementById('formEtaNotes');
+    const etaModeBadge = document.getElementById('etaModeBadge');
+
+    if (etaModeBadge) {
+        etaModeBadge.textContent = isKurirToko ? 'Kurir Toko' : 'Ekspedisi';
+    }
+
+    if (etaInput) {
+        if (order.estimated_delivery_at) {
+            etaInput.value = order.estimated_delivery_at;
+        } else if (isKurirToko) {
+            // Default tomorrow at 14:00
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(14, 0, 0, 0);
+            const tzOffset = tomorrow.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(tomorrow.getTime() - tzOffset)).toISOString().slice(0, 16);
+            etaInput.value = localISOTime;
+        } else {
+            etaInput.value = '';
         }
+    }
+
+    if (etaDuration) {
+        etaDuration.value = order.estimated_delivery_duration || '1-2 hari';
+    }
+    if (etaNotes) {
+        etaNotes.value = order.eta_notes || '';
     }
 
     // Prefill Biteship Destination summary
@@ -525,23 +603,43 @@ function openResiModal(order, defaultTab = 'manual') {
         else matchedCompanyKey = Object.keys(biteshipCouriersCatalog)[0] || 'jne';
     }
 
-    // 3. Populate Biteship Courier Select (#biteshipCourierCompany) dari data DB
-    const biteshipCompanySelect = document.getElementById('biteshipCourierCompany');
-    if (biteshipCompanySelect) {
-        biteshipCompanySelect.innerHTML = '';
-        Object.entries(biteshipCouriersCatalog).forEach(([key, item]) => {
-            const opt = document.createElement('option');
-            opt.value = item.courier_company || item.code || key;
-            opt.textContent = item.name;
-            if (key === matchedCompanyKey || opt.value === matchedCompanyKey) {
-                opt.selected = true;
-            }
-            biteshipCompanySelect.appendChild(opt);
-        });
+    // 3. Lock Biteship Courier & Service to Checkout Courier
+    const biteshipCompanyInput = document.getElementById('biteshipCourierCompany');
+    const displayBiteshipCourier = document.getElementById('displayBiteshipCourierName');
+    const biteshipTypeInput = document.getElementById('biteshipCourierType');
+    const displayBiteshipType = document.getElementById('displayBiteshipCourierType');
 
-        // Trigger render tipe layanan untuk kurir terpilih
-        onBiteshipCourierSelected(biteshipCompanySelect.value || matchedCompanyKey);
+    const catalogItem = biteshipCouriersCatalog[matchedCompanyKey];
+    const resolvedCompany = catalogItem?.courier_company || catalogItem?.code || matchedCompanyKey;
+    if (biteshipCompanyInput) {
+        biteshipCompanyInput.value = resolvedCompany;
     }
+    if (displayBiteshipCourier) {
+        displayBiteshipCourier.textContent = order.courier_name || catalogItem?.name || resolvedCompany.toUpperCase();
+    }
+
+    // Lock Biteship Service Type to Checkout Service Type
+    let targetServiceCode = (order.shipping_service_code || order.courier_service_type || '').toLowerCase();
+    let targetServiceName = order.shipping_service_name || '';
+
+    if (!targetServiceCode && catalogItem) {
+        targetServiceCode = catalogItem.default_service || 'reg';
+    }
+    if (!targetServiceName && catalogItem?.services && catalogItem.services[targetServiceCode]) {
+        targetServiceName = catalogItem.services[targetServiceCode];
+    } else if (!targetServiceName) {
+        targetServiceName = targetServiceCode ? targetServiceCode.toUpperCase() : 'Reguler / Standard';
+    }
+
+    if (biteshipTypeInput) {
+        biteshipTypeInput.value = targetServiceCode || 'reg';
+    }
+    if (displayBiteshipType) {
+        displayBiteshipType.textContent = targetServiceName;
+    }
+
+    // Trigger onBiteshipCourierSelected
+    onBiteshipCourierSelected(resolvedCompany, targetServiceCode);
 
     // Handle Already Issued Biteship Resi
     const hasBiteshipResi = !!(order.has_biteship_resi || (order.meta && order.meta.biteship_order_id) || (order.resi && (order.fulfillment_type === 'biteship' || (order.meta && order.meta.fulfillment_type === 'biteship'))));
@@ -682,6 +780,38 @@ function copyResiCode() {
     });
 }
 
+function onDurationPresetChange(duration) {
+    const etaInput = document.getElementById('formEstimatedDeliveryAt');
+    if (!etaInput) return;
+
+    let daysToAdd = 1;
+    let hour = 14;
+    if (duration === 'Same Day') {
+        daysToAdd = 0;
+        hour = 17;
+    } else if (duration === '1 hari') {
+        daysToAdd = 1;
+        hour = 14;
+    } else if (duration === '1-2 hari') {
+        daysToAdd = 2;
+        hour = 14;
+    } else if (duration === '2-3 hari') {
+        daysToAdd = 3;
+        hour = 14;
+    } else if (duration === '3-5 hari') {
+        daysToAdd = 5;
+        hour = 14;
+    }
+
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + daysToAdd);
+    targetDate.setHours(hour, 0, 0, 0);
+    const tzOffset = targetDate.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(targetDate.getTime() - tzOffset)).toISOString().slice(0, 16);
+    etaInput.value = localISOTime;
+}
+window.onDurationPresetChange = onDurationPresetChange;
+
 // 1. Submit Manual Resi Form
 async function submitResiForm(e) {
     e.preventDefault();
@@ -730,19 +860,26 @@ async function submitResiForm(e) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
 
     try {
-        const response = await fetch(`/orders/${orderId}/update-resi`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({
-                tracking_number: trackingNumber,
-                courier_id: courierId || null,
-                status: statusTarget ? parseInt(statusTarget) : 4
-            })
-        });
+            const estimatedDeliveryAt = document.getElementById('formEstimatedDeliveryAt')?.value;
+            const estimatedDuration = document.getElementById('formEstimatedDuration')?.value;
+            const etaNotes = document.getElementById('formEtaNotes')?.value;
+
+            const response = await fetch(`/orders/${orderId}/update-resi`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    tracking_number: trackingNumber,
+                    courier_id: courierId || null,
+                    status: statusTarget ? parseInt(statusTarget) : 4,
+                    estimated_delivery_at: estimatedDeliveryAt || null,
+                    estimated_delivery_duration: estimatedDuration || null,
+                    eta_notes: etaNotes || null
+                })
+            });
 
         const data = await response.json();
         if (response.ok && data.success) {

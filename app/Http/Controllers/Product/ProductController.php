@@ -19,14 +19,18 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'brand', 'images', 'variants']);
+        $query = Product::with(['category', 'brand', 'images', 'variants'])
+            ->where('is_bundle', false);
 
-        if ($search = $request->query('search')) {
+        if ($request->filled('search')) {
+            $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'ilike', "%{$search}%")
-                  ->orWhere('code', 'ilike', "%{$search}%")
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%")
                   ->orWhereHas('variants', function ($q2) use ($search) {
-                      $q2->where('sku', 'ilike', "%{$search}%");
+                      $q2->where('sku', 'like', "%{$search}%")
+                         ->orWhere('variant_name', 'like', "%{$search}%");
                   });
             });
         }
@@ -64,7 +68,7 @@ class ProductController extends Controller
             $variantsData = json_decode($request->variants, true);
             if (is_array($variantsData)) {
                 foreach ($variantsData as &$vData) {
-                    foreach (['base_price', 'sell_price', 'shipping_cost', 'stock_qty', 'min_order_qty', 'sort_order', 'length', 'width', 'height', 'weight'] as $field) {
+                    foreach (['base_price', 'sell_price', 'shipping_cost', 'stock_qty', 'min_order_qty', 'sort_order', 'length', 'width', 'height', 'weight', 'package_length', 'package_width', 'package_height', 'package_weight'] as $field) {
                         if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
                             $vData[$field] = null;
                         }
@@ -94,24 +98,23 @@ class ProductController extends Controller
             'alt_text' => 'nullable|string|max:255',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
+            'category_id' => 'required|string|exists:product_category,id',
+            'brand_id' => 'required|string|exists:brands,id',
             'warranty_duration' => 'nullable|string|max:255',
-            'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
-            'shipping_scheme' => 'nullable|string|in:dimension,fixed',
+            'courier_type' => 'nullable|string|in:toko,ekspedisi,keduanya',
+            'shipping_scheme' => 'nullable|string|in:fixed,dimension',
             'shipping_cost' => 'nullable|numeric|min:0',
             'length' => 'nullable|numeric|min:0',
             'width' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
             'weight' => 'nullable|numeric|min:0',
-            
-            'segments' => 'nullable|array',
-            'segments.*' => 'nullable|string|max:255',
             'best_seller' => 'boolean',
             'is_new' => 'boolean',
-            'sort_order' => 'nullable|integer|min:0',
+            'show_on_web' => 'boolean',
+            'sort_order' => 'integer|min:0',
             'status' => 'boolean',
-            'show_on_web' => 'nullable|boolean',
-            'category_id' => 'nullable|string|exists:product_category,id',
-            'brand_id' => 'nullable|string|exists:brands,id',
+            'suggested_products' => 'nullable|array',
+            'suggested_products.*' => 'exists:products,id',
             'colors' => 'nullable|array',
             'colors.*.color_name' => 'nullable|string|max:255',
             'colors.*.color_code' => 'nullable|string|max:255',
@@ -128,6 +131,10 @@ class ProductController extends Controller
             'variants.*.width' => 'nullable|numeric|min:0',
             'variants.*.height' => 'nullable|numeric|min:0',
             'variants.*.weight' => 'nullable|numeric|min:0',
+            'variants.*.package_length' => 'nullable|numeric|min:0',
+            'variants.*.package_width' => 'nullable|numeric|min:0',
+            'variants.*.package_height' => 'nullable|numeric|min:0',
+            'variants.*.package_weight' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
             'variants.*.sort_order' => 'nullable|integer|min:0',
@@ -283,7 +290,7 @@ class ProductController extends Controller
             $variantsData = json_decode($request->variants, true);
             if (is_array($variantsData)) {
                 foreach ($variantsData as &$vData) {
-                    foreach (['base_price', 'sell_price', 'shipping_cost', 'stock_qty', 'min_order_qty', 'sort_order', 'length', 'width', 'height', 'weight'] as $field) {
+                    foreach (['base_price', 'sell_price', 'shipping_cost', 'stock_qty', 'min_order_qty', 'sort_order', 'length', 'width', 'height', 'weight', 'package_length', 'package_width', 'package_height', 'package_weight'] as $field) {
                         if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
                             $vData[$field] = null;
                         }
@@ -316,7 +323,7 @@ class ProductController extends Controller
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
             'warranty_duration' => 'nullable|string|max:255',
-            'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
+            'courier_type' => 'nullable|string|in:toko,ekspedisi,expedisi,keduanya',
             'shipping_scheme' => 'nullable|string|in:dimension,fixed',
             'shipping_cost' => 'nullable|numeric|min:0',
             'length' => 'nullable|numeric|min:0',
@@ -347,6 +354,10 @@ class ProductController extends Controller
             'variants.*.width' => 'nullable|numeric|min:0',
             'variants.*.height' => 'nullable|numeric|min:0',
             'variants.*.weight' => 'nullable|numeric|min:0',
+            'variants.*.package_length' => 'nullable|numeric|min:0',
+            'variants.*.package_width' => 'nullable|numeric|min:0',
+            'variants.*.package_height' => 'nullable|numeric|min:0',
+            'variants.*.package_weight' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
             'variants.*.sort_order' => 'nullable|integer|min:0',

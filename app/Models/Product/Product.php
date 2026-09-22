@@ -92,6 +92,7 @@ class Product extends Model
         'sort_order',
         'status',
         'show_on_web',
+        'is_bundle',
         'creator',
         'editor',
         'deleted',
@@ -106,6 +107,7 @@ class Product extends Model
             'sort_order' => 'integer',
             'status' => 'boolean',
             'show_on_web' => 'boolean',
+            'is_bundle' => 'boolean',
             'deleted' => 'boolean',
             'shipping_cost' => 'decimal:2',
             'created_at' => 'datetime',
@@ -277,5 +279,20 @@ class Product extends Model
     public function storePricings(): HasMany
     {
         return $this->hasMany(\App\Models\Promo\StorePricing::class, 'product_id', 'id');
+    }
+
+    public function bundleItems(): HasMany
+    {
+        return $this->hasMany(ProductBundlingItem::class, 'product_bundling_id');
+    }
+
+    public function fixedBundleItems(): HasMany
+    {
+        return $this->hasMany(ProductBundlingItem::class, 'product_bundling_id')->where('is_suggest', false);
+    }
+
+    public function suggestBundleItems(): HasMany
+    {
+        return $this->hasMany(ProductBundlingItem::class, 'product_bundling_id')->where('is_suggest', true);
     }
 }

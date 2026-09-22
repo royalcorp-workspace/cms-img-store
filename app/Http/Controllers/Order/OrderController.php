@@ -264,23 +264,48 @@ class OrderController extends Controller
             'tracking_number' => 'required|string|max:100',
             'courier_id' => 'nullable|string|exists:couriers,id',
             'status' => 'nullable|integer|in:0,1,2,3,4,5,6,7',
+            'estimated_delivery_at' => 'nullable|string',
+            'estimated_delivery_duration' => 'nullable|string|max:100',
+            'eta_notes' => 'nullable|string|max:500',
         ]);
 
         $trackingNumber = trim($validated['tracking_number']);
+        $isKurirToko = $order->isKurirToko();
+        $etaSource = $isKurirToko ? 'store' : 'manual';
+        $estimatedAt = !empty($validated['estimated_delivery_at']) ? \Carbon\Carbon::parse($validated['estimated_delivery_at']) : null;
+        $estimatedDuration = !empty($validated['estimated_delivery_duration']) ? trim((string)$validated['estimated_delivery_duration']) : null;
+        $etaNotes = !empty($validated['eta_notes']) ? trim((string)$validated['eta_notes']) : null;
+
+        if ($estimatedDuration && !$estimatedAt) {
+            $calc = \App\Services\EtaService::calculateEta($estimatedDuration);
+            $estimatedAt = $calc['estimated_at'];
+        }
+
         $meta = $order->meta ?? [];
         $meta['tracking_number'] = $trackingNumber;
         $meta['resi'] = $trackingNumber;
         $meta['fulfillment_type'] = 'manual';
         $meta['resi_updated_at'] = now()->toDateTimeString();
         $meta['resi_updated_by'] = auth()->user()->name ?? 'admin';
+        if ($estimatedAt) {
+            $meta['estimated_delivery_at'] = $estimatedAt->toDateTimeString();
+        }
+        if ($estimatedDuration) {
+            $meta['estimated_delivery_duration'] = $estimatedDuration;
+        }
+        if ($etaNotes) {
+            $meta['eta_notes'] = $etaNotes;
+        }
 
         $updateData = [
             'meta' => $meta,
             'editor' => auth()->user()->name ?? 'admin',
         ];
 
-        if (!empty($validated['courier_id'])) {
-            $updateData['courier_id'] = $validated['courier_id'];
+        // Kurir dikunci menggunakan bawaan dari checkout; fallback hanya jika order belum memiliki kurir
+        $finalCourierId = $order->courier_id ?: (!empty($validated['courier_id']) ? $validated['courier_id'] : null);
+        if (!empty($finalCourierId)) {
+            $updateData['courier_id'] = $finalCourierId;
         }
 
         $targetStatus = isset($validated['status'])
@@ -318,9 +343,13 @@ class OrderController extends Controller
         try {
             \App\Services\OrderFulfillmentService::completeFulfillmentPipeline($order, [
                 'tracking_number' => $trackingNumber,
-                'courier_id' => $validated['courier_id'] ?? $order->courier_id,
+                'courier_id' => $finalCourierId ?? $order->courier_id,
                 'target_status' => $targetStatus,
                 'fulfillment_type' => 'manual',
+                'estimated_delivery_at' => $estimatedAt,
+                'estimated_delivery_duration' => $estimatedDuration,
+                'eta_source' => $etaSource,
+                'eta_notes' => $etaNotes,
             ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("Gagal memperbarui dokumen alur gudang otomatis saat input resi manual #{$order->order_number}: " . $e->getMessage(), [
@@ -426,8 +455,20 @@ class OrderController extends Controller
             ], 422);
         }
 
-        $courierCompany = !empty($validated['courier_company']) ? $validated['courier_company'] : null;
-        $courierType = !empty($validated['courier_type']) ? $validated['courier_type'] : null;
+        // Kurir & tipe layanan dikunci menggunakan bawaan dari checkout
+        $checkoutCourierCode = strtolower((string)($order->courier?->code ?? ''));
+        $checkoutCourierName = strtolower((string)($order->courier?->name ?? ''));
+        $courierCompany = $biteshipService->mapCourierCompany($checkoutCourierCode)
+            ?: $biteshipService->mapCourierCompany($checkoutCourierName)
+            ?: (!empty($validated['courier_company']) ? $biteshipService->mapCourierCompany($validated['courier_company']) : 'jne');
+
+        $checkoutCourierType = strtolower(trim((string)(
+            $order->meta['courier_service_type']
+            ?? $order->meta['shipping_service_code']
+            ?? $order->meta['shipping_address']['courier_service_code']
+            ?? ''
+        )));
+        $courierType = $checkoutCourierType ?: (!empty($validated['courier_type']) ? $validated['courier_type'] : 'reg');
         $originNote = $validated['origin_note'] ?? null;
         $destinationNote = $validated['destination_note'] ?? null;
         $targetStatus = (int) ($validated['final_status'] ?? Order::STATUS_SHIPPED);
@@ -454,6 +495,14 @@ class OrderController extends Controller
         $courierData = $biteshipRes['courier'] ?? [];
         $trackingUrl = $courierData['tracking_url'] ?? null;
 
+        $rawBiteshipDuration = data_get($biteshipRes['raw'], 'shipment.duration')
+            ?? data_get($biteshipRes['raw'], 'courier.duration')
+            ?? data_get($biteshipRes['raw'], 'duration')
+            ?? data_get($biteshipRes['raw'], 'shipment_duration_range')
+            ?? ($order->meta['shipping_duration'] ?? '1-2 hari');
+
+        $biteshipEta = \App\Services\EtaService::calculateEta((string) $rawBiteshipDuration);
+
         $meta = $order->meta ?? [];
         if ($waybillId) {
             $meta['tracking_number'] = $waybillId;
@@ -464,6 +513,9 @@ class OrderController extends Controller
         $meta['biteship_payload'] = $payload;
         $meta['biteship_request_payload'] = $payload;
         $meta['biteship_tracking_url'] = $trackingUrl;
+        $meta['biteship_eta'] = $biteshipEta;
+        $meta['estimated_delivery_at'] = $biteshipEta['estimated_at']->toDateTimeString();
+        $meta['estimated_delivery_duration'] = $biteshipEta['duration'];
         $meta['fulfillment_type'] = 'biteship';
         $meta['resi_updated_at'] = now()->toDateTimeString();
         $meta['resi_updated_by'] = auth()->user()->name ?? 'admin';
@@ -477,7 +529,7 @@ class OrderController extends Controller
         ];
 
         $usedCompany = $courierData['company'] ?? ($payload['courier_company'] ?? '');
-        if ($usedCompany) {
+        if ($usedCompany && empty($order->courier_id)) {
             $cleanCompany = strtolower(trim((string) $usedCompany));
             $mappedCompany = $biteshipService->mapCourierCompany($cleanCompany);
             $matchedCourier = \App\Models\Shipping\Courier::where(function ($q) use ($cleanCompany, $mappedCompany) {
@@ -521,6 +573,12 @@ class OrderController extends Controller
                 'driver_name' => $courierData['company'] ?? (!empty($usedCompany) ? strtoupper($usedCompany) : 'Biteship Courier'),
                 'target_status' => $targetStatus,
                 'fulfillment_type' => 'biteship',
+                'estimated_delivery_at' => $biteshipEta['estimated_at'],
+                'estimated_delivery_min' => $biteshipEta['min_date'],
+                'estimated_delivery_max' => $biteshipEta['max_date'],
+                'estimated_delivery_duration' => $biteshipEta['duration'],
+                'eta_source' => 'biteship',
+                'eta_notes' => $biteshipEta['formatted_label'],
             ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("Gagal memperbarui dokumen alur gudang otomatis saat hit biteship #{$order->order_number}: " . $e->getMessage(), [
