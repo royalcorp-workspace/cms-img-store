@@ -52,7 +52,7 @@ class DeliveryController extends Controller
     public function create(string $packing_out_id)
     {
         $couriers = Courier::all();
-        $packingOut = \App\Models\Packing\PackingOut::with('packingSlip.order')->findOrFail($packing_out_id);
+        $packingOut = \App\Models\Packing\PackingOut::with('packingSlip.order.courier')->findOrFail($packing_out_id);
         return view('pages.delivery.create', compact('couriers', 'packingOut'));
     }
 
@@ -64,17 +64,38 @@ class DeliveryController extends Controller
             'tracking_number' => 'nullable|string',
             'driver_name' => 'nullable|string',
             'driver_phone' => 'nullable|string',
+            'estimated_delivery_at' => 'nullable|string',
+            'estimated_delivery_duration' => 'nullable|string|max:100',
+            'eta_notes' => 'nullable|string|max:500',
         ]);
+
+        $packingOut = \App\Models\Packing\PackingOut::with('packingSlip.order')->findOrFail($request->packing_out_id);
+        $order = $packingOut->packingSlip?->order;
+        $finalCourierId = $order?->courier_id ?: $request->courier_id;
+
+        $courier = Courier::find($finalCourierId);
+        $isToko = ($courier?->courier_type === 'toko' || $courier?->code === 'kurir_toko');
+        $estimatedAt = !empty($request->estimated_delivery_at) ? \Carbon\Carbon::parse($request->estimated_delivery_at) : null;
+        $estimatedDuration = !empty($request->estimated_delivery_duration) ? trim((string)$request->estimated_delivery_duration) : null;
+
+        if ($estimatedDuration && !$estimatedAt) {
+            $calc = \App\Services\EtaService::calculateEta($estimatedDuration);
+            $estimatedAt = $calc['estimated_at'];
+        }
 
         $delivery = Delivery::create([
             'packing_out_id' => $request->packing_out_id,
-            'order_id' => \App\Models\Packing\PackingOut::find($request->packing_out_id)->packingSlip->order_id,
-            'courier_id' => $request->courier_id,
+            'order_id' => $order?->id ?? $packingOut->packingSlip->order_id,
+            'courier_id' => $finalCourierId,
             'tracking_number' => $request->tracking_number,
             'driver_name' => $request->driver_name,
             'driver_phone' => $request->driver_phone,
             'status' => 'in_transit',
             'shipped_at' => now(),
+            'estimated_delivery_at' => $estimatedAt,
+            'estimated_delivery_duration' => $estimatedDuration,
+            'eta_source' => $isToko ? 'store' : 'manual',
+            'eta_notes' => $request->eta_notes,
         ]);
 
         \App\Models\Packing\PackingOut::find($request->packing_out_id)->update(['status' => 'out']);

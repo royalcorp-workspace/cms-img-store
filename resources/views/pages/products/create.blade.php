@@ -65,6 +65,10 @@
             'width' => $v->width !== null && $v->width !== '' ? (float)$v->width : (isset($v->attributes['width']) ? (float)$v->attributes['width'] : null),
             'height' => $v->height !== null && $v->height !== '' ? (float)$v->height : (isset($v->attributes['height']) ? (float)$v->attributes['height'] : null),
             'weight' => $v->weight !== null && $v->weight !== '' ? (float)$v->weight : (isset($v->attributes['weight']) ? (float)$v->attributes['weight'] : null),
+            'package_length' => $v->package_length !== null && $v->package_length !== '' ? (float)$v->package_length : null,
+            'package_width' => $v->package_width !== null && $v->package_width !== '' ? (float)$v->package_width : null,
+            'package_height' => $v->package_height !== null && $v->package_height !== '' ? (float)$v->package_height : null,
+            'package_weight' => $v->package_weight !== null && $v->package_weight !== '' ? (float)$v->package_weight : null,
             'status' => $v->status ?? 1,
             'attributes' => $v->attributes ?? null,
             'image' => $imgPath,
@@ -158,7 +162,7 @@
     <form id="productForm" method="POST" action="{{ $isEdit ? route('products.update', $product->id) : route('products.store') }}" enctype="multipart/form-data" class="w-full space-y-6">
         @csrf
         @if($isEdit) @method('PUT') @endif
-        <input type="hidden" name="code" id="productCodeHidden" value="{{ $productCode }}">
+        <input type="hidden" id="productCodeHidden" value="{{ $productCode }}">
         <input type="hidden" name="variants" id="variantsInput" value="">
         <input type="hidden" name="colors" id="colorsInput" value="{{ json_encode($colorData) }}">
 
@@ -179,9 +183,9 @@
                     <!-- Kode Produk -->
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                            Kode Produk <span class="text-[11px] font-normal text-on-surface-variant">(Otomatis)</span>
+                            Kode Produk
                         </label>
-                        <input type="text" value="{{ $product->code ?? 'Auto Generated' }}" class="w-full px-3.5 py-2 bg-surface-container-low border border-outline-variant rounded-xl text-xs font-mono text-on-surface-variant cursor-not-allowed" readonly>
+                        <input type="text" name="code" id="productCodeInput" value="{{ old('code', $productCode) }}" placeholder="Contoh: PRD..." class="w-full px-3.5 py-2 bg-white border border-outline-variant rounded-xl text-xs font-mono font-bold text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all">
                     </div>
 
                     <!-- Nama Produk -->
@@ -861,8 +865,8 @@
                         <input type="number" step="1000" min="0" id="batchShippingCost" placeholder="0" class="w-full px-2.5 py-1.5 border border-amber-300 rounded-lg text-xs font-bold text-amber-950 bg-amber-50/50 focus:ring-2 focus:ring-amber-400/20 focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Kode SKU</label>
-                        <input type="text" id="batchSkuPrefix" value="{{ $productCode }}" readonly disabled class="w-full px-2.5 py-1.5 border border-outline-variant/60 rounded-lg text-xs font-mono font-bold bg-surface-container/60 text-on-surface-variant cursor-not-allowed" title="Prefix SKU otomatis dari kode produk">
+                        <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Prefix SKU</label>
+                        <input type="text" id="batchSkuPrefix" value="{{ $productCode }}" placeholder="Prefix SKU..." class="w-full px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs font-mono font-bold bg-white text-on-surface focus:ring-2 focus:ring-primary/20 focus:outline-none" title="Prefix SKU untuk varian">
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">P (cm)</label>
@@ -1116,9 +1120,9 @@ function formatStandardSize(str) {
 }
 
 // Auto-generate official ERP SKU from Product Code + Ukuran - Kelengkapan / Ketebalan
-function generateAutoSku(sizeStr, compCode, tebalNum) {
+function generateAutoSku(sizeStr, compCode, tebalNum, customProdCode = null) {
     const dims = parseSizeDimensions(sizeStr);
-    const prodCode = (window.productCode || document.getElementById('productCodeHidden')?.value || '').trim() || 'PRD';
+    const prodCode = (customProdCode || document.getElementById('productCodeInput')?.value || window.productCode || document.getElementById('productCodeHidden')?.value || '').trim() || 'PRD';
 
     let suffix = '';
     if (compCode) {
@@ -1554,6 +1558,9 @@ function saveCurrentTableInputs() {
         const wid = row.querySelector('.v-width')?.value ?? '';
         const hei = row.querySelector('.v-height')?.value ?? '';
         const wei = row.querySelector('.v-weight')?.value ?? '';
+        const pkgLen = row.querySelector('.v-pkg-length')?.value ?? '';
+        const pkgWid = row.querySelector('.v-pkg-width')?.value ?? '';
+        const pkgHei = row.querySelector('.v-pkg-height')?.value ?? '';
         const stat = row.querySelector('.v-status')?.value ?? '1';
         const excl = row.dataset.excluded === '1';
 
@@ -1564,6 +1571,9 @@ function saveCurrentTableInputs() {
         const parsedWid = (wid !== '' && !isNaN(parseFloat(wid))) ? parseFloat(wid) : null;
         const parsedHei = (hei !== '' && !isNaN(parseFloat(hei))) ? parseFloat(hei) : null;
         const parsedWei = (wei !== '' && !isNaN(parseFloat(wei))) ? parseFloat(wei) : null;
+        const parsedPkgLen = (pkgLen !== '' && !isNaN(parseFloat(pkgLen))) ? parseFloat(pkgLen) : null;
+        const parsedPkgWid = (pkgWid !== '' && !isNaN(parseFloat(pkgWid))) ? parseFloat(pkgWid) : null;
+        const parsedPkgHei = (pkgHei !== '' && !isNaN(parseFloat(pkgHei))) ? parseFloat(pkgHei) : null;
 
         rowCache[key] = {
             variant_name: vName,
@@ -1575,6 +1585,9 @@ function saveCurrentTableInputs() {
             width: parsedWid,
             height: parsedHei,
             weight: parsedWei,
+            package_length: parsedPkgLen,
+            package_width: parsedPkgWid,
+            package_height: parsedPkgHei,
             status: stat,
             excluded: excl,
             has_db_sku: row.dataset.hasDbSku === '1',
@@ -1594,6 +1607,9 @@ function saveCurrentTableInputs() {
             target.width = parsedWid;
             target.height = parsedHei;
             target.weight = parsedWei;
+            target.package_length = parsedPkgLen;
+            target.package_width = parsedPkgWid;
+            target.package_height = parsedPkgHei;
             target.status = stat;
             target.excluded = excl;
         }
@@ -1672,6 +1688,9 @@ function rebuildCombinations() {
                     width: cached.width !== undefined && cached.width !== '' ? cached.width : (dims.width || ''),
                     height: cached.height !== undefined && cached.height !== '' ? cached.height : (hasThickness ? (thicknessMode === 'multi' ? thVal : (singleThickness || 25)) : (document.getElementById('productHeight')?.value || 25)),
                     weight: cached.weight !== undefined && cached.weight !== '' ? cached.weight : (document.getElementById('productWeight')?.value || ''),
+                    package_length: cached.package_length !== undefined ? cached.package_length : '',
+                    package_width: cached.package_width !== undefined ? cached.package_width : '',
+                    package_height: cached.package_height !== undefined ? cached.package_height : '',
                     status: cached.status !== undefined ? cached.status : 1,
                     image: cached.image || null,
                     image_url: cached.image_url || null,
@@ -1775,8 +1794,12 @@ function applyBatchSettings() {
             if (bWeight !== '') v.weight = bWeight;
             if (bPrefix !== '') {
                 const compObj = completenessList.find(c => c.name === v.kelengkapan || c.short === v.kelengkapan);
-                v.sku = generateAutoSku(v.size, compObj?.code, thicknessMode === 'multi' ? v.tebal : null);
-                v.has_db_sku = false;
+                v.sku = generateAutoSku(v.size, compObj?.code, thicknessMode === 'multi' ? v.tebal : null, bPrefix);
+                v.has_db_sku = true;
+                if (v.key && rowCache[v.key]) {
+                    rowCache[v.key].sku = v.sku;
+                    rowCache[v.key].has_db_sku = true;
+                }
             }
         }
     });
@@ -1956,6 +1979,9 @@ function renderVariantsTable() {
             const widthVal = (v.width !== undefined && v.width !== null && v.width !== '') ? v.width : (dims.width || '');
             const heightVal = (v.height !== undefined && v.height !== null && v.height !== '') ? v.height : (v.tebal || singleThickness || 25);
             const weightVal = (v.weight !== undefined && v.weight !== null && v.weight !== '') ? v.weight : (document.getElementById('productWeight')?.value || '');
+            const pkgLenVal = (v.package_length !== undefined && v.package_length !== null && v.package_length !== '') ? v.package_length : '';
+            const pkgWidVal = (v.package_width !== undefined && v.package_width !== null && v.package_width !== '') ? v.package_width : '';
+            const pkgHeiVal = (v.package_height !== undefined && v.package_height !== null && v.package_height !== '') ? v.package_height : '';
             const shippingCostVal = (v.shipping_cost !== undefined && v.shipping_cost !== null && v.shipping_cost !== '') ? v.shipping_cost : (productDefaultShipping || 0);
 
             rowsHtml += `
@@ -1982,7 +2008,7 @@ function renderVariantsTable() {
                     </td>
                     ` : ''}
                     <td class="px-3 py-2.5">
-                        <input type="text" class="v-sku w-full min-w-[200px] px-2.5 py-1.5 border border-outline-variant/60 bg-surface-container/60 text-on-surface-variant rounded-lg text-xs font-mono font-bold cursor-not-allowed select-all focus:outline-none" value="${escapeHtml(v.sku || '')}" title="SKU otomatis terisi (Kode Produk + Ukuran - Kelengkapan/Tebal)" readonly tabindex="-1">
+                        <input type="text" class="v-sku w-full min-w-[200px] px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs font-mono font-bold text-on-surface bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all" value="${escapeHtml(v.sku || '')}" placeholder="SKU Varian" oninput="onRowSkuChanged(this, ${globalIdx})" title="Klik untuk mengedit SKU varian ini">
                     </td>
                     <td class="px-3 py-2.5">
                         <input type="text" class="v-variant-name w-full min-w-[170px] px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all" value="${escapeHtml(v.variant_name || '')}" placeholder="Nama kombinasi" oninput="onRowNameChanged(this, ${globalIdx})">
@@ -2012,6 +2038,16 @@ function renderVariantsTable() {
                     </td>
                     <td class="px-1.5 py-2.5 text-center">
                         <input type="number" step="0.01" min="0" class="v-weight w-16 px-1.5 py-1.5 border border-outline-variant rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="0" value="${escapeHtml(String(weightVal))}" title="Berat (kg)">
+                    </td>
+                    <!-- Dimensi Paket Pengiriman (Gulung/Packing) -->
+                    <td class="px-1.5 py-2.5 text-center bg-blue-50/20 border-l border-blue-100" title="Panjang Paket Pengiriman (cm) - misal jika digulung">
+                        <input type="number" step="1" min="0" class="v-pkg-length w-16 px-1.5 py-1.5 border border-blue-200 rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="P Pkt" value="${escapeHtml(String(pkgLenVal))}" title="Panjang Paket Pengiriman (cm)">
+                    </td>
+                    <td class="px-1.5 py-2.5 text-center bg-blue-50/20" title="Lebar Paket Pengiriman (cm)">
+                        <input type="number" step="1" min="0" class="v-pkg-width w-16 px-1.5 py-1.5 border border-blue-200 rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="L Pkt" value="${escapeHtml(String(pkgWidVal))}" title="Lebar Paket Pengiriman (cm)">
+                    </td>
+                    <td class="px-1.5 py-2.5 text-center bg-blue-50/20 border-r border-blue-100" title="Tinggi Paket Pengiriman (cm)">
+                        <input type="number" step="1" min="0" class="v-pkg-height w-16 px-1.5 py-1.5 border border-blue-200 rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="T Pkt" value="${escapeHtml(String(pkgHeiVal))}" title="Tinggi Paket Pengiriman (cm)">
                     </td>
                     <td class="px-3 py-2.5">
                         <select class="v-status w-full px-2 py-1.5 border border-outline-variant rounded-lg text-xs bg-white focus:ring-2 focus:ring-primary/20 focus:outline-none">
@@ -2051,6 +2087,9 @@ function renderVariantsTable() {
                             <th class="px-1.5 py-2 min-w-[65px] text-center">L (cm)</th>
                             <th class="px-1.5 py-2 min-w-[65px] text-center">T (cm)</th>
                             <th class="px-1.5 py-2 min-w-[65px] text-center">Berat (kg)</th>
+                            <th class="px-1.5 py-2 min-w-[65px] text-center bg-blue-50/60 text-blue-900 border-l border-blue-200/50" title="Panjang Paket Pengiriman (cm) jika digulung/dikemas">P Pkt</th>
+                            <th class="px-1.5 py-2 min-w-[65px] text-center bg-blue-50/60 text-blue-900" title="Lebar Paket Pengiriman (cm)">L Pkt</th>
+                            <th class="px-1.5 py-2 min-w-[65px] text-center bg-blue-50/60 text-blue-900 border-r border-blue-200/50" title="Tinggi Paket Pengiriman (cm)">T Pkt</th>
                             <th class="px-3 py-2 min-w-[85px]">Status</th>
                             <th class="px-2 py-2 text-center w-10">Aksi</th>
                         </tr>
@@ -2173,8 +2212,15 @@ function onRowNameChanged(input, idx) {
 
 function onRowSkuChanged(input, idx) {
     if (!variantRows[idx]) return;
-    variantRows[idx].sku = input.value.trim();
+    const val = input.value.trim();
+    variantRows[idx].sku = val;
     variantRows[idx].has_db_sku = true;
+    const row = input.closest('tr.variant-row');
+    if (row) row.dataset.hasDbSku = '1';
+    if (variantRows[idx].key && rowCache[variantRows[idx].key]) {
+        rowCache[variantRows[idx].key].sku = val;
+        rowCache[variantRows[idx].key].has_db_sku = true;
+    }
 }
 
 function deleteVariantRow(idx) {
@@ -2625,6 +2671,10 @@ function initVariantsFromBackend() {
                 width: v.width ?? dims.width ?? '',
                 height: v.height ?? thVal,
                 weight: v.weight ?? '',
+                package_length: v.package_length ?? '',
+                package_width: v.package_width ?? '',
+                package_height: v.package_height ?? '',
+                package_weight: v.package_weight ?? '',
                 status: v.status !== undefined ? (v.status == 1 || v.status === true ? 1 : 0) : 1,
                 image: v.image || null,
                 image_url: v.image_url || null,
@@ -2839,6 +2889,10 @@ async function submitProductForm() {
                 width: finalWidth,
                 height: finalHeight,
                 weight: finalWeight,
+                package_length: (v.package_length !== '' && v.package_length !== null && !isNaN(parseFloat(v.package_length))) ? parseFloat(v.package_length) : null,
+                package_width: (v.package_width !== '' && v.package_width !== null && !isNaN(parseFloat(v.package_width))) ? parseFloat(v.package_width) : null,
+                package_height: (v.package_height !== '' && v.package_height !== null && !isNaN(parseFloat(v.package_height))) ? parseFloat(v.package_height) : null,
+                package_weight: (v.package_weight !== '' && v.package_weight !== null && !isNaN(parseFloat(v.package_weight))) ? parseFloat(v.package_weight) : null,
                 stock_qty: 0,
                 status: v.status == '1' || v.status === 1 ? 1 : 0,
                 sort_order: idx,
@@ -3077,6 +3131,21 @@ $(document).ready(function() {
         updateAllNewRowSkus();
     });
 
+    $('#productCodeInput').on('input', function() {
+        const val = $(this).val().trim();
+        window.productCode = val;
+        $('#productCodeHidden').val(val);
+        const batchSkuPrefix = document.getElementById('batchSkuPrefix');
+        if (batchSkuPrefix && !batchSkuPrefix.dataset.userEdited) {
+            batchSkuPrefix.value = val;
+        }
+        updateAllNewRowSkus();
+    });
+
+    $('#batchSkuPrefix').on('input', function() {
+        this.dataset.userEdited = '1';
+    });
+
     initVariantsFromBackend();
     renderGalleryImages();
 
@@ -3110,8 +3179,25 @@ $(document).ready(function() {
         } else if (this.classList.contains('v-weight')) {
             const val = parseFloat(this.value);
             target.weight = isNaN(val) ? null : val;
+        } else if (this.classList.contains('v-pkg-length')) {
+            const val = parseFloat(this.value);
+            target.package_length = isNaN(val) ? null : val;
+        } else if (this.classList.contains('v-pkg-width')) {
+            const val = parseFloat(this.value);
+            target.package_width = isNaN(val) ? null : val;
+        } else if (this.classList.contains('v-pkg-height')) {
+            const val = parseFloat(this.value);
+            target.package_height = isNaN(val) ? null : val;
         } else if (this.classList.contains('v-variant-name')) {
             target.variant_name = this.value;
+        } else if (this.classList.contains('v-sku')) {
+            target.sku = this.value.trim();
+            target.has_db_sku = true;
+            row.dataset.hasDbSku = '1';
+            if (key && rowCache[key]) {
+                rowCache[key].sku = target.sku;
+                rowCache[key].has_db_sku = true;
+            }
         } else if (this.classList.contains('v-status')) {
             target.status = this.value;
         }

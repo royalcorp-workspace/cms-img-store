@@ -31,6 +31,7 @@ class User extends Authenticatable
         'email_verified',
         'email_verified_at',
         'firebase_uid',
+        'google_id',
         'auth_provider',
         'photo_url',
     ];

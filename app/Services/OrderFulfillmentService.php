@@ -81,8 +81,8 @@ class OrderFulfillmentService
                 $warehouseId = $activeWarehouse?->id ?? Warehouse::first()?->id;
             }
 
-            // 2. Resolve Courier
-            $courierId = !empty($params['courier_id']) ? $params['courier_id'] : $order->courier_id;
+            // 2. Resolve Courier (Strictly prioritize checkout courier)
+            $courierId = $order->courier_id ?: (!empty($params['courier_id']) ? $params['courier_id'] : null);
             if (!$courierId) {
                 $courierName = $order->meta['shipping_address']['courier_name'] ?? null;
                 if ($courierName) {
@@ -303,6 +303,28 @@ class OrderFulfillmentService
             $delivery = Delivery::where('order_id', $order->id)->first();
             $deliveryStatus = $isDelivered ? 'delivered' : 'in_transit';
 
+            // Resolve ETA
+            $estimatedAt = !empty($params['estimated_delivery_at']) ? \Carbon\Carbon::parse($params['estimated_delivery_at']) : null;
+            $estimatedMin = !empty($params['estimated_delivery_min']) ? \Carbon\Carbon::parse($params['estimated_delivery_min']) : null;
+            $estimatedMax = !empty($params['estimated_delivery_max']) ? \Carbon\Carbon::parse($params['estimated_delivery_max']) : null;
+            $estimatedDuration = !empty($params['estimated_delivery_duration']) ? trim((string) $params['estimated_delivery_duration']) : null;
+            $etaSource = !empty($params['eta_source']) ? trim((string) $params['eta_source']) : ($order->isKurirToko() ? 'store' : ($fulfillmentType === 'biteship' ? 'biteship' : 'manual'));
+            $etaNotes = !empty($params['eta_notes']) ? trim((string) $params['eta_notes']) : null;
+
+            // If Biteship and no ETA passed explicitly, calculate from Biteship duration or rates
+            if ($fulfillmentType === 'biteship' && !$estimatedAt && !$estimatedMin) {
+                $rawDuration = $params['biteship_duration'] ?? ($order->meta['biteship_duration'] ?? ($order->meta['shipping_duration'] ?? null));
+                if ($rawDuration) {
+                    $eta = \App\Services\EtaService::calculateEta($rawDuration);
+                    $estimatedMin = $eta['min_date'];
+                    $estimatedMax = $eta['max_date'];
+                    $estimatedAt = $eta['estimated_at'];
+                    $estimatedDuration = $eta['duration'];
+                    $etaSource = 'biteship';
+                    $etaNotes = $eta['formatted_label'];
+                }
+            }
+
             if (!$delivery) {
                 $delivery = Delivery::create([
                     'packing_out_id' => $packingOut->id,
@@ -315,6 +337,12 @@ class OrderFulfillmentService
                     'shipped_at' => now(),
                     'delivered_at' => $isDelivered ? now() : null,
                     'notes' => 'Pengiriman via ' . $fulfillmentType,
+                    'estimated_delivery_at' => $estimatedAt,
+                    'estimated_delivery_min' => $estimatedMin,
+                    'estimated_delivery_max' => $estimatedMax,
+                    'estimated_delivery_duration' => $estimatedDuration,
+                    'eta_source' => $etaSource,
+                    'eta_notes' => $etaNotes,
                 ]);
             } else {
                 $deliveryUpdate = [
@@ -339,11 +367,33 @@ class OrderFulfillmentService
                 if (empty($delivery->shipped_at)) {
                     $deliveryUpdate['shipped_at'] = now();
                 }
+                if ($estimatedAt) {
+                    $deliveryUpdate['estimated_delivery_at'] = $estimatedAt;
+                }
+                if ($estimatedMin) {
+                    $deliveryUpdate['estimated_delivery_min'] = $estimatedMin;
+                }
+                if ($estimatedMax) {
+                    $deliveryUpdate['estimated_delivery_max'] = $estimatedMax;
+                }
+                if ($estimatedDuration) {
+                    $deliveryUpdate['estimated_delivery_duration'] = $estimatedDuration;
+                }
+                if ($etaSource) {
+                    $deliveryUpdate['eta_source'] = $etaSource;
+                }
+                if ($etaNotes) {
+                    $deliveryUpdate['eta_notes'] = $etaNotes;
+                }
                 $delivery->update($deliveryUpdate);
             }
 
             // Record delivery log: Selesai Dikemas (ketika buat data delivery)
             if (DeliveryLog::where('order_id', $order->id)->where('event', 'delivery.created')->doesntExist()) {
+                $logNote = 'Pesanan selesai dikemas dan siap dikirim (Data pengiriman dibuat)';
+                if ($delivery->eta_label) {
+                    $logNote .= ' - ' . ($delivery->eta_source_label ?? 'ETA') . ': ' . $delivery->eta_label;
+                }
                 DeliveryLog::create([
                     'order_id' => $order->id,
                     'delivery_id' => $delivery->id,
@@ -352,12 +402,14 @@ class OrderFulfillmentService
                     'event' => 'delivery.created',
                     'status' => 'dikemas',
                     'location' => 'Gudang Pengirim',
-                    'note' => 'Pesanan selesai dikemas dan siap dikirim (Data pengiriman dibuat)',
+                    'note' => $logNote,
                     'payload' => [
                         'delivery_id' => $delivery->id,
                         'tracking_number' => $trackingNumber,
                         'courier_id' => $courierId,
                         'driver_name' => $driverName,
+                        'eta' => $delivery->eta_label,
+                        'eta_source' => $delivery->eta_source,
                     ],
                 ]);
             }

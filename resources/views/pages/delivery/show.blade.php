@@ -91,6 +91,19 @@
                         <span class="w-1.5 h-1.5 rounded-full bg-current"></span> {{ ucfirst(str_replace('_', ' ', $delivery->status)) }}
                     </span>
                 </div>
+                <div>
+                    <p class="text-label-sm text-on-surface-variant mb-1 font-medium">Estimasi Tiba (ETA)</p>
+                    <p class="font-body-md text-body-md text-primary font-bold">{{ $delivery->eta_label ?? 'Belum ditentukan' }}</p>
+                    @if($delivery->eta_notes)
+                        <p class="text-[11px] text-on-surface-variant italic mt-0.5">{{ $delivery->eta_notes }}</p>
+                    @endif
+                </div>
+                <div>
+                    <p class="text-label-sm text-on-surface-variant mb-1 font-medium">Penentuan Estimasi</p>
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full {{ $delivery->eta_source === 'store' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
+                        {{ $delivery->eta_source_label }}
+                    </span>
+                </div>
             </div>
         </div>
 

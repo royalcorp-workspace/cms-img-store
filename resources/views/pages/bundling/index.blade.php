@@ -9,6 +9,8 @@
             <nav class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-1 font-medium">
                 <a href="{{ route('dashboard') }}" class="hover:text-primary transition-colors">eCommerce</a>
                 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                <a href="{{ route('vouchers.index') }}" class="hover:text-primary transition-colors">Promotions</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
                 <span class="text-on-surface">Bundling</span>
             </nav>
         </div>
@@ -55,45 +57,88 @@
                     <tr class="bg-surface-gray border-b border-outline-variant/50">
                         <th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Bundle Name</th>
                         <th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Price</th>
-                        <th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Included Products</th>
+                        <th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Included & Suggest Products</th>
                         <th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Status</th>
                         <th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-outline-variant/20">
                     @forelse($bundlings ?? [] as $bundle)
+                        @php
+                            $thumbUrl = $bundle->thumbnail ? (str_starts_with($bundle->thumbnail, 'http') ? $bundle->thumbnail : (function_exists('media_url') ? media_url($bundle->thumbnail) : asset('storage/' . $bundle->thumbnail))) : null;
+                            $bundlePrice = (float)($bundle->variants->first()?->sell_price ?? $bundle->base_price ?? 0);
+                            $fixedItems = $bundle->bundleItems->where('is_suggest', false);
+                            $suggestItems = $bundle->bundleItems->where('is_suggest', true);
+                        @endphp
                         <tr class="hover:bg-surface-container/30 transition-colors group">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="w-12 h-12 rounded-xl bg-surface-gray border border-outline-variant/30 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                        @if($bundle->image_full_url)
-                                            <img src="{{ $bundle->image_full_url }}" alt="{{ $bundle->name }}" class="w-full h-full object-cover">
+                                        @if($thumbUrl)
+                                            <img src="{{ $thumbUrl }}" alt="{{ $bundle->name }}" class="w-full h-full object-cover">
                                         @else
-                                            <span class="material-symbols-outlined text-on-surface-variant text-[20px]">package_2</span>
+                                            <span class="material-symbols-outlined text-on-surface-variant text-[20px]">layers</span>
                                         @endif
                                     </div>
                                     <div>
                                         <span class="font-headline-md text-[14px] font-semibold text-on-surface block">{{ $bundle->name }}</span>
-                                        <p class="text-label-sm text-on-surface-variant font-medium mt-0.5 font-mono">{{ $bundle->slug }}</p>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            <span class="text-label-sm text-on-surface-variant font-mono text-[11px]">{{ $bundle->slug }}</span>
+                                            @if($bundle->brand)
+                                                <span class="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">{{ $bundle->brand->name }}</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 font-headline-md text-[14px] font-bold text-on-surface">
-                                Rp{{ number_format($bundle->price, 0, ',', '.') }}
+                            <td class="px-6 py-4 font-headline-md text-[14px] font-bold text-primary">
+                                Rp{{ number_format($bundlePrice, 0, ',', '.') }}
                             </td>
                             <td class="px-6 py-4 text-body-md text-on-surface-variant font-medium">
-                                <ul class="space-y-1">
-                                    @foreach($bundle->items as $item)
-                                        <li class="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
-                                            <span>{{ $item->product?->name ?? 'Unknown Product' }}</span>
-                                            <span class="font-bold text-primary">(x{{ $item->quantity }})</span>
-                                        </li>
-                                    @endforeach
-                                </ul>
+                                <div class="space-y-2">
+                                    @if($fixedItems->count() > 0)
+                                        <div>
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1">Paket Termasuk:</span>
+                                            <ul class="space-y-1">
+                                                @foreach($fixedItems as $item)
+                                                    <li class="flex items-center gap-1.5 text-xs text-on-surface">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                                                        <span class="font-medium">{{ $item->product?->name ?? 'Produk' }}</span>
+                                                        @if($item->variant)
+                                                            <span class="text-on-surface-variant text-[11px]">({{ $item->variant->variant_name }})</span>
+                                                        @endif
+                                                        <span class="font-bold text-emerald-600">(x{{ $item->quantity }})</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @endif
+
+                                    @if($suggestItems->count() > 0)
+                                        <div class="pt-1 border-t border-outline-variant/15">
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600 block mb-1">Suggest Add-on (Diskon):</span>
+                                            <ul class="space-y-1">
+                                                @foreach($suggestItems as $item)
+                                                    <li class="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0"></span>
+                                                        <span>{{ $item->product?->name ?? 'Produk' }}</span>
+                                                        @if($item->variant)
+                                                            <span class="text-[11px]">({{ $item->variant->variant_name }})</span>
+                                                        @endif
+                                                        @if($item->bundle_price)
+                                                            <span class="font-bold text-amber-700 bg-amber-50 px-1 rounded text-[11px]">Rp{{ number_format($item->bundle_price, 0, ',', '.') }}</span>
+                                                        @elseif($item->discount_percent)
+                                                            <span class="font-bold text-amber-700 bg-amber-50 px-1 rounded text-[11px]">Diskon {{ $item->discount_percent }}%</span>
+                                                        @endif
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-6 py-4 text-center">
-                                @if($bundle->is_active)
+                                @if($bundle->status == 1 || $bundle->status === true)
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-success/10 text-success border border-success/20 rounded-full text-[11px] font-semibold uppercase tracking-wider">
                                         <span class="w-1.5 h-1.5 rounded-full bg-success"></span> Aktif
                                     </span>
@@ -122,8 +167,8 @@
                         <tr>
                             <td colspan="5" class="py-12 text-center text-on-surface-variant">
                                 <div class="flex flex-col items-center justify-center">
-                                    <span class="material-symbols-outlined text-[48px] mb-2 opacity-40">package_2</span>
-                                    <p class="font-label-md">Tidak ada paket bundling yang ditemukan.</p>
+                                    <span class="material-symbols-outlined text-[48px] mb-2 opacity-40">layers</span>
+                                    <p class="font-label-md">Tidak ada produk bundling yang ditemukan.</p>
                                 </div>
                             </td>
                         </tr>

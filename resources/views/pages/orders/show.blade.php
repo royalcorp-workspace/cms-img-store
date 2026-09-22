@@ -225,6 +225,32 @@
                         @endif
                     </div>
 
+                    <!-- Estimasi Tiba (ETA) -->
+                    @php
+                        $deliveryObj = $order->delivery;
+                        $etaLabel = $deliveryObj?->eta_label 
+                            ?? ($order->meta['biteship_eta']['formatted_label'] ?? ($order->meta['shipping_eta_label'] ?? ($order->meta['shipping_duration'] ?? null)));
+                        $etaSourceLabel = $deliveryObj?->eta_source_label 
+                            ?? ($order->isKurirToko() ? 'Ditentukan Toko (Kurir Toko)' : (!empty($order->meta['biteship_order_id']) ? 'Vendor Ekspedisi (Biteship)' : 'Estimasi Pengiriman'));
+                    @endphp
+                    <div>
+                        <span class="text-[10px] text-on-surface-variant font-semibold block mb-0.5">Estimasi Tiba (ETA)</span>
+                        <div class="p-2.5 bg-primary/5 rounded-lg border border-primary/20 flex flex-col gap-1">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-xs text-primary flex items-center gap-1.5" id="show-order-eta-label">
+                                    <span class="material-symbols-outlined text-[16px]">schedule</span>
+                                    <span>{{ $etaLabel ?: 'Belum ditentukan' }}</span>
+                                </span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded font-bold {{ ($deliveryObj?->eta_source === 'store' || $order->isKurirToko()) ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
+                                    {{ $etaSourceLabel }}
+                                </span>
+                            </div>
+                            @if($deliveryObj?->eta_notes)
+                                <p class="text-[11px] text-on-surface-variant italic">{{ $deliveryObj->eta_notes }}</p>
+                            @endif
+                        </div>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div class="grid grid-cols-2 gap-2 pt-1">
                         @if($order->status >= \App\Models\Order\Order::STATUS_SHIPPED)

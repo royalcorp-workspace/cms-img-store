@@ -51,15 +51,26 @@
                     <h2 class="font-headline-md text-headline-md text-on-surface mb-4 font-semibold">Delivery Details</h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        @php
+                            $order = $packingOut->packingSlip?->order;
+                            $orderCourier = $order?->courier;
+                        @endphp
                         <div>
                             <label for="courier_id" class="block font-label-md text-label-md text-on-surface-variant mb-2">Courier / Shipping Service</label>
-                            <select name="courier_id" id="courier_id" 
-                                class="w-full px-4 py-2.5 border border-outline/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-body-md bg-white select2-enable">
-                                <option value="" selected>-- Local Delivery / Self pickup --</option>
-                                @foreach($couriers as $courier)
-                                    <option value="{{ $courier->id }}">{{ $courier->name }} ({{ $courier->code }})</option>
-                                @endforeach
-                            </select>
+                            @if($orderCourier)
+                                <div class="px-4 py-2.5 bg-neutral-100 border border-neutral-300 rounded-lg text-neutral-800 font-medium">
+                                    <span>{{ $orderCourier->name }} ({{ $orderCourier->code }})</span>
+                                </div>
+                                <input type="hidden" name="courier_id" value="{{ $orderCourier->id }}">
+                            @else
+                                <select name="courier_id" id="courier_id" 
+                                    class="w-full px-4 py-2.5 border border-outline/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-body-md bg-white select2-enable">
+                                    <option value="" selected>-- Local Delivery / Self pickup --</option>
+                                    @foreach($couriers as $courier)
+                                        <option value="{{ $courier->id }}">{{ $courier->name }} ({{ $courier->code }})</option>
+                                    @endforeach
+                                </select>
+                            @endif
                         </div>
                         <div>
                             <label for="tracking_number" class="block font-label-md text-label-md text-on-surface-variant mb-2">Tracking / AWB Number</label>
@@ -79,6 +90,24 @@
                             <input type="text" name="driver_phone" id="driver_phone" placeholder="Driver's contact phone..."
                                 class="w-full px-4 py-2.5 border border-outline/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-body-md">
                         </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-outline/20">
+                        <div>
+                            <label for="estimated_delivery_at" class="block font-label-md text-label-md text-on-surface-variant mb-2">Target Estimasi Tiba (ETA)</label>
+                            <input type="datetime-local" name="estimated_delivery_at" id="estimated_delivery_at"
+                                class="w-full px-4 py-2.5 border border-outline/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-body-md bg-white">
+                        </div>
+                        <div>
+                            <label for="estimated_delivery_duration" class="block font-label-md text-label-md text-on-surface-variant mb-2">Durasi Estimasi (Hari / Waktu)</label>
+                            <input type="text" name="estimated_delivery_duration" id="estimated_delivery_duration" placeholder="Contoh: 1-2 hari, 1 hari, Same Day..."
+                                class="w-full px-4 py-2.5 border border-outline/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-body-md">
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label for="eta_notes" class="block font-label-md text-label-md text-on-surface-variant mb-2">Catatan Estimasi / Jadwal Pengiriman Toko</label>
+                        <input type="text" name="eta_notes" id="eta_notes" placeholder="Contoh: Diantar armada toko kloter pagi (10:00 - 13:00)..."
+                            class="w-full px-4 py-2.5 border border-outline/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-body-md">
                     </div>
                 </div>
             </div>

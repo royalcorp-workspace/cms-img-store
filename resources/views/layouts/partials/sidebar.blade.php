@@ -52,7 +52,7 @@
                 'title' => 'Promotions',
                 'icon' => 'local_offer',
                 'route_name' => 'vouchers.index',
-                'active_routes' => ['vouchers.*', 'price-settings.*', 'price-product-setting-store.*', 'bundlings.*', 'events.*'],
+                'active_routes' => ['vouchers.*', 'price-settings.*', 'price-product-setting-store.*', 'events.*', 'bundlings.*'],
                 'children' => []
             ],
             [

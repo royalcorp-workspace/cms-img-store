@@ -20,15 +20,28 @@ class ProductBundlingItem extends Model
         'product_id',
         'quantity',
         'variant_id',
+        'is_suggest',
+        'bundle_price',
+        'discount_percent',
+        'discount_nominal',
         'creator',
         'editor',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
+        'is_suggest' => 'boolean',
+        'bundle_price' => 'decimal:2',
+        'discount_percent' => 'decimal:2',
+        'discount_nominal' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function bundleProduct(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_bundling_id');
+    }
 
     public function product(): BelongsTo
     {
