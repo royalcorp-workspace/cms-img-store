@@ -18,66 +18,96 @@ class InventoryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Inventory::with([
-            'product' => function ($q) {
-                $q->with('images');
-            },
-            'variant',
-            'warehouse',
-            'store',
-            'channel'
-        ])->where('deleted', false);
+        $warehouseId = $request->input('warehouse_id');
+        $channelId = $request->input('store_channel_id');
+        $status = $request->input('status');
+        $search = $request->input('search');
 
-        // Search by Product name, Variant name, SKU, or Barcode
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('product', function ($pq) use ($search) {
-                    $pq->where('name', 'ilike', "%{$search}%")
-                       ->orWhere('code', 'ilike', "%{$search}%");
-                })->orWhereHas('variant', function ($vq) use ($search) {
-                    $vq->where('variant_name', 'ilike', "%{$search}%")
-                       ->orWhere('sku', 'ilike', "%{$search}%")
-                       ->orWhere('barcode', 'ilike', "%{$search}%");
-                });
+        $productQuery = Product::with([
+            'images',
+            'category',
+            'brand',
+            'variants' => function ($vq) use ($warehouseId, $channelId) {
+                $vq->where('deleted', false)
+                   ->orderBy('created_at', 'asc')
+                   ->orderBy('id', 'asc')
+                   ->with(['inventories' => function ($iq) use ($warehouseId, $channelId) {
+                       $iq->where('deleted', false)->with(['warehouse', 'channel']);
+                       if ($warehouseId) {
+                           $iq->where('warehouse_id', $warehouseId);
+                       }
+                       if ($channelId) {
+                           $iq->where('store_channel_id', $channelId);
+                       }
+                   }]);
+            }
+        ])->where('deleted', false)->where('is_bundle', false);
+
+        // Search by Product name, Code, or Variant name, SKU, Barcode
+        if ($search) {
+            $productQuery->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('code', 'ilike', "%{$search}%")
+                  ->orWhereHas('variants', function ($vq) use ($search) {
+                      $vq->where('variant_name', 'ilike', "%{$search}%")
+                         ->orWhere('sku', 'ilike', "%{$search}%")
+                         ->orWhere('barcode', 'ilike', "%{$search}%");
+                  });
             });
         }
 
         // Filter by warehouse
-        if ($warehouseId = $request->input('warehouse_id')) {
-            $query->where('warehouse_id', $warehouseId);
+        if ($warehouseId) {
+            $productQuery->whereHas('variants.inventories', function ($iq) use ($warehouseId) {
+                $iq->where('warehouse_id', $warehouseId)->where('deleted', false);
+            });
         }
 
         // Filter by store channel
-        if ($channelId = $request->input('store_channel_id')) {
-            $query->where('store_channel_id', $channelId);
+        if ($channelId) {
+            $productQuery->whereHas('variants.inventories', function ($iq) use ($channelId) {
+                $iq->where('store_channel_id', $channelId)->where('deleted', false);
+            });
         }
 
         // Filter by status
-        if ($status = $request->input('status')) {
+        if ($status) {
             switch ($status) {
                 case 'available':
-                    $query->where('available', '>', 0);
+                    $productQuery->whereHas('variants.inventories', function ($iq) {
+                        $iq->where('available', '>', 0)->where('deleted', false);
+                    });
                     break;
                 case 'out_of_stock':
-                    $query->where('available', '<=', 0);
+                    $productQuery->whereDoesntHave('variants.inventories', function ($iq) {
+                        $iq->where('available', '>', 0)->where('deleted', false);
+                    });
                     break;
                 case 'on_stock':
-                    $query->where('on_stock', '>', 0);
+                    $productQuery->whereHas('variants.inventories', function ($iq) {
+                        $iq->where('on_stock', '>', 0)->where('deleted', false);
+                    });
                     break;
                 case 'incoming':
-                    $query->where('incoming', '>', 0);
+                    $productQuery->whereHas('variants.inventories', function ($iq) {
+                        $iq->where('incoming', '>', 0)->where('deleted', false);
+                    });
                     break;
                 case 'on_order':
-                    $query->where('on_order', '>', 0);
+                    $productQuery->whereHas('variants.inventories', function ($iq) {
+                        $iq->where('on_order', '>', 0)->where('deleted', false);
+                    });
                     break;
                 case 'outgoing':
-                    $query->where('outgoing', '>', 0);
+                    $productQuery->whereHas('variants.inventories', function ($iq) {
+                        $iq->where('outgoing', '>', 0)->where('deleted', false);
+                    });
                     break;
             }
         }
 
-        // Order by latest updated
-        $inventories = $query->orderBy('updated_at', 'desc')->paginate(15)->withQueryString();
+        // Order by latest updated product
+        $products = $productQuery->orderBy('updated_at', 'desc')->paginate(10)->withQueryString();
 
         // Stats summary
         $stats = [
@@ -88,12 +118,16 @@ class InventoryController extends Controller
             'total_available' => Inventory::where('deleted', false)->sum('available'),
             'out_of_stock' => Inventory::where('deleted', false)->where('available', '<=', 0)->count(),
             'total_items' => Inventory::where('deleted', false)->count(),
+            'total_products' => Product::where('deleted', false)->where('is_bundle', false)->count(),
+            'total_variants' => Variant::where('deleted', false)->count(),
         ];
 
         $warehouses = Warehouse::where('status', true)->orderBy('name')->get();
         $channels = StoreChannel::with('store')->orderBy('name')->get();
+        $defaultWarehouse = InventoryService::getDefaultWarehouse();
+        $defaultChannel = InventoryService::getWebImgChannel();
 
-        return view('pages.inventory.index', compact('inventories', 'stats', 'warehouses', 'channels'));
+        return view('pages.inventory.index', compact('products', 'stats', 'warehouses', 'channels', 'defaultWarehouse', 'defaultChannel'));
     }
 
     public function searchChannels(Request $request)
@@ -116,7 +150,7 @@ class InventoryController extends Controller
         $channels = $query->orderBy('name')->limit(30)->get();
 
         $results = $channels->map(function ($ch) {
-            $storeName = $ch->store?->name ?? '-';
+            $storeName = ($ch->store ? $ch->store->name : null) ?? '-';
             return [
                 'id' => $ch->id,
                 'text' => "{$ch->name} (Toko: {$storeName})",
@@ -354,7 +388,12 @@ class InventoryController extends Controller
     public function create()
     {
         $products = Product::with(['variants' => function ($q) {
-            $q->where('deleted', false);
+            $q->where('deleted', false)
+              ->with(['inventories' => function ($iq) {
+                  $iq->where('deleted', false);
+              }])
+              ->orderBy('created_at', 'asc')
+              ->orderBy('id', 'asc');
         }])->where('deleted', false)->orderBy('name')->get();
 
         $warehouses = Warehouse::where('status', true)->orderBy('name')->get();
@@ -364,11 +403,110 @@ class InventoryController extends Controller
         $defaultWarehouse = InventoryService::getDefaultWarehouse();
         $defaultChannel = InventoryService::getWebImgChannel();
 
-        return view('pages.inventory.create', compact('products', 'warehouses', 'channels', 'stores', 'defaultWarehouse', 'defaultChannel'));
+        $productsData = $products->map(function ($prod) {
+            return [
+                'id' => $prod->id,
+                'name' => $prod->name,
+                'code' => $prod->code ?? '-',
+                'variants' => $prod->variants->map(function ($v) {
+                    return [
+                        'id' => $v->id,
+                        'variant_name' => $v->variant_name ?: 'Standar',
+                        'sku' => $v->sku ?: '-',
+                        'stock_quantity' => (int) $v->stock_quantity,
+                        'inventories' => $v->inventories->map(function ($inv) {
+                            return [
+                                'warehouse_id' => $inv->warehouse_id,
+                                'store_channel_id' => $inv->store_channel_id,
+                                'on_stock' => (int) $inv->on_stock,
+                                'incoming' => (int) $inv->incoming,
+                                'on_order' => (int) $inv->on_order,
+                                'outgoing' => (int) $inv->outgoing,
+                                'available' => (int) $inv->available,
+                            ];
+                        })->values(),
+                    ];
+                })->values(),
+            ];
+        });
+
+        return view('pages.inventory.create', compact('products', 'productsData', 'warehouses', 'channels', 'stores', 'defaultWarehouse', 'defaultChannel'));
     }
 
     public function store(Request $request)
     {
+        $defaultWarehouse = InventoryService::getDefaultWarehouse();
+        $defaultChannel = InventoryService::getWebImgChannel();
+
+        $warehouseId = $request->input('warehouse_id') ?: ($defaultWarehouse?->id);
+        $channelId = $request->input('store_channel_id') ?: ($defaultChannel?->id);
+        $storeId = $request->input('store_id');
+        if (!$storeId && $channelId) {
+            $channel = StoreChannel::find($channelId);
+            $storeId = $channel?->store_id;
+        }
+
+        // Multi-variant batch stock update / create
+        if ($request->has('variants') && is_array($request->input('variants')) && count($request->input('variants')) > 0) {
+            $validated = $request->validate([
+                'product_id' => 'required|uuid|exists:products,id',
+                'warehouse_id' => 'nullable|uuid|exists:warehouses,id',
+                'store_id' => 'nullable|uuid|exists:stores,id',
+                'store_channel_id' => 'nullable|uuid|exists:store_channel,id',
+                'variants' => 'required|array|min:1',
+                'variants.*.product_variant_id' => 'required|uuid|exists:product_variants,id',
+                'variants.*.on_stock' => 'required|integer|min:0',
+                'variants.*.incoming' => 'nullable|integer|min:0',
+                'variants.*.on_order' => 'nullable|integer|min:0',
+                'variants.*.outgoing' => 'nullable|integer|min:0',
+            ]);
+
+            $savedCount = 0;
+            DB::transaction(function () use ($validated, $warehouseId, $channelId, $storeId, &$savedCount) {
+                $user = Auth::user()?->name ?? 'Admin';
+                foreach ($validated['variants'] as $item) {
+                    $onStock = (int) $item['on_stock'];
+                    $incoming = (int) ($item['incoming'] ?? 0);
+                    $onOrder = (int) ($item['on_order'] ?? 0);
+                    $outgoing = (int) ($item['outgoing'] ?? 0);
+                    $available = max(0, $onStock - $onOrder - $outgoing);
+
+                    Inventory::updateOrCreate(
+                        [
+                            'product_id' => $validated['product_id'],
+                            'product_variant_id' => $item['product_variant_id'],
+                            'warehouse_id' => $warehouseId,
+                            'store_channel_id' => $channelId,
+                        ],
+                        [
+                            'store_id' => $storeId,
+                            'on_stock' => $onStock,
+                            'incoming' => $incoming,
+                            'on_order' => $onOrder,
+                            'outgoing' => $outgoing,
+                            'available' => $available,
+                            'quantity' => $available,
+                            'creator' => $user,
+                            'editor' => $user,
+                            'deleted' => false,
+                        ]
+                    );
+
+                    // Sync variant stock_quantity cache
+                    Variant::where('id', $item['product_variant_id'])->update([
+                        'stock_quantity' => Inventory::where('product_variant_id', $item['product_variant_id'])
+                            ->where('deleted', false)
+                            ->sum('available')
+                    ]);
+
+                    $savedCount++;
+                }
+            });
+
+            return redirect()->route('inventory.index')->with('success', "Stok untuk {$savedCount} varian berhasil disimpan.");
+        }
+
+        // Single variant fallback
         $validated = $request->validate([
             'product_id' => 'required|uuid|exists:products,id',
             'product_variant_id' => 'required|uuid|exists:product_variants,id',
@@ -380,13 +518,6 @@ class InventoryController extends Controller
             'on_order' => 'nullable|integer|min:0',
             'outgoing' => 'nullable|integer|min:0',
         ]);
-
-        $defaultWarehouse = InventoryService::getDefaultWarehouse();
-        $defaultChannel = InventoryService::getWebImgChannel();
-
-        $warehouseId = $validated['warehouse_id'] ?? ($defaultWarehouse?->id);
-        $channelId = $validated['store_channel_id'] ?? ($defaultChannel?->id);
-        $storeId = $validated['store_id'] ?? ($defaultChannel?->store_id);
 
         $onStock = (int) $validated['on_stock'];
         $incoming = (int) ($validated['incoming'] ?? 0);
@@ -478,6 +609,57 @@ class InventoryController extends Controller
         }
 
         return redirect()->route('inventory.index')->with('success', 'Data inventory berhasil diperbarui.');
+    }
+
+    public function quickUpdate(Request $request)
+    {
+        $validated = $request->validate([
+            'variant_id' => 'required|uuid|exists:product_variants,id',
+            'product_id' => 'nullable|uuid|exists:products,id',
+            'on_stock' => 'required|integer|min:0',
+            'warehouse_id' => 'nullable|uuid|exists:warehouses,id',
+            'store_channel_id' => 'nullable|uuid|exists:store_channel,id',
+        ]);
+
+        $variant = Variant::findOrFail($validated['variant_id']);
+        $productId = $validated['product_id'] ?? $variant->product_id;
+        $warehouseId = $validated['warehouse_id'] ?? null;
+        $channelId = $validated['store_channel_id'] ?? null;
+
+        // Ensure inventory record exists
+        $inventory = InventoryService::ensureVariantInventory(
+            $productId,
+            $variant->id,
+            $warehouseId,
+            $channelId,
+            0
+        );
+
+        $onStock = (int) $validated['on_stock'];
+        $inventory->on_stock = $onStock;
+        $inventory->editor = Auth::user()?->name ?? 'Admin';
+        $inventory->save(); // saving hook recalculates available and quantity
+
+        // Sync variant's stock_quantity
+        $totalAvailable = (int) Inventory::where('product_variant_id', $variant->id)
+            ->where('deleted', false)
+            ->sum('available');
+        $variant->update(['stock_quantity' => $totalAvailable]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Stok varian {$variant->variant_name} berhasil diperbarui.",
+            'data' => [
+                'inventory_id' => $inventory->id,
+                'variant_id' => $variant->id,
+                'on_stock' => $inventory->on_stock,
+                'available' => $inventory->available,
+                'on_order' => $inventory->on_order,
+                'outgoing' => $inventory->outgoing,
+                'incoming' => $inventory->incoming,
+                'variant_stock' => $totalAvailable,
+            ]
+        ]);
     }
 
     public function adjust(Request $request, $id)

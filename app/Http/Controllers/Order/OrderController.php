@@ -624,7 +624,17 @@ class OrderController extends Controller
 
     public function trackBiteship(Request $request, string $id)
     {
-        $order = Order::with(['courier', 'delivery.courier'])->findOrFail($id);
+        $order = \Illuminate\Support\Str::isUuid($id)
+            ? Order::with(['courier', 'delivery.courier', 'pickingList', 'packingSlip', 'handover', 'payments'])->find($id)
+            : Order::with(['courier', 'delivery.courier', 'pickingList', 'packingSlip', 'handover', 'payments'])->where('order_number', $id)->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pesanan tidak ditemukan.',
+                'data' => null,
+            ], 200);
+        }
 
         $resi = $order->resi;
         $courierName = $order->courier_name ?? $order->courier?->name ?? 'Kurir';
@@ -645,77 +655,186 @@ class OrderController extends Controller
                 $query->orWhere('delivery_id', $deliveryId);
             }
         })
-        ->orderBy('created_at', 'desc')
+        ->orderBy('created_at', 'asc')
         ->get();
 
-        if (empty($resi) && $logs->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pesanan ini belum memiliki riwayat pengiriman atau nomor resi.',
-            ], 404);
+        $events = [];
+
+        // 1. Pesanan Dibuat
+        if ($order->created_at) {
+            $events[] = [
+                'stage' => 'created',
+                'time' => $order->created_at->format('d M Y H:i'),
+                'status' => 'Pesanan Dibuat',
+                'raw_status' => 'order_created',
+                'event' => 'order.created',
+                'icon' => 'shopping_bag',
+                'location' => 'Online Store',
+                'description' => "Pesanan #{$order->order_number} berhasil dibuat oleh pelanggan.",
+                'timestamp' => $order->created_at->timestamp,
+                'weight' => -3,
+            ];
         }
 
-        // Apply statusStageWeight tiebreaker for events recorded at identical second timestamps
-        $logs = $logs->sort(function ($a, $b) {
-            $timeCompare = ($b->created_at?->timestamp ?? 0) <=> ($a->created_at?->timestamp ?? 0);
-            if ($timeCompare !== 0) {
-                return $timeCompare;
-            }
-            return Order::statusStageWeight($b->status) <=> Order::statusStageWeight($a->status);
-        })->values();
+        // 2. Pembayaran Berhasil / Dikonfirmasi
+        $isPaid = (int)$order->payment_status === Order::PAYMENT_PAID || (int)$order->status >= Order::STATUS_CONFIRMED;
+        if ($isPaid) {
+            $payment = $order->payments()->where('status', 'success')->latest()->first();
+            $payTime = $payment?->created_at ?? ($order->created_at ? $order->created_at->copy()->addSeconds(30) : now());
+            $payMethod = $order->payment_method ? ucwords(str_replace('_', ' ', $order->payment_method)) : 'Metode Pembayaran';
+            $events[] = [
+                'stage' => 'paid',
+                'time' => $payTime->format('d M Y H:i'),
+                'status' => 'Pembayaran Terverifikasi',
+                'raw_status' => 'payment_verified',
+                'event' => 'payment.verified',
+                'icon' => 'paid',
+                'location' => 'Sistem Pembayaran',
+                'description' => "Pembayaran pesanan telah diverifikasi via {$payMethod}. Pesanan siap diproses.",
+                'timestamp' => $payTime->timestamp,
+                'weight' => -2,
+            ];
+        }
 
-        $events = [];
+        // 3. Pesanan Diproses (Picking)
+        $isProcessing = (int)$order->status >= Order::STATUS_PROCESSING || $order->pickingList()->exists();
+        if ($isProcessing) {
+            $procTime = $order->pickingList?->created_at ?? ($order->created_at ? $order->created_at->copy()->addMinutes(5) : now());
+            $events[] = [
+                'stage' => 'processing',
+                'time' => $procTime->format('d M Y H:i'),
+                'status' => 'Pesanan Diproses',
+                'raw_status' => 'processing',
+                'event' => 'order.processing',
+                'icon' => 'inventory_2',
+                'location' => 'Gudang Pengirim',
+                'description' => 'Pesanan sedang diproses dan disiapkan oleh tim gudang.',
+                'timestamp' => $procTime->timestamp,
+                'weight' => -1,
+            ];
+        }
+
+        $hasLogSedangDikemas = $logs->contains(fn($l) => in_array(strtolower($l->status), ['sedang_dikemas', 'packing']));
+        $hasLogDikemas = $logs->contains(fn($l) => in_array(strtolower($l->status), ['dikemas', 'packed', 'siap_dikirim']));
+        $hasLogHandover = $logs->contains(fn($l) => in_array(strtolower($l->status), ['diserahkan_ke_kurir', 'handover', 'handed_over']));
+        $hasLogDelivered = $logs->contains(fn($l) => strtolower($l->status) === 'delivered');
+
+        // 4. Dikemas (jika belum tercatat di DeliveryLog)
+        $isPackingOrBeyond = $order->packingSlip()->exists() || (int)$order->status >= Order::STATUS_PROCESSING;
+        if ($isPackingOrBeyond && !$hasLogSedangDikemas && !$hasLogDikemas) {
+            $packTime = $order->packingSlip?->created_at ?? ($order->created_at ? $order->created_at->copy()->addMinutes(15) : now());
+            $isPacked = $order->packingSlip?->status === 'packed' || (int)$order->status >= Order::STATUS_SHIPPED || !empty($resi);
+            $events[] = [
+                'stage' => 'packing',
+                'time' => $packTime->format('d M Y H:i'),
+                'status' => $isPacked ? 'Selesai Dikemas' : 'Sedang Dikemas',
+                'raw_status' => $isPacked ? 'dikemas' : 'sedang_dikemas',
+                'event' => $isPacked ? 'order.packed' : 'order.packing',
+                'icon' => 'package',
+                'location' => 'Bagian Packing Gudang',
+                'description' => $isPacked
+                    ? 'Pesanan telah selesai dikemas rapi dan siap diserahkan ke kurir pengiriman.'
+                    : 'Pesanan sedang dikemas oleh tim gudang.',
+                'timestamp' => $packTime->timestamp,
+                'weight' => $isPacked ? 2 : 1,
+            ];
+        }
+
+        // 5. Diserahkan ke Kurir (jika belum tercatat di DeliveryLog)
+        $isHandoverOrBeyond = $order->handover()->exists() || (int)$order->status >= Order::STATUS_SHIPPED || !empty($resi);
+        if ($isHandoverOrBeyond && !$hasLogHandover) {
+            $handoverTime = $order->handover?->created_at
+                ?? $order->delivery?->shipped_at
+                ?? ($order->created_at ? $order->created_at->copy()->addMinutes(30) : now());
+            $events[] = [
+                'stage' => 'handover',
+                'time' => $handoverTime->format('d M Y H:i'),
+                'status' => 'Diserahkan ke Kurir',
+                'raw_status' => 'diserahkan_ke_kurir',
+                'event' => 'order.handover',
+                'icon' => 'local_shipping',
+                'location' => 'Gudang Pengirim',
+                'description' => "Paket telah diserahkan kepada kurir {$courierName}" . (!empty($resi) ? " (No. Resi: {$resi})" : '') . '.',
+                'timestamp' => $handoverTime->timestamp,
+                'weight' => 3,
+            ];
+        }
+
+        // 6. Checkpoint Log Pengiriman & Ekspedisi (Biteship webhook / kurir logs)
         foreach ($logs as $log) {
             $info = Order::deliveryStatusInfo($log->status, $log->event);
+            $desc = $log->note;
+            if (empty($desc)) {
+                $desc = $info['label'] . ($log->location ? " di {$log->location}" : '');
+            }
+
             $events[] = [
+                'stage' => 'log_' . $log->id,
                 'time' => $log->created_at ? $log->created_at->format('d M Y H:i') : '-',
                 'status' => $info['label'] ?? ($log->note ?: ($log->status ?: 'Status Checkpoint')),
                 'raw_status' => $log->status,
                 'event' => $log->event,
-                'location' => $log->location ?: null,
-                'description' => $log->note ?: ($info['label'] . ($log->location ? " di {$log->location}" : '')),
-                'payload' => $log->payload,
+                'icon' => $info['icon'] ?? 'local_shipping',
+                'location' => $log->location ?: ($log->status === 'delivered' ? 'Alamat Tujuan' : 'Ekspedisi ' . $courierName),
+                'description' => $desc,
+                'timestamp' => $log->created_at?->timestamp ?? 0,
+                'weight' => Order::statusStageWeight($log->status),
             ];
         }
 
-        // If no webhook events logged yet, provide initial baseline checkpoint
-        if (empty($events)) {
+        // 7. Paket Diterima (jika status Delivered tapi belum ada di DeliveryLog)
+        $isDelivered = (int)$order->status === Order::STATUS_DELIVERED;
+        if ($isDelivered && !$hasLogDelivered) {
+            $delivTime = $order->delivery?->delivered_at ?? $order->updated_at ?? now();
             $events[] = [
-                'time' => !empty($order->meta['resi_updated_at'])
-                    ? \Carbon\Carbon::parse($order->meta['resi_updated_at'])->format('d M Y H:i')
-                    : ($order->updated_at ? $order->updated_at->format('d M Y H:i') : '-'),
-                'status' => 'Resi Diterbitkan',
-                'raw_status' => 'waybill_issued',
-                'event' => 'order.waybill_issued',
-                'location' => 'Gudang Pengirim',
-                'description' => 'Nomor resi ' . ($resi ?: '-') . ' telah diterbitkan. Menunggu pembaruan status log dari webhook kurir.',
-                'payload' => $order->meta['biteship_payload'] ?? null,
+                'stage' => 'delivered',
+                'time' => $delivTime->format('d M Y H:i'),
+                'status' => 'Paket Diterima',
+                'raw_status' => 'delivered',
+                'event' => 'order.delivered',
+                'icon' => 'check_circle',
+                'location' => 'Alamat Penerima',
+                'description' => 'Paket telah berhasil diterima di alamat tujuan. Pesanan selesai.',
+                'timestamp' => $delivTime->timestamp,
+                'weight' => 11,
             ];
         }
 
-        $latestLog = $logs->first();
-        $latestStatusInfo = Order::deliveryStatusInfo($latestLog?->status ?? $order->delivery_status);
+        // Sort events descending: status checkpoint paling mutakhir di urutan teratas (index 0)
+        usort($events, function ($a, $b) {
+            $diff = ($b['timestamp'] ?? 0) <=> ($a['timestamp'] ?? 0);
+            if ($diff !== 0) {
+                return $diff;
+            }
+            return ($b['weight'] ?? 0) <=> ($a['weight'] ?? 0);
+        });
+
+        // Tentukan status terkini yang ditampilkan di header modal
+        $latestEvent = $events[0] ?? null;
+        $currentStatusLabel = $latestEvent['status'] ?? 'Menunggu Pengiriman';
+        $currentStatusRaw = $latestEvent['raw_status'] ?? ($logs->last()?->status ?? $order->delivery_status);
+        $currentStatusInfo = Order::deliveryStatusInfo($currentStatusRaw);
 
         $trackingUrl = $order->meta['biteship_tracking_url']
-            ?? data_get($latestLog?->payload, 'courier_link')
-            ?? data_get($latestLog?->payload, 'courier.link');
+            ?? data_get($logs->last()?->payload, 'courier_link')
+            ?? data_get($logs->last()?->payload, 'courier.link');
 
         return response()->json([
             'success' => true,
-            'source' => 'webhook_logs',
+            'source' => 'order_tracking_flow',
             'data' => [
                 'resi' => $resi,
                 'tracking_number' => $resi,
                 'courier' => $courierCode,
                 'courier_name' => $courierName,
-                'status' => $latestStatusInfo['label'],
-                'status_raw' => $latestLog?->status ?? $order->delivery_status,
-                'status_badge_class' => $latestStatusInfo['badge_class'],
-                'status_icon' => $latestStatusInfo['icon'],
+                'status' => $currentStatusLabel,
+                'status_raw' => $currentStatusRaw,
+                'status_badge_class' => $currentStatusInfo['badge_class'],
+                'status_icon' => $latestEvent['icon'] ?? $currentStatusInfo['icon'],
                 'link' => $trackingUrl,
-                'last_updated' => $latestLog?->created_at?->format('d M Y H:i') ?? $order->updated_at?->format('d M Y H:i'),
+                'last_updated' => $latestEvent['time'] ?? ($order->updated_at ? $order->updated_at->format('d M Y H:i') : '-'),
                 'events' => $events,
             ],
-        ]);
+        ], 200);
     }
 }

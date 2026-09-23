@@ -1063,11 +1063,28 @@ async function fetchBiteshipTracking() {
     if (timeline) timeline.innerHTML = '';
 
     try {
-        const response = await fetch(`/orders/${orderId}/biteship-tracking`);
-        const result = await response.json();
+        const response = await fetch(`/orders/${orderId}/biteship-tracking`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        let result = {};
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            result = await response.json();
+        } else {
+            result = {
+                success: true,
+                message: 'Data tracking belum tersedia untuk pesanan ini.',
+                data: { events: [] }
+            };
+        }
+
         if (loading) loading.classList.add('hidden');
 
-        if (response.ok && result.success && result.data) {
+        if (result && result.success && result.data) {
             const data = result.data;
             const events = data.events || [];
 
@@ -1104,7 +1121,7 @@ async function fetchBiteshipTracking() {
                 if (empty) {
                     empty.classList.remove('hidden');
                     const emptyText = document.getElementById('trackingEmptyText');
-                    if (emptyText) emptyText.textContent = 'Paket baru didaftarkan. Belum ada riwayat checkpoint dari webhook kurir.';
+                    if (emptyText) emptyText.textContent = result.message || 'Data tracking belum tersedia untuk pesanan ini.';
                 }
                 return;
             }
@@ -1112,30 +1129,26 @@ async function fetchBiteshipTracking() {
             if (timeline) {
                 timeline.innerHTML = events.map(function(ev, index) {
                     const isLatest = index === 0;
-                    const dotClass = isLatest ? 'bg-primary ring-4 ring-primary/20' : 'bg-outline';
-                    const titleClass = isLatest ? 'text-primary font-extrabold' : 'text-on-surface font-bold';
-                    let payloadSection = '';
-                    if (ev.payload && typeof ev.payload === 'object' && Object.keys(ev.payload).length > 0) {
-                        payloadSection = `
-                            <details class="mt-2 text-[10px] text-on-surface-variant font-mono group">
-                                <summary class="cursor-pointer hover:underline text-primary inline-flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[12px] group-open:rotate-90 transition-transform">chevron_right</span>
-                                    <span>Lihat Payload Webhook (${ev.event || 'raw'})</span>
-                                </summary>
-                                <pre class="p-2.5 bg-surface-container-lowest border border-outline-variant/30 rounded-lg mt-1 overflow-x-auto text-[11px] leading-relaxed max-h-40">${JSON.stringify(ev.payload, null, 2)}</pre>
-                            </details>
-                        `;
-                    }
+                    const dotClass = isLatest ? 'bg-primary ring-4 ring-primary/20 text-white' : 'bg-outline-variant text-on-surface-variant';
+                    const titleClass = isLatest ? 'text-primary font-extrabold text-[13px]' : 'text-on-surface font-bold text-[12px]';
+                    const iconName = ev.icon || (isLatest ? 'check_circle' : 'radio_button_checked');
+                    
                     return `
-                        <div class="relative pb-4 last:pb-0">
-                            <div class="absolute -left-[31px] top-0.5 w-3.5 h-3.5 rounded-full ${dotClass}"></div>
-                            <div class="flex items-center justify-between gap-2 flex-wrap">
-                                <div class="text-[12px] ${titleClass}">${ev.status || 'Status Checkpoint'}</div>
-                                ${ev.event ? `<span class="px-1.5 py-0.5 bg-surface-container text-on-surface-variant rounded text-[9px] font-mono">${ev.event}</span>` : ''}
+                        <div class="relative pb-5 last:pb-0">
+                            <div class="absolute -left-[32px] top-0.5 w-4 h-4 rounded-full ${dotClass} flex items-center justify-center text-[10px]">
+                                <span class="material-symbols-outlined text-[10px] leading-none">${iconName}</span>
                             </div>
-                            <div class="text-[10px] text-on-surface-variant mt-0.5">${ev.time || '-'} ${ev.location ? ' &bull; ' + ev.location : ''}</div>
-                            <div class="text-xs text-on-surface mt-1 leading-snug">${ev.description || ''}</div>
-                            ${payloadSection}
+                            <div class="flex items-center justify-between gap-2 flex-wrap">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="${titleClass}">${ev.status || 'Status Checkpoint'}</span>
+                                    ${isLatest ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">Status Terkini</span>` : ''}
+                                </div>
+                                <span class="text-[10px] font-mono text-on-surface-variant font-medium">${ev.time || '-'}</span>
+                            </div>
+                            ${ev.location ? `<div class="text-[11px] text-on-surface-variant font-medium mt-0.5 flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-primary">location_on</span><span>${ev.location}</span></div>` : ''}
+                            <div class="text-xs text-on-surface mt-1.5 leading-relaxed bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/30">
+                                ${ev.description || ''}
+                            </div>
                         </div>
                     `;
                 }).join('');
@@ -1144,7 +1157,7 @@ async function fetchBiteshipTracking() {
             if (empty) {
                 empty.classList.remove('hidden');
                 const emptyText = document.getElementById('trackingEmptyText');
-                if (emptyText) emptyText.textContent = result.message || 'Tidak ada data tracking untuk nomor resi ini.';
+                if (emptyText) emptyText.textContent = (result && result.message) ? result.message : 'Data tracking belum tersedia untuk pesanan ini.';
             }
         }
     } catch (err) {
@@ -1153,7 +1166,7 @@ async function fetchBiteshipTracking() {
         if (empty) {
             empty.classList.remove('hidden');
             const emptyText = document.getElementById('trackingEmptyText');
-            if (emptyText) emptyText.textContent = 'Gagal memuat status tracking dari log webhook: ' + (err.message || 'Unknown error');
+            if (emptyText) emptyText.textContent = 'Data tracking belum tersedia untuk pesanan ini.';
         }
     }
 }

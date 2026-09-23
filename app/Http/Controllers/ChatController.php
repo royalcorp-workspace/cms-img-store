@@ -40,7 +40,10 @@ class ChatController extends Controller
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-        $messages = Message::where('conversation_id', $id)->orderBy('created_at', 'asc')->get();
+        $messages = Message::where('conversation_id', $id)
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
         return response()->json($messages);
     }
 
