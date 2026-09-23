@@ -185,144 +185,389 @@
             </form>
         </div>
 
-        <!-- Table Content -->
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-surface-gray/50 border-b border-outline-variant/30">
-                        <th class="px-5 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Produk & Varian</th>
-                        <th class="px-4 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Warehouse</th>
-                        <th class="px-4 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Store Channel</th>
-                        <th class="px-3 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider text-center">On Stock</th>
-                        <th class="px-3 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider text-center">Incoming</th>
-                        <th class="px-3 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider text-center">On Order</th>
-                        <th class="px-3 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider text-center">Outgoing</th>
-                        <th class="px-4 py-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider text-center">Available</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-outline-variant/20">
-                    @forelse($inventories as $inv)
-                        @php
-                            $variant = $inv->variant;
-                            $product = $inv->product;
-                            $image = $variant?->image ?: ($product?->thumbnail_url ?: ($product?->images->first()?->url ?? ''));
-                        @endphp
-                        <tr class="hover:bg-surface-container/30 transition-colors group">
-                            <!-- Product & Variant -->
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 bg-surface-gray rounded-lg overflow-hidden flex-shrink-0 border border-outline-variant/30">
-                                        @if($image)
-                                            <img class="w-full h-full object-cover" src="{{ $image }}" alt="{{ $product?->name ?? 'Product' }}">
-                                        @else
-                                            <div class="w-full h-full flex items-center justify-center text-on-surface-variant bg-surface-container">
-                                                <span class="material-symbols-outlined text-[22px]">inventory_2</span>
-                                            </div>
-                                        @endif
-                                    </div>
-                                    <div>
-                                        <div class="font-semibold text-sm text-on-surface">
-                                            {{ $product?->name ?? 'Unknown Product' }}
-                                        </div>
-                                        <div class="mt-1 flex items-center gap-1.5 flex-wrap">
-                                            @if($variant?->variant_name)
-                                                <span class="text-[11px] bg-primary/10 text-primary font-medium px-2 py-0.5 rounded border border-primary/20">
-                                                    {{ $variant->variant_name }}
-                                                </span>
-                                            @endif
-                                            @if($variant?->sku)
-                                                <span class="text-[10px] bg-surface-container-low text-on-surface-variant px-1.5 py-0.5 rounded border border-outline-variant/30 font-mono">
-                                                    SKU: {{ $variant->sku }}
-                                                </span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
+        <!-- Segregated Products & Variants List -->
+        <div class="divide-y divide-outline-variant/30">
+            @forelse($products as $product)
+                @php
+                    $pImg = $product->thumbnail_url ?: ($product->images->first()?->url ?? '');
+                    $totalProdVariants = $product->variants->count();
+                    $totalProdOnStock = 0;
+                    $totalProdIncoming = 0;
+                    $totalProdOnOrder = 0;
+                    $totalProdOutgoing = 0;
+                    $totalProdAvailable = 0;
 
-                            <!-- Warehouse -->
-                            <td class="px-4 py-4">
-                                <div class="text-xs font-medium text-on-surface">
-                                    {{ $inv->warehouse?->name ?? 'Gudang Utama' }}
-                                </div>
-                                <div class="text-[10px] font-mono text-on-surface-variant mt-0.5">
-                                    {{ $inv->warehouse?->code ?? '-' }}
-                                </div>
-                            </td>
+                    foreach ($product->variants as $v) {
+                        $vInv = $v->inventories->first();
+                        $onStk = $vInv ? (int)$vInv->on_stock : 0;
+                        $inc = $vInv ? (int)$vInv->incoming : 0;
+                        $onOrd = $vInv ? (int)$vInv->on_order : 0;
+                        $outg = $vInv ? (int)$vInv->outgoing : 0;
+                        $avail = $vInv ? (int)$vInv->available : max(0, $onStk - $onOrd - $outg);
 
-                            <!-- Store Channel -->
-                            <td class="px-4 py-4">
-                                <div class="text-xs font-medium text-on-surface flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[15px] text-primary">storefront</span>
-                                    <span>{{ $inv->channel?->name ?? 'Web IMG' }}</span>
-                                </div>
-                                <div class="text-[10px] text-on-surface-variant mt-0.5">
-                                    <span>Toko:</span>
-                                    <span class="font-medium text-secondary">{{ $inv->store?->name ?? 'Online Retail' }}</span>
-                                </div>
-                            </td>
-
-                            <!-- On Stock -->
-                            <td class="px-3 py-4 text-center">
-                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold text-on-surface bg-surface-container-low border border-outline-variant/30">
-                                    {{ number_format($inv->on_stock ?? 0) }}
-                                </span>
-                            </td>
-
-                            <!-- Incoming -->
-                            <td class="px-3 py-4 text-center">
-                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold {{ $inv->incoming > 0 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-on-surface-variant bg-surface-container-low' }}">
-                                    {{ number_format($inv->incoming) }}
-                                </span>
-                            </td>
-
-                            <!-- On Order -->
-                            <td class="px-3 py-4 text-center">
-                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold {{ $inv->on_order > 0 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-on-surface-variant bg-surface-container-low' }}">
-                                    {{ number_format($inv->on_order) }}
-                                </span>
-                            </td>
-
-                            <!-- Outgoing -->
-                            <td class="px-3 py-4 text-center">
-                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold {{ $inv->outgoing > 0 ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-on-surface-variant bg-surface-container-low' }}">
-                                    {{ number_format($inv->outgoing) }}
-                                </span>
-                            </td>
-
-                            <!-- Available (On Stock - On Order - Outgoing) -->
-                            <td class="px-4 py-4 text-center">
-                                @if($inv->available > 0)
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-extrabold bg-success/15 text-success border border-success/30 shadow-xs">
-                                        {{ number_format($inv->available) }}
-                                    </span>
+                        $totalProdOnStock += $onStk;
+                        $totalProdIncoming += $inc;
+                        $totalProdOnOrder += $onOrd;
+                        $totalProdOutgoing += $outg;
+                        $totalProdAvailable += $avail;
+                    }
+                @endphp
+                <div class="product-inventory-group border-b border-outline-variant/30 last:border-b-0 bg-white" id="product-group-{{ $product->id }}">
+                    <!-- Product Header Bar (Segregasi Produk) -->
+                    <div class="p-4 bg-slate-50/70 hover:bg-slate-100/70 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-l-primary">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 min-w-[40px] max-w-[40px] min-h-[40px] max-h-[40px] rounded-lg bg-surface-container-low border border-outline-variant/30 overflow-hidden flex-shrink-0 shadow-2xs flex items-center justify-center">
+                                @if($pImg)
+                                    <img src="{{ $pImg }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
                                 @else
-                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-danger/10 text-danger border border-danger/20">
-                                        Habis (0)
-                                    </span>
+                                    <span class="material-symbols-outlined text-outline-variant text-[20px]">inventory_2</span>
                                 @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-on-surface-variant">
-                                <div class="flex flex-col items-center justify-center">
-                                    <span class="material-symbols-outlined text-[48px] text-outline-variant mb-2">inventory_2</span>
-                                    <p class="text-sm font-semibold text-on-surface">Tidak ada data inventory ditemukan</p>
-                                    <p class="text-xs text-on-surface-variant mt-1">Coba sesuaikan kata kunci pencarian atau filter.</p>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 class="text-sm font-bold text-on-surface">{{ $product->name }}</h3>
+                                    @if($product->code)
+                                        <span class="text-[10px] font-mono font-bold bg-white text-on-surface-variant px-2 py-0.5 rounded border border-outline-variant/40">
+                                            {{ $product->code }}
+                                        </span>
+                                    @endif
+                                    @if($product->category)
+                                        <span class="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">
+                                            {{ $product->category->name }}
+                                        </span>
+                                    @endif
+                                    @if($product->brand)
+                                        <span class="text-[10px] bg-secondary/10 text-secondary font-semibold px-2 py-0.5 rounded-full">
+                                            {{ $product->brand->name }}
+                                        </span>
+                                    @endif
                                 </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                                <div class="text-xs text-on-surface-variant mt-1 flex items-center gap-2">
+                                    <span class="font-medium text-slate-600">{{ $totalProdVariants }} Varian</span>
+                                    <span>•</span>
+                                    <span class="text-[11px]">Total Fisik: <strong class="text-on-surface prod-total-onstock">{{ number_format($totalProdOnStock) }}</strong> unit</span>
+                                    <span>•</span>
+                                    <span class="text-[11px]">Total Siap Jual: <strong class="text-success prod-total-available">{{ number_format($totalProdAvailable) }}</strong> unit</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Actions for Product Header -->
+                        <div class="flex items-center gap-3 shrink-0">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold {{ $totalProdAvailable > 0 ? 'bg-success/15 text-success border border-success/30' : 'bg-danger/10 text-danger border border-danger/20' }}">
+                                <span class="w-2 h-2 rounded-full {{ $totalProdAvailable > 0 ? 'bg-success' : 'bg-danger' }}"></span>
+                                <span>{{ $totalProdAvailable > 0 ? 'Tersedia (' . number_format($totalProdAvailable) . ' unit)' : 'Stok Habis' }}</span>
+                            </span>
+                            <button type="button" onclick="toggleProductVariants('{{ $product->id }}')" class="p-1.5 hover:bg-white rounded-lg text-on-surface-variant hover:text-on-surface border border-outline-variant/30 transition-all" title="Buka / Tutup Varian">
+                                <span class="material-symbols-outlined text-[20px] transition-transform duration-200" id="chevron-{{ $product->id }}">expand_less</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Variants Table for this Product (Tampilan Varian & Direct Edit Stock) -->
+                    <div id="variants-container-{{ $product->id }}" class="overflow-x-auto border-t border-outline-variant/20">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-surface-container-low/60 border-b border-outline-variant/20 text-on-surface-variant text-[11px] font-bold uppercase tracking-wider">
+                                    <th class="py-2.5 px-4 min-w-[220px]">Varian & SKU</th>
+                                    <th class="py-2.5 px-3 min-w-[150px]">Lokasi Gudang</th>
+                                    <th class="py-2.5 px-3 text-center min-w-[140px] bg-amber-50/50 text-amber-900 border-x border-amber-200/50">
+                                        On Stock (Edit)
+                                    </th>
+                                    <th class="py-2.5 px-2.5 text-center min-w-[75px]">Incoming</th>
+                                    <th class="py-2.5 px-2.5 text-center min-w-[75px]">On Order</th>
+                                    <th class="py-2.5 px-2.5 text-center min-w-[75px]">Outgoing</th>
+                                    <th class="py-2.5 px-3 text-center min-w-[100px] bg-success/5 text-success">Available</th>
+                                    <th class="py-2.5 px-3 text-center min-w-[90px]">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-variant/15">
+                                @forelse($product->variants as $variant)
+                                    @php
+                                        $inventory = $variant->inventories->first();
+                                        $onStockVal = $inventory ? (int)$inventory->on_stock : 0;
+                                        $incomingVal = $inventory ? (int)$inventory->incoming : 0;
+                                        $onOrderVal = $inventory ? (int)$inventory->on_order : 0;
+                                        $outgoingVal = $inventory ? (int)$inventory->outgoing : 0;
+                                        $availableVal = $inventory ? (int)$inventory->available : max(0, $onStockVal - $onOrderVal - $outgoingVal);
+                                        $whName = $inventory?->warehouse?->name ?? ($defaultWarehouse?->name ?? 'Gudang Utama');
+                                        $whCode = $inventory?->warehouse?->code ?? ($defaultWarehouse?->code ?? 'GD-JKT01');
+                                        $chName = $inventory?->channel?->name ?? ($defaultChannel?->name ?? 'Web IMG');
+                                    @endphp
+                                    <tr class="hover:bg-slate-50/70 transition-colors variant-row" id="variant-row-{{ $variant->id }}" data-variant-id="{{ $variant->id }}" data-product-id="{{ $product->id }}">
+                                        <!-- Variant Name & SKU -->
+                                        <td class="py-3 px-4">
+                                            <div class="font-bold text-on-surface text-xs flex items-center gap-1.5">
+                                                <span class="material-symbols-outlined text-[15px] text-primary">subdirectory_arrow_right</span>
+                                                <span>{{ $variant->variant_name }}</span>
+                                            </div>
+                                            <div class="mt-0.5 ml-5 flex items-center gap-2 flex-wrap">
+                                                @if($variant->sku)
+                                                    <span class="font-mono text-[10px] text-on-surface-variant bg-slate-100 px-1.5 py-0.5 rounded border border-outline-variant/20">
+                                                        SKU: {{ $variant->sku }}
+                                                    </span>
+                                                @endif
+                                                @if(!empty($variant->attributes) && is_array($variant->attributes))
+                                                    @foreach($variant->attributes as $k => $vAttr)
+                                                        @if(!in_array($k, ['width', 'length', 'height', 'weight', 'image', 'image_url', '_completeness_title']) && is_string($vAttr))
+                                                            <span class="text-[10px] text-slate-500">{{ $k }}: {{ $vAttr }}</span>
+                                                        @endif
+                                                    @endforeach
+                                                @endif
+                                            </div>
+                                        </td>
+
+                                        <!-- Location & Channel -->
+                                        <td class="py-3 px-3">
+                                            <div class="text-xs font-semibold text-on-surface flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-[14px] text-slate-500">warehouse</span>
+                                                <span>{{ $whName }}</span>
+                                            </div>
+                                            <div class="text-[10px] text-on-surface-variant mt-0.5 flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-[13px] text-primary">storefront</span>
+                                                <span>{{ $chName }}</span>
+                                            </div>
+                                        </td>
+
+                                        <!-- DIRECT EDITABLE ON STOCK -->
+                                        <td class="py-2.5 px-3 text-center bg-amber-50/30 border-x border-amber-200/40">
+                                            <div class="inline-flex items-center gap-1.5">
+                                                <input 
+                                                    type="number" 
+                                                    min="0" 
+                                                    step="1"
+                                                    value="{{ $onStockVal }}" 
+                                                    id="stock-input-{{ $variant->id }}"
+                                                    data-variant-id="{{ $variant->id }}"
+                                                    data-product-id="{{ $product->id }}"
+                                                    data-initial="{{ $onStockVal }}"
+                                                    data-on-order="{{ $onOrderVal }}"
+                                                    data-outgoing="{{ $outgoingVal }}"
+                                                    onkeydown="if(event.key==='Enter') { event.preventDefault(); quickSaveStock('{{ $variant->id }}'); }"
+                                                    class="stock-edit-input w-20 px-2.5 py-1 text-center font-mono font-bold text-xs bg-white border border-amber-300 rounded-lg text-amber-950 focus:ring-2 focus:ring-amber-400/30 focus:border-amber-500 focus:outline-none shadow-2xs transition-all"
+                                                    title="Ketik jumlah stok lalu tekan Enter atau klik Simpan"
+                                                >
+                                            </div>
+                                        </td>
+
+                                        <!-- Incoming -->
+                                        <td class="py-3 px-2.5 text-center">
+                                            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold {{ $incomingVal > 0 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-400' }}">
+                                                {{ number_format($incomingVal) }}
+                                            </span>
+                                        </td>
+
+                                        <!-- On Order -->
+                                        <td class="py-3 px-2.5 text-center">
+                                            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold {{ $onOrderVal > 0 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-400' }}">
+                                                {{ number_format($onOrderVal) }}
+                                            </span>
+                                        </td>
+
+                                        <!-- Outgoing -->
+                                        <td class="py-3 px-2.5 text-center">
+                                            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold {{ $outgoingVal > 0 ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-400' }}">
+                                                {{ number_format($outgoingVal) }}
+                                            </span>
+                                        </td>
+
+                                        <!-- Available (Live calculated) -->
+                                        <td class="py-3 px-3 text-center bg-success/5">
+                                            <span id="available-badge-{{ $variant->id }}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold {{ $availableVal > 0 ? 'bg-success/15 text-success border border-success/30' : 'bg-danger/10 text-danger border border-danger/20' }}">
+                                                {{ number_format($availableVal) }}
+                                            </span>
+                                        </td>
+
+                                        <!-- Action: Quick Save Button -->
+                                        <td class="py-3 px-3 text-center">
+                                            <button 
+                                                type="button" 
+                                                id="btn-save-{{ $variant->id }}"
+                                                onclick="quickSaveStock('{{ $variant->id }}')" 
+                                                class="inline-flex items-center justify-center gap-1 px-2.5 py-1 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-all shadow-2xs"
+                                                title="Simpan perubahan stok"
+                                            >
+                                                <span class="material-symbols-outlined text-[15px]">save</span>
+                                                <span>Simpan</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="py-4 px-4 text-center text-xs text-on-surface-variant italic">
+                                            Produk ini belum memiliki varian.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @empty
+                <div class="p-12 text-center text-on-surface-variant bg-white rounded-lg">
+                    <span class="material-symbols-outlined text-[48px] text-outline-variant mb-2">inventory_2</span>
+                    <p class="text-sm font-semibold text-on-surface">Tidak ada data produk ditemukan</p>
+                    <p class="text-xs text-on-surface-variant mt-1">Coba sesuaikan kata kunci pencarian atau filter.</p>
+                </div>
+            @endforelse
         </div>
 
         <!-- Pagination -->
-        @if($inventories->hasPages())
+        @if($products->hasPages())
             <div class="p-4 border-t border-outline-variant/30 bg-surface-container-lowest">
-                {{ $inventories->links() }}
+                {{ $products->links() }}
             </div>
         @endif
     </div>
+
+    <!-- Toast Notification Container -->
+    <div id="inventory-toast" class="fixed bottom-6 right-6 z-50 transform transition-all duration-300 translate-y-20 opacity-0 pointer-events-none flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-bold text-white bg-slate-900">
+        <span class="material-symbols-outlined text-[20px] text-success" id="toast-icon">check_circle</span>
+        <span id="toast-message">Stok berhasil diperbarui</span>
+    </div>
 @endsection
+
+@push('scripts')
+<script>
+    function toggleProductVariants(productId) {
+        const container = document.getElementById(`variants-container-${productId}`);
+        const chevron = document.getElementById(`chevron-${productId}`);
+        if (!container || !chevron) return;
+
+        if (container.classList.contains('hidden')) {
+            container.classList.remove('hidden');
+            chevron.style.transform = 'rotate(0deg)';
+        } else {
+            container.classList.add('hidden');
+            chevron.style.transform = 'rotate(180deg)';
+        }
+    }
+
+    function showInventoryToast(message, isSuccess = true) {
+        const toast = document.getElementById('inventory-toast');
+        const toastMessage = document.getElementById('toast-message');
+        const toastIcon = document.getElementById('toast-icon');
+        if (!toast) return;
+
+        toastMessage.textContent = message;
+        if (isSuccess) {
+            toastIcon.textContent = 'check_circle';
+            toastIcon.className = 'material-symbols-outlined text-[20px] text-success';
+        } else {
+            toastIcon.textContent = 'error';
+            toastIcon.className = 'material-symbols-outlined text-[20px] text-danger';
+        }
+
+        toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+        toast.classList.add('translate-y-0', 'opacity-100');
+
+        setTimeout(() => {
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+        }, 3000);
+    }
+
+    function quickSaveStock(variantId) {
+        const input = document.getElementById(`stock-input-${variantId}`);
+        const btn = document.getElementById(`btn-save-${variantId}`);
+        const availBadge = document.getElementById(`available-badge-${variantId}`);
+        if (!input) return;
+
+        const val = parseInt(input.value);
+        if (isNaN(val) || val < 0) {
+            alert('Jumlah stok harus berupa angka minimal 0');
+            input.focus();
+            return;
+        }
+
+        const productId = input.dataset.productId;
+        const initialVal = parseInt(input.dataset.initial || '0');
+        const onOrder = parseInt(input.dataset.onOrder || '0');
+        const outgoing = parseInt(input.dataset.outgoing || '0');
+
+        // Loading state on button
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-70');
+            btn.innerHTML = '<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>';
+        }
+
+        fetch('{{ route('inventory.quick-update') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                variant_id: variantId,
+                product_id: productId,
+                on_stock: val,
+                warehouse_id: '{{ request('warehouse_id') }}' || null,
+                store_channel_id: '{{ request('store_channel_id') }}' || null
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70');
+                btn.innerHTML = '<span class="material-symbols-outlined text-[15px]">check</span><span>Tersimpan</span>';
+                btn.classList.remove('bg-primary');
+                btn.classList.add('bg-success');
+                setTimeout(() => {
+                    btn.innerHTML = '<span class="material-symbols-outlined text-[15px]">save</span><span>Simpan</span>';
+                    btn.classList.remove('bg-success');
+                    btn.classList.add('bg-primary');
+                }, 2000);
+            }
+
+            if (data.success) {
+                input.dataset.initial = val;
+                const newAvailable = data.data.available !== undefined ? data.data.available : Math.max(0, val - onOrder - outgoing);
+                
+                if (availBadge) {
+                    availBadge.textContent = newAvailable.toLocaleString('id-ID');
+                    if (newAvailable > 0) {
+                        availBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-success/15 text-success border border-success/30';
+                    } else {
+                        availBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-danger/10 text-danger border border-danger/20';
+                    }
+                }
+
+                // Recalculate product totals live
+                const prodGroup = document.getElementById(`product-group-${productId}`);
+                if (prodGroup) {
+                    let sumOnStock = 0;
+                    let sumAvail = 0;
+                    prodGroup.querySelectorAll('.stock-edit-input').forEach(inp => {
+                        const sVal = parseInt(inp.value) || 0;
+                        const sOrd = parseInt(inp.dataset.onOrder) || 0;
+                        const sOut = parseInt(inp.dataset.outgoing) || 0;
+                        sumOnStock += sVal;
+                        sumAvail += Math.max(0, sVal - sOrd - sOut);
+                    });
+
+                    const totOnStockEl = prodGroup.querySelector('.prod-total-onstock');
+                    const totAvailEl = prodGroup.querySelector('.prod-total-available');
+                    if (totOnStockEl) totOnStockEl.textContent = sumOnStock.toLocaleString('id-ID');
+                    if (totAvailEl) totAvailEl.textContent = sumAvail.toLocaleString('id-ID');
+                }
+
+                showInventoryToast(data.message || 'Stok berhasil diperbarui', true);
+            } else {
+                showInventoryToast(data.message || 'Gagal memperbarui stok', false);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70');
+                btn.innerHTML = '<span class="material-symbols-outlined text-[15px]">save</span><span>Simpan</span>';
+            }
+            showInventoryToast('Terjadi kesalahan saat menyimpan stok', false);
+        });
+    }
+</script>
+@endpush

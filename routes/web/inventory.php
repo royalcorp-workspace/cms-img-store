@@ -14,6 +14,7 @@ Route::get('/inventory/create', [InventoryController::class, 'create'])->name('i
 Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
 Route::get('/inventory/{id}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
 Route::put('/inventory/{id}', [InventoryController::class, 'update'])->name('inventory.update');
+Route::post('/inventory/quick-update', [InventoryController::class, 'quickUpdate'])->name('inventory.quick-update');
 Route::post('/inventory/{id}/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
 Route::delete('/inventory/{id}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
 

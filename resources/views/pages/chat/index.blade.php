@@ -59,35 +59,49 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.1/dist/echo.iife.js"></script>
 <script>
-    if (typeof window.Echo === 'function') {
+    let activeConversationId = null;
+    let pusherInstance = null;
+
+    function initAdminPusher() {
+        if (pusherInstance) return;
         try {
-            window.Echo = new window.Echo({
-                broadcaster: 'pusher',
-                key: '{{ env('PUSHER_APP_KEY') }}',
+            pusherInstance = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
                 cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
                 forceTLS: true
             });
-        } catch (e) {
-            console.error('Echo init failed:', e);
+
+            const channel = pusherInstance.subscribe('admin.chat');
+            channel.bind('message.sent', function(e) {
+                console.log("Incoming realtime message:", e);
+                loadConversations();
+                
+                // If message is for currently open conversation
+                if (activeConversationId && activeConversationId == e.conversation_id) {
+                    appendMessage(e);
+                    // Mark as read silently
+                    axios.get(`/chat/${activeConversationId}/messages`).catch(() => {});
+                }
+            });
+        } catch (err) {
+            console.error('Pusher initialization error:', err);
         }
     }
-    let activeConversationId = null;
     
     function loadConversations() {
         axios.get('/chat/conversations')
             .then(res => {
                 const list = document.getElementById('conversations-list');
-                list.innerHTML = '';
+                if (!list) return;
                 
                 let totalUnread = 0;
                 
-                if(res.data.length === 0) {
+                if (res.data.length === 0) {
                     list.innerHTML = '<div class="p-4 text-center text-xs text-on-surface-variant">No conversations yet.</div>';
                     return;
                 }
 
+                list.innerHTML = '';
                 res.data.forEach(conv => {
                     totalUnread += parseInt(conv.unread_count) || 0;
                     const name = conv.customer ? conv.customer.name : 'Unknown Customer';
@@ -121,7 +135,8 @@
                         badge.classList.add('hidden');
                     }
                 }
-            });
+            })
+            .catch(err => console.error('Failed to load conversations:', err));
     }
 
     function openChat(id, name, subject) {
@@ -143,25 +158,33 @@
         axios.get(`/chat/${id}/messages`)
             .then(res => {
                 list.innerHTML = '';
-                if(res.data.length === 0) {
+                if (res.data.length === 0) {
                     list.innerHTML = '<div class="text-center text-xs text-on-surface-variant py-4">This is the start of your conversation.</div>';
+                    return;
                 }
+                // Sort ascending chronologically with tiebreaker
+                res.data.sort((a, b) => {
+                    const diff = new Date(a.created_at) - new Date(b.created_at);
+                    return diff !== 0 ? diff : ((a.id || 0) - (b.id || 0));
+                });
                 res.data.forEach(msg => appendMessage(msg));
                 scrollToBottom();
-            });
+            })
+            .catch(err => console.error('Failed to load messages:', err));
     }
 
     function appendMessage(msg) {
         if (document.getElementById('msg-' + msg.id)) return; // Prevent duplicate appends
 
         const list = document.getElementById('messages-list');
-        // Remove empty state message if exists
-        if(list.innerHTML.includes('start of your conversation')) list.innerHTML = '';
+        if (list.innerHTML.includes('start of your conversation')) list.innerHTML = '';
 
         const isMe = msg.sender_type === 'agent';
         
         const div = document.createElement('div');
         div.id = 'msg-' + msg.id;
+        div.dataset.timestamp = new Date(msg.created_at).getTime() || 0;
+        div.dataset.id = msg.id || 0;
         div.className = `flex flex-col max-w-[80%] ${isMe ? 'self-end items-end' : 'self-start items-start'}`;
         
         const bubble = document.createElement('div');
@@ -174,7 +197,30 @@
 
         div.appendChild(bubble);
         div.appendChild(time);
-        list.appendChild(div);
+
+        // Deterministic chronological insertion
+        const existingMessages = Array.from(list.children).filter(c => c.id && c.id.startsWith('msg-'));
+        let inserted = false;
+        for (let i = existingMessages.length - 1; i >= 0; i--) {
+            const el = existingMessages[i];
+            const itemTime = parseInt(el.dataset.timestamp || '0', 10);
+            const itemId = parseInt(el.dataset.id || '0', 10);
+            const currentItemTime = parseInt(div.dataset.timestamp, 10);
+            const currentItemId = parseInt(div.dataset.id, 10);
+
+            if (currentItemTime > itemTime || (currentItemTime === itemTime && currentItemId >= itemId)) {
+                el.after(div);
+                inserted = true;
+                break;
+            }
+        }
+        if (!inserted) {
+            if (existingMessages.length > 0) {
+                list.insertBefore(div, existingMessages[0]);
+            } else {
+                list.appendChild(div);
+            }
+        }
         
         scrollToBottom();
     }
@@ -204,26 +250,24 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
+        initAdminPusher();
         loadConversations();
 
-        // Global listener for ANY incoming customer message to update sidebar and active chat
-        if (typeof window.Echo !== 'undefined') {
-            window.Echo.channel('admin.chat')
-                .listen('.message.sent', (e) => {
-                    loadConversations();
-                    console.log("Incoming message:", e);
-                    console.log("activeConversationId:", activeConversationId);
-                    
-                    // If the incoming message belongs to the currently open chat, append it!
-                    if (activeConversationId == e.conversation_id) {
-                        appendMessage(e);
-                        scrollToBottom();
-                        
-                        // Mark as read silently
-                        axios.get(`/chat/${activeConversationId}/messages`).catch(()=>{});
-                    }
-                });
-        }
+        // Polling fallback every 3 seconds to keep sync even if WebSocket reconnects
+        setInterval(() => {
+            loadConversations();
+            if (activeConversationId) {
+                axios.get(`/chat/${activeConversationId}/messages`)
+                    .then(res => {
+                        res.data.sort((a, b) => {
+                            const diff = new Date(a.created_at) - new Date(b.created_at);
+                            return diff !== 0 ? diff : ((a.id || 0) - (b.id || 0));
+                        });
+                        res.data.forEach(msg => appendMessage(msg));
+                    })
+                    .catch(() => {});
+            }
+        }, 3000);
     });
 </script>
 @endpush
