@@ -248,6 +248,21 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Tag Produk -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                            Tag Produk (Product Tags)
+                        </label>
+                        <select name="tags[]" id="tagsSelect" multiple class="w-full px-3.5 py-2 border border-outline-variant rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
+                            @foreach($tags ?? \App\Models\Product\ProductTag::where('deleted', false)->orderBy('name')->get() as $t)
+                                <option value="{{ $t->id }}" {{ in_array($t->id, old('tags', $selectedTagIds ?? [])) ? 'selected' : '' }}>
+                                    {{ $t->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="text-[10px] text-on-surface-variant">Pilih satu atau lebih tag untuk klasifikasi produk.</p>
+                    </div>
                 </div>
 
                 <!-- Foto Utama (Thumbnail Produk) -->
@@ -2918,6 +2933,13 @@ async function submitProductForm() {
 
         let formData = new FormData(form);
 
+        // Append product tags
+        formData.delete('tags[]');
+        const selectedTags = $('#tagsSelect').val() || [];
+        selectedTags.forEach(tId => {
+            formData.append('tags[]', tId);
+        });
+
         // Upload main thumbnail if selected
         const thumbnailInput = document.getElementById('thumbnailInput');
         formData.delete('thumbnail_file');
@@ -3123,6 +3145,30 @@ $(document).ready(function() {
         placeholder: 'Pilih Brand / Merek',
         allowClear: true,
         width: '100%'
+    });
+
+    $('#tagsSelect').select2({
+        placeholder: 'Pilih Tag Produk (Bisa pilih lebih dari satu)',
+        allowClear: true,
+        width: '100%',
+        templateResult: function(data) {
+            if (!data.id) return data.text;
+            return $(`
+                <div class="flex items-center gap-2 py-0.5">
+                    <span class="material-symbols-outlined text-primary text-[17px] shrink-0">sell</span>
+                    <span class="font-medium text-xs text-on-surface">${data.text}</span>
+                </div>
+            `);
+        },
+        templateSelection: function(data) {
+            if (!data.id) return data.text;
+            return $(`
+                <span class="inline-flex items-center gap-1 font-medium text-xs">
+                    <span class="material-symbols-outlined text-[13px] opacity-75">sell</span>
+                    <span>${data.text}</span>
+                </span>
+            `);
+        }
     });
 
     $('#productNameInput').on('input', function() {

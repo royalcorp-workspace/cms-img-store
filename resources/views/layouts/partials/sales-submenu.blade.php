@@ -1,6 +1,14 @@
 <div class="flex border-b border-outline-variant mb-6 overflow-x-auto">
-    <a href="{{ route('orders.index') }}" class="{{ request()->routeIs('orders.*') && !request()->routeIs('orders.void.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Orders</a>
-    <a href="{{ route('reconciliation.index') }}" class="{{ request()->routeIs('reconciliation.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Payment Reconciliation</a>
-    <a href="{{ route('settlements.index') }}" class="{{ request()->routeIs('settlements.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Settlement</a>
-    <a href="{{ route('orders.void.index') }}" class="{{ request()->routeIs('orders.void.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Void Orders</a>
+    @can('orders.index')
+        <a href="{{ route('orders.index') }}" class="{{ request()->routeIs('orders.*') && !request()->routeIs('orders.void.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Orders</a>
+    @endcan
+    @can('reconciliation.index')
+        <a href="{{ route('reconciliation.index') }}" class="{{ request()->routeIs('reconciliation.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Payment Reconciliation</a>
+    @endcan
+    @can('settlements.index')
+        <a href="{{ route('settlements.index') }}" class="{{ request()->routeIs('settlements.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Settlement</a>
+    @endcan
+    @can('orders.void.index')
+        <a href="{{ route('orders.void.index') }}" class="{{ request()->routeIs('orders.void.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Void Orders</a>
+    @endcan
 </div>

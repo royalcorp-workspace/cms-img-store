@@ -58,13 +58,13 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Brand Name <span class="text-danger">*</span></label>
-                    <input type="text" name="name" value="{{ old('name', $brand->name) }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Lady Americana" required>
+                    <input type="text" id="brandName" name="name" value="{{ old('name', $brand->name) }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. Lady Americana" required>
                     @error('name') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="space-y-1.5">
-                    <label class="block text-label-sm font-medium text-on-surface-variant">Slug (URL Name)</label>
-                    <input type="text" name="slug" value="{{ old('slug', $brand->slug) }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g. lady-americana">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Slug (URL Name) <span class="text-xs text-secondary font-normal">(Otomatis)</span></label>
+                    <input type="text" id="brandSlug" name="slug" value="{{ old('slug', $brand->slug) }}" readonly class="w-full px-3 py-2 border border-outline-variant rounded-lg bg-surface-container-low/60 cursor-not-allowed text-on-surface-variant focus:outline-none" placeholder="Otomatis terisi dari nama brand">
                     @error('slug') <span class="text-danger text-xs font-semibold">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -167,6 +167,14 @@
                         document.getElementById('banner_url_inputs').style.display = 'grid';
                     }
                 }
+                document.getElementById('brandName').addEventListener('input', function() {
+                    const slugInput = document.getElementById('brandSlug');
+                    slugInput.value = this.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .trim()
+                        .replace(/[\s-]+/g, '-');
+                });
                 document.addEventListener('DOMContentLoaded', toggleBannerInputs);
             </script>
 

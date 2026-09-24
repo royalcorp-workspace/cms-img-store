@@ -70,3 +70,12 @@ Route::post('/events', [EventController::class, 'store'])->name('events.store');
 Route::get('/events/{id}/edit', [EventController::class, 'edit'])->name('events.edit');
 Route::put('/events/{id}', [EventController::class, 'update'])->name('events.update');
 Route::delete('/events/{id}', [EventController::class, 'destroy'])->name('events.destroy');
+
+use App\Http\Controllers\Product\ProductTagController;
+Route::get('/tags', [ProductTagController::class, 'index'])->name('tags.index');
+Route::get('/tags/create', [ProductTagController::class, 'create'])->name('tags.create');
+Route::post('/tags', [ProductTagController::class, 'store'])->name('tags.store');
+Route::get('/tags/{id}/edit', [ProductTagController::class, 'edit'])->name('tags.edit');
+Route::put('/tags/{id}', [ProductTagController::class, 'update'])->name('tags.update');
+Route::delete('/tags/{id}', [ProductTagController::class, 'destroy'])->name('tags.destroy');
+

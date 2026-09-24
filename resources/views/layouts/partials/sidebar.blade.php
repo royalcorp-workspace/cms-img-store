@@ -7,150 +7,130 @@
     </div>
     <nav class="flex-1 min-h-0 overflow-y-auto sidebar-scroll">
         @php
-        $menuGroups = [
-            [
-                'title' => 'Dashboard',
-                'icon' => 'dashboard',
-                'route_name' => 'dashboard',
-                'children' => []
-            ],
-            [
-                'title' => 'Customers',
-                'icon' => 'person',
-                'route_name' => 'customers.index',
-                'children' => []
-            ],
-            [
-                'title' => 'Live Chat',
-                'icon' => 'forum',
-                'route_name' => 'chat.index',
-                'children' => [],
-                'badge' => \App\Models\Message::where('sender_type', 'customer')->where('is_read', false)->count()
-            ],
-            [
-                'title' => 'Products',
-                'icon' => 'inventory_2',
-                'route_name' => 'products.index',
-                'active_routes' => ['products.*', 'categories.*', 'brands.*', 'product-suggestions.*'],
-                'children' => []
-            ],
-            [
-                'title' => 'Inventory',
-                'icon' => 'warehouse',
-                'route_name' => 'inventory.index',
-                'active_routes' => ['inventory.*', 'warehouses.*'],
-                'children' => []
-            ],
-            [
-                'title' => 'Sales',
-                'icon' => 'shopping_cart',
-                'route_name' => 'orders.index',
-                'active_routes' => ['orders.*', 'settlements.*', 'reconciliation.*'],
-                'children' => []
-            ],
-            [
-                'title' => 'Promotions',
-                'icon' => 'local_offer',
-                'route_name' => 'vouchers.index',
-                'active_routes' => ['vouchers.*', 'price-settings.*', 'price-product-setting-store.*', 'events.*', 'bundlings.*'],
-                'children' => []
-            ],
-            [
-                'title' => 'Pick & Pack',
-                'icon' => 'package',
-                'route_name' => 'picking-list.index',
-                'active_routes' => ['picking-list.*', 'packing-slip.*', 'packing-out.*', 'handover.*', 'delivery.*'],
-                'children' => []
-            ],
-            [
-                'title' => 'Store Management',
-                'icon' => 'store',
-                'route_name' => 'store-groups.index',
-                'children' => []
-            ],
-            [
-                'title' => 'Shipping & Payment',
-                'icon' => 'payments',
-                'route_name' => 'couriers.index',
-                'children' => []
-            ],
-            [
-                'title' => 'Content',
-                'icon' => 'article',
-                'route_name' => 'content.faq.index',
-                'children' => []
-            ],
-            [
-                'title' => 'System',
-                'icon' => 'settings',
-                'route_name' => 'roles.index',
-                'children' => []
-            ],
-        ];
+            $admin = \Illuminate\Support\Facades\Auth::guard('admin')->user();
+            $unreadChatCount = \App\Models\Message::where('sender_type', 'customer')->where('is_read', false)->count();
+
+            // Mapping active route patterns per module
+            $moduleActivePatterns = [
+                'dashboard' => ['dashboard'],
+                'customers' => ['customers.*'],
+                'chat' => ['chat.*'],
+                'products' => ['products.*', 'categories.*', 'brands.*', 'product-suggestions.*'],
+                'inventory' => ['inventory.*', 'warehouses.*'],
+                'sales' => ['orders.*', 'settlements.*', 'reconciliation.*'],
+                'orders' => ['orders.*', 'settlements.*', 'reconciliation.*'],
+                'promotions' => ['vouchers.*', 'price-settings.*', 'price-product-setting-store.*', 'events.*', 'bundlings.*'],
+                'vouchers' => ['vouchers.*', 'price-settings.*', 'price-product-setting-store.*', 'events.*', 'bundlings.*'],
+                'pick & pack' => ['picking-list.*', 'packing-slip.*', 'packing-out.*', 'handover.*', 'delivery.*'],
+                'picking-list' => ['picking-list.*', 'packing-slip.*', 'packing-out.*', 'handover.*', 'delivery.*'],
+                'store management' => ['store-groups.*', 'stores.*', 'store-tiers.*', 'store-channels.*', 'store-channel-stocks.*'],
+                'store-management' => ['store-groups.*', 'stores.*', 'store-tiers.*', 'store-channels.*', 'store-channel-stocks.*'],
+                'shipping & payment' => ['couriers.*', 'payment-methods.*', 'shipping-addresses.*'],
+                'shipping-payment' => ['couriers.*', 'payment-methods.*', 'shipping-addresses.*'],
+                'content' => ['content.*'],
+                'system' => ['roles.*', 'permissions.*', 'users.*', 'profile.*'],
+            ];
+
+            // Helper to check if user has permission for a route string (supports piped routes)
+            $canAccessRoute = function ($routeStr) use ($admin) {
+                if (!$admin) return false;
+                if ($admin->isSuperAdmin()) return true;
+                if (empty($routeStr)) return false;
+                $routes = explode('|', $routeStr);
+                foreach ($routes as $r) {
+                    $r = trim($r);
+                    if (!empty($r) && ($admin->can($r) || $admin->hasPermission($r))) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            // Recursive helper to check if user can access a menu item or any of its descendants
+            $hasMenuAccess = function ($item) use (&$hasMenuAccess, $canAccessRoute, $admin) {
+                if (!$admin) return false;
+                if ($admin->isSuperAdmin()) return true;
+                if (!empty($item->route_name) && $canAccessRoute($item->route_name)) {
+                    return true;
+                }
+                if (isset($item->childs) && count($item->childs)) {
+                    foreach ($item->childs as $child) {
+                        if ($hasMenuAccess($child)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+
+            // Helper to check if route is active for a menu module
+            $isModuleActive = function ($menu, $patternsMap) {
+                $slug = strtolower(trim($menu->title));
+                $patterns = $patternsMap[$slug] ?? null;
+                if (!$patterns && !empty($menu->route_name)) {
+                    $key = strtolower(trim($menu->route_name));
+                    $patterns = $patternsMap[$key] ?? null;
+                }
+
+                if ($patterns) {
+                    foreach ($patterns as $p) {
+                        if (request()->routeIs($p)) {
+                            return true;
+                        }
+                    }
+                }
+
+                if (!empty($menu->route_name)) {
+                    $routes = explode('|', $menu->route_name);
+                    foreach ($routes as $r) {
+                        $r = trim($r);
+                        if (request()->routeIs($r)) return true;
+                        $prefix = \Illuminate\Support\Str::beforeLast($r, '.');
+                        if (!empty($prefix) && request()->routeIs($prefix . '.*')) return true;
+                    }
+                }
+
+                return false;
+            };
         @endphp
 
         <div class="flex flex-col gap-1">
-            @foreach($menuGroups as $menu)
-                @if(empty($menu['children']))
+            @foreach($menus as $menu)
+                @if($hasMenuAccess($menu))
                     @php
-                        $isActive = false;
-                        if (!empty($menu['active_routes'])) {
-                            foreach ($menu['active_routes'] as $pattern) {
-                                if (request()->routeIs($pattern)) {
-                                    $isActive = true;
+                        // Resolve target destination route (first accessible route)
+                        $targetRoute = $menu->route_name;
+                        if (!$targetRoute || !Route::has($targetRoute)) {
+                            foreach ($menu->childs as $c) {
+                                $cRoute = $c->route_name ? explode('|', $c->route_name)[0] : null;
+                                if ($cRoute && Route::has($cRoute) && $canAccessRoute($cRoute)) {
+                                    $targetRoute = $cRoute;
                                     break;
                                 }
                             }
-                        } else {
-                            $routePrefix = \Illuminate\Support\Str::beforeLast($menu['route_name'], '.');
-                            $isActive = request()->routeIs($routePrefix . '*');
                         }
+                        if (str_contains($targetRoute ?? '', '|')) {
+                            $targetRoute = explode('|', $targetRoute)[0];
+                        }
+                        if (!$targetRoute || !Route::has($targetRoute)) {
+                            $targetRoute = 'dashboard';
+                        }
+
+                        $isActive = $isModuleActive($menu, $moduleActivePatterns);
+                        $badgeCount = ($menu->route_name === 'chat.index' || strtolower($menu->title) === 'live chat') ? $unreadChatCount : null;
                     @endphp
-                    <a class="sidebar-link flex items-center justify-between w-full px-4 py-3 text-sidebar-text hover:bg-sidebar-active/10 hover:text-sidebar-active transition-colors duration-200 {{ $isActive ? 'bg-primary-container text-sidebar-active' : '' }}" href="{{ route($menu['route_name']) }}">
+
+                    <a class="sidebar-link flex items-center justify-between w-full px-4 py-3 text-sidebar-text hover:bg-sidebar-active/10 hover:text-sidebar-active transition-colors duration-200 {{ $isActive ? 'bg-primary-container text-sidebar-active font-semibold' : '' }}" 
+                       href="{{ route($targetRoute) }}"
+                       title="{{ $menu->title }}">
                         <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined shrink-0">{{ $menu['icon'] }}</span>
-                            <span class="sidebar-link-text font-label-md text-label-md whitespace-nowrap">{{ $menu['title'] }}</span>
+                            <span class="material-symbols-outlined shrink-0 text-[20px]">{{ $menu->icon ?: 'circle' }}</span>
+                            <span class="sidebar-link-text font-label-md text-label-md whitespace-nowrap">{{ $menu->title }}</span>
                         </div>
-                        @if(isset($menu['badge']))
-                            <span id="menu-badge-{{ \Illuminate\Support\Str::slug($menu['title']) }}" class="sidebar-badge bg-danger text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center {{ $menu['badge'] > 0 ? '' : 'hidden' }}">{{ $menu['badge'] }}</span>
+                        @if($badgeCount !== null)
+                            <span id="menu-badge-chat" class="sidebar-badge bg-danger text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center {{ $badgeCount > 0 ? '' : 'hidden' }}">{{ $badgeCount }}</span>
                         @endif
                     </a>
-                @else
-                    @php
-                        $hasActiveChild = false;
-                        foreach($menu['children'] as $child) {
-                            $childPrefix = \Illuminate\Support\Str::beforeLast($child['route_name'], '.');
-                            if(request()->routeIs($childPrefix . '*')) {
-                                $hasActiveChild = true;
-                                break;
-                            }
-                        }
-                    @endphp
-                    <div class="sidebar-group-container {{ $hasActiveChild ? 'is-open' : '' }} relative">
-                        <button class="sidebar-group-header w-full flex items-center justify-between px-4 py-3 text-sidebar-text hover:bg-sidebar-active/10 hover:text-sidebar-active transition-colors duration-200 cursor-pointer {{ $hasActiveChild ? 'bg-white/5 text-sidebar-active' : '' }}">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined shrink-0">{{ $menu['icon'] }}</span>
-                                <span class="sidebar-link-text font-label-md text-label-md whitespace-nowrap">{{ $menu['title'] }}</span>
-                            </div>
-                            <span class="material-symbols-outlined text-[18px] transition-transform duration-200 sidebar-link-text chevron-icon shrink-0">expand_more</span>
-                        </button>
-                        <div class="sidebar-group-content transition-all duration-300 ease-in-out">
-                            <div class="overflow-hidden">
-                                <div class="py-1 pl-6 flex flex-col border-l border-white/10 ml-6 mt-1 mb-2 gap-1">
-                                    @foreach($menu['children'] as $child)
-                                        @php
-                                            $childPrefix = \Illuminate\Support\Str::beforeLast($child['route_name'], '.');
-                                            $isChildActive = request()->routeIs($childPrefix . '*');
-                                        @endphp
-                                        <a class="sidebar-link flex items-center justify-start py-2 px-3 text-sidebar-text hover:bg-sidebar-active/10 hover:text-sidebar-active rounded transition-colors duration-200 gap-2 {{ $isChildActive ? 'bg-primary-container/50 text-sidebar-active' : '' }}" href="{{ route($child['route_name']) }}">
-                                            <span class="material-symbols-outlined shrink-0 text-[18px]">{{ $child['icon'] }}</span>
-                                            <span class="sidebar-link-text font-label-md text-label-md whitespace-nowrap">{{ $child['title'] }}</span>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 @endif
             @endforeach
         </div>
@@ -160,16 +140,18 @@
             $admin = \Illuminate\Support\Facades\Auth::guard('admin')->user();
         @endphp
         <div class="flex items-center gap-3">
-            @if($admin && $admin->photo_url)
+            @if($admin && !empty($admin->photo_url))
                 <img class="w-10 h-10 rounded-full object-cover border-2 border-primary-container shrink-0 sidebar-bottom-img" src="{{ $admin->photo_url }}" alt="{{ $admin?->name }}"/>
             @else
                 <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center border-2 border-primary-container shrink-0 sidebar-bottom-img">
                     <span class="text-sidebar-active font-bold text-sm">{{ strtoupper(substr($admin?->name ?? 'A', 0, 1)) }}</span>
                 </div>
             @endif
-            <div class="sidebar-bottom-text">
-                <p class="font-label-md text-label-md text-sidebar-active">{{ $admin?->name ?? 'Admin User' }}</p>
-                <p class="text-[10px] font-label-sm text-sidebar-text uppercase">Admin</p>
+            <div class="sidebar-bottom-text overflow-hidden">
+                <p class="font-label-md text-label-md text-sidebar-active truncate">{{ $admin?->name ?? 'Admin User' }}</p>
+                <p class="text-[10px] font-label-sm text-sidebar-text uppercase truncate">
+                    {{ $admin?->roles->first()?->name ?? 'Administrator' }}
+                </p>
             </div>
         </div>
     </div>
@@ -178,78 +160,50 @@
     </button>
 </aside>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        if (typeof window.Echo !== 'undefined') {
-            window.Echo.channel('admin.chat')
-                .listen('.message.sent', (e) => {
-                    const badge = document.getElementById('menu-badge-live-chat');
-                    if (badge) {
-                        let count = parseInt(badge.innerText) || 0;
-                        count++;
-                        badge.innerText = count;
-                        badge.classList.remove('hidden');
-                        
-                        // Play a small notification sound optionally
-                        // new Audio('notification.mp3').play().catch(()=>{});
-                    }
-                });
-        }
-    });
-</script>
-
 <style>
-/* Accordion Grid animation styling */
-.sidebar-group-content {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.sidebar-group-container.is-open .sidebar-group-content {
-    grid-template-rows: 1fr;
-}
-.sidebar-group-container.is-open .chevron-icon {
-    transform: rotate(180deg);
+/* Base transition for smooth collapse */
+aside#sidebar {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+aside#sidebar .sidebar-link-text,
+aside#sidebar .sidebar-bottom-text {
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+aside#sidebar ~ main {
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsed State Styles (Desktop only) */
 @media (min-width: 1024px) {
     aside#sidebar.sidebar-collapsed {
-        width: 70px !important;
+        width: 72px !important;
     }
     aside#sidebar.sidebar-collapsed ~ main {
-        margin-left: 70px !important;
+        margin-left: 72px !important;
     }
     aside#sidebar.sidebar-collapsed .sidebar-group-title,
     aside#sidebar.sidebar-collapsed .sidebar-link-text,
     aside#sidebar.sidebar-collapsed .sidebar-bottom-text,
-    aside#sidebar.sidebar-collapsed .chevron-icon {
+    aside#sidebar.sidebar-collapsed .sidebar-badge {
         display: none !important;
     }
     aside#sidebar.sidebar-collapsed nav {
-        padding: 0;
-        overflow: visible !important;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
     }
-    aside#sidebar.sidebar-collapsed .sidebar-link,
-    aside#sidebar.sidebar-collapsed .sidebar-group-header {
-        justify-content: center;
-        padding-left: 0;
-        padding-right: 0;
-        margin-left: 0;
-        margin-right: 0;
-        width: 100%;
-        gap: 0 !important;
-    }
-    aside#sidebar.sidebar-collapsed .sidebar-group-header .flex {
-        gap: 0 !important;
-    }
-    aside#sidebar.sidebar-collapsed .sidebar-bottom-img,
-    aside#sidebar.sidebar-collapsed .sidebar-logo {
-        display: none;
+    aside#sidebar.sidebar-collapsed .sidebar-link {
+        justify-content: center !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        border-radius: 0.5rem;
     }
     aside#sidebar.sidebar-collapsed .sidebar-bottom {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
         display: flex;
         justify-content: center;
-        padding: 0;
     }
     aside#sidebar.sidebar-collapsed .sidebar-bottom-img {
         margin: 0 auto;
@@ -258,59 +212,7 @@
         transform: rotate(180deg);
     }
     aside#sidebar.sidebar-collapsed .sidebar-toggle-btn {
-        right: -8px;
-    }
-
-    /* Floating Popup menu for collapsed sidebar */
-    aside#sidebar.sidebar-collapsed .sidebar-group-container {
-        position: relative;
-    }
-    aside#sidebar.sidebar-collapsed .sidebar-group-content {
-        display: block !important;
-        position: absolute;
-        left: 100%;
-        top: 0;
-        margin-left: 4px;
-        width: 220px;
-        background-color: var(--color-sidebar-bg);
-        border-radius: 0.5rem;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        max-height: none !important;
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-        overflow: visible;
-        transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
-        transform: translateX(10px);
-        z-index: 100;
-    }
-    aside#sidebar.sidebar-collapsed .sidebar-group-container:hover .sidebar-group-content {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transform: translateX(0);
-    }
-    aside#sidebar.sidebar-collapsed .sidebar-group-content .overflow-hidden {
-        overflow: visible !important;
-    }
-    aside#sidebar.sidebar-collapsed .sidebar-group-content .py-1 {
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-        margin-left: 0 !important;
-        border-left: none !important;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-    }
-    aside#sidebar.sidebar-collapsed .sidebar-group-content .sidebar-link-text {
-        display: inline !important;
-    }
-    aside#sidebar.sidebar-collapsed .sidebar-group-content .sidebar-link {
-        justify-content: flex-start !important;
-        width: auto !important;
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-        gap: 0.5rem !important;
+        right: -12px;
     }
 }
 </style>
@@ -322,59 +224,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const toggleIcon = document.getElementById('sidebarToggleIcon');
     const storageKey = 'admin-sidebar-collapsed';
 
-    function updateClasses() {
-        if (window.innerWidth < 1024) {
-            sidebar.classList.remove('sidebar-collapsed');
-            localStorage.removeItem(storageKey);
-            return;
-        }
-
-        if (localStorage.getItem(storageKey) === 'true') {
+    // Check stored state on load
+    if (localStorage.getItem(storageKey) === 'true') {
+        if (window.innerWidth >= 1024) {
             sidebar.classList.add('sidebar-collapsed');
-            if (toggleIcon) toggleIcon.textContent = 'chevron_right';
         } else {
             sidebar.classList.remove('sidebar-collapsed');
-            if (toggleIcon) toggleIcon.textContent = 'chevron_left';
         }
     }
 
     if (toggleBtn) {
-        toggleBtn.addEventListener('click', function() {
-            if (window.innerWidth < 1024) return;
-            const isCollapsed = localStorage.getItem(storageKey) === 'true';
-            localStorage.setItem(storageKey, isCollapsed ? 'false' : 'true');
-            updateClasses();
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
+            localStorage.setItem(storageKey, isCollapsed);
         });
     }
 
-    window.addEventListener('resize', updateClasses);
-    updateClasses();
-
-    // Accordion Toggle for sidebar groups
-    const groupHeaders = document.querySelectorAll('.sidebar-group-header');
-    groupHeaders.forEach(header => {
-        header.addEventListener('click', function(e) {
-            // Only toggle accordion if sidebar is NOT collapsed
-            if (sidebar.classList.contains('sidebar-collapsed')) {
-                return;
-            }
-            
-            const container = this.closest('.sidebar-group-container');
-            const isOpen = container.classList.contains('is-open');
-            
-            // Close all other groups
-            document.querySelectorAll('.sidebar-group-container').forEach(c => {
-                if (c !== container) {
-                    c.classList.remove('is-open');
-                }
-            });
-
-            if (isOpen) {
-                container.classList.remove('is-open');
-            } else {
-                container.classList.add('is-open');
-            }
-        });
+    // Reset collapse state on smaller screens automatically
+    window.addEventListener('resize', function() {
+        if (window.innerWidth < 1024) {
+            sidebar.classList.remove('sidebar-collapsed');
+        } else if (localStorage.getItem(storageKey) === 'true') {
+            sidebar.classList.add('sidebar-collapsed');
+        }
     });
 });
 </script>

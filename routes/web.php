@@ -15,7 +15,7 @@ Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard'
 
 require __DIR__ . '/web/auth.php';
 
-Route::middleware(['auth:admin', 'admin'])->group(function () {
+Route::middleware(['auth:admin', 'admin', 'permission'])->group(function () {
    
     require __DIR__ . '/web/admin.php';
     require __DIR__ . '/web/product.php';

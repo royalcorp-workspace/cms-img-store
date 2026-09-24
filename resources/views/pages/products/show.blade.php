@@ -182,6 +182,21 @@
                     </p>
                 </div>
 
+                <!-- Tag Produk -->
+                <div class="p-3.5 bg-surface-container-lowest border border-outline-variant/40 rounded-xl space-y-1 md:col-span-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Tag Produk</span>
+                    <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+                        @forelse($product->tags as $ptag)
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                                <span class="material-symbols-outlined text-[14px]">sell</span>
+                                {{ $ptag->name }}
+                            </span>
+                        @empty
+                            <span class="text-xs text-on-surface-variant italic">Belum ada tag yang dipilih</span>
+                        @endforelse
+                    </div>
+                </div>
+
                 <!-- Dimensi & Berat Pengiriman -->
                 <div class="p-3.5 bg-surface-container-lowest border border-outline-variant/40 rounded-xl space-y-1.5 md:col-span-2">
                     <div class="flex items-center justify-between">

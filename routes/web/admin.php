@@ -9,10 +9,16 @@ use App\Http\Controllers\Admin\PermissionController;
 
 Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
 
-Route::get('/users', [UserController::class, 'index'])->name('users.index');
-
 Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
-Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+// Role Management Routes
+Route::resource('roles', RoleController::class);
 
+// Permission Management Routes
 Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
+Route::post('/permissions/sync', [PermissionController::class, 'sync'])->name('permissions.sync');
+
+// User Management Routes
+Route::resource('users', UserController::class);

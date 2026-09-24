@@ -1,31 +1,48 @@
 @extends('layouts.app')
 
-@section('title', 'Role Management')
+@section('title', 'Manajemen Hak Akses & Role')
 
 @section('content')
-<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
     <div>
-        <h1 class="font-headline-xl text-headline-xl text-on-surface">Role Management</h1>
-        <p class="text-body-md text-on-surface-variant">Define and manage access levels across the organization.</p>
+        <h1 class="font-headline-xl text-headline-xl text-on-surface">Manajemen Hak Akses & Role</h1>
+        <p class="text-body-md text-on-surface-variant">Kelola tingkatan otoritas dan batasan akses modul untuk setiap pengguna admin.</p>
     </div>
-    <button class="flex items-center gap-2 bg-primary-container text-white px-6 py-2.5 rounded-lg font-headline-md text-headline-md hover:bg-primary transition-all active:scale-95 shadow-sm">
-        <span class="material-symbols-outlined">add_circle</span>
-        Create Role
-    </button>
+    @can('roles.create')
+        <a href="{{ route('roles.create') }}" class="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg font-headline-md text-headline-md hover:opacity-90 transition-all active:scale-95 shadow-sm">
+            <span class="material-symbols-outlined text-[20px]">add_circle</span>
+            Tambah Role Baru
+        </a>
+    @endcan
 </div>
 
-    @include('layouts.partials.system-submenu')
+@include('layouts.partials.system-submenu')
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-container-gap">
+@if(session('success'))
+    <div class="mb-6 p-4 rounded-xl bg-success/10 border border-success/20 text-success text-body-md flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px]">check_circle</span>
+        <span>{{ session('success') }}</span>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="mb-6 p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-body-md flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px]">error</span>
+        <span>{{ session('error') }}</span>
+    </div>
+@endif
+
+<!-- Metric Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-container-gap mb-8">
     <div class="bg-white p-card-padding rounded-xl shadow-subtle border border-surface-container flex items-center gap-4">
         <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
             <span class="material-symbols-outlined text-[28px]">shield_person</span>
         </div>
         <div>
-            <p class="text-on-surface-variant font-label-md text-label-md">Total Roles</p>
+            <p class="text-on-surface-variant font-label-md text-label-md">Total Role</p>
             <div class="flex items-baseline gap-2">
-                <span class="font-metric-display text-metric-display text-on-surface">12</span>
-                <span class="text-success font-label-sm text-label-sm flex items-center">+2 this month</span>
+                <span class="font-metric-display text-metric-display text-on-surface">{{ $totalRoles }}</span>
+                <span class="text-on-surface-variant text-label-sm">peran terdaftar</span>
             </div>
         </div>
     </div>
@@ -34,186 +51,148 @@
             <span class="material-symbols-outlined text-[28px]">group</span>
         </div>
         <div>
-            <p class="text-on-surface-variant font-label-md text-label-md">Active Users</p>
+            <p class="text-on-surface-variant font-label-md text-label-md">Pengguna dengan Role</p>
             <div class="flex items-baseline gap-2">
-                <span class="font-metric-display text-metric-display text-on-surface">1,284</span>
-                <span class="text-success font-label-sm text-label-sm flex items-center">+12%</span>
+                <span class="font-metric-display text-metric-display text-on-surface">{{ $totalUsers }}</span>
+                <span class="text-success font-label-sm text-label-sm">admin aktif</span>
             </div>
         </div>
     </div>
     <div class="bg-white p-card-padding rounded-xl shadow-subtle border border-surface-container flex items-center gap-4">
         <div class="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center text-warning">
-            <span class="material-symbols-outlined text-[28px]">recent_actors</span>
+            <span class="material-symbols-outlined text-[28px]">key</span>
         </div>
         <div>
-            <p class="text-on-surface-variant font-label-md text-label-md">Recently Added</p>
-            <span class="font-metric-display text-metric-display text-on-surface">Warehouse Manager</span>
+            <p class="text-on-surface-variant font-label-md text-label-md">Total Permissions</p>
+            <div class="flex items-baseline gap-2">
+                <span class="font-metric-display text-metric-display text-on-surface">{{ $totalPermissions }}</span>
+                <span class="text-on-surface-variant text-label-sm">fitur & route</span>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- Table Card -->
 <div class="bg-white rounded-xl shadow-subtle border border-surface-container overflow-hidden">
-    <div class="p-6 border-b border-surface-container flex justify-between items-center bg-surface-container-low/30">
-        <h3 class="font-headline-md text-headline-md text-on-surface">System Roles</h3>
-        <div class="flex gap-2">
-            <button class="px-4 py-1.5 border border-outline-variant rounded-md font-label-md text-label-md text-on-surface-variant hover:bg-surface-gray transition-colors">
-                Export PDF
-            </button>
-            <button class="px-4 py-1.5 border border-outline-variant rounded-md font-label-md text-label-md text-on-surface-variant hover:bg-surface-gray transition-colors">
-                Filter
-            </button>
+    <div class="p-6 border-b border-surface-container flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface-container-low/30">
+        <div>
+            <h3 class="font-headline-md text-headline-md text-on-surface">Daftar Role Sistem</h3>
+            <p class="text-body-sm text-on-surface-variant">Klik detail atau edit untuk mengelola hak akses per modul.</p>
         </div>
+        <form method="GET" action="{{ route('roles.index') }}" class="flex items-center gap-2 w-full sm:w-auto">
+            <div class="relative w-full sm:w-64">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                <input type="text" name="search" value="{{ $search }}" placeholder="Cari role..." class="w-full pl-9 pr-3 py-1.5 border border-outline-variant rounded-lg text-body-sm focus:outline-none focus:border-primary">
+            </div>
+            @if($search)
+                <a href="{{ route('roles.index') }}" class="px-3 py-1.5 border border-outline-variant text-on-surface-variant rounded-lg text-body-sm hover:bg-surface-container">Reset</a>
+            @endif
+        </form>
     </div>
+
     <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
             <thead>
-                <tr class="bg-surface-gray/50 border-b border-surface-container">
-                    <th class="px-6 py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Role Name</th>
-                    <th class="px-6 py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Description</th>
-                    <th class="px-6 py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-center">Users</th>
-                    <th class="px-6 py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Date Created</th>
-                    <th class="px-6 py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-center">Actions</th>
+                <tr class="bg-surface-container-low/50 text-on-surface-variant border-b border-surface-container font-label-md text-label-md">
+                    <th class="px-6 py-3.5">Nama Role</th>
+                    <th class="px-6 py-3.5">Deskripsi</th>
+                    <th class="px-6 py-3.5 text-center">Level Otoritas</th>
+                    <th class="px-6 py-3.5 text-center">Hak Akses Aktif</th>
+                    <th class="px-6 py-3.5 text-center">Admin Terpasang</th>
+                    <th class="px-6 py-3.5 text-center">Tipe Role</th>
+                    <th class="px-6 py-3.5 text-right">Aksi</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-surface-container">
-                <tr class="hover:bg-surface-container-low/20 transition-colors group">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-2 h-2 rounded-full bg-primary"></div>
-                            <span class="font-headline-md text-headline-md text-on-surface">Super Admin</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 max-w-xs">
-                        <p class="font-body-md text-body-md text-on-surface-variant truncate">Full system access with no restrictions.</p>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md">3</span>
-                    </td>
-                    <td class="px-6 py-4 font-body-md text-body-md text-on-surface-variant">Oct 12, 2023</td>
-                    <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button class="p-1.5 text-tertiary hover:bg-tertiary/10 rounded transition-colors" title="Manage Permissions"><span class="material-symbols-outlined">rule</span></button>
-                            <button class="p-1.5 text-on-surface-variant hover:bg-surface-gray rounded transition-colors" title="Edit Role"><span class="material-symbols-outlined">edit</span></button>
-                            <button class="p-1.5 text-danger hover:bg-danger/10 rounded transition-colors" title="Delete Role"><span class="material-symbols-outlined">delete</span></button>
-                        </div>
-                    </td>
-                </tr>
-                <tr class="hover:bg-surface-container-low/20 transition-colors group">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-2 h-2 rounded-full bg-success"></div>
-                            <span class="font-headline-md text-headline-md text-on-surface">Editor</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 max-w-xs">
-                        <p class="font-body-md text-body-md text-on-surface-variant truncate">Manage products, categories, and inventory details.</p>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md">24</span>
-                    </td>
-                    <td class="px-6 py-4 font-body-md text-body-md text-on-surface-variant">Nov 05, 2023</td>
-                    <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button class="p-1.5 text-tertiary hover:bg-tertiary/10 rounded transition-colors" title="Manage Permissions"><span class="material-symbols-outlined">rule</span></button>
-                            <button class="p-1.5 text-on-surface-variant hover:bg-surface-gray rounded transition-colors" title="Edit Role"><span class="material-symbols-outlined">edit</span></button>
-                            <button class="p-1.5 text-danger hover:bg-danger/10 rounded transition-colors" title="Delete Role"><span class="material-symbols-outlined">delete</span></button>
-                        </div>
-                    </td>
-                </tr>
-                <tr class="hover:bg-surface-container-low/20 transition-colors group">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-2 h-2 rounded-full bg-warning"></div>
-                            <span class="font-headline-md text-headline-md text-on-surface">Warehouse Manager</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 max-w-xs">
-                        <p class="font-body-md text-body-md text-on-surface-variant truncate">Focus on logistics, stock levels, and order fulfillment.</p>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md">8</span>
-                    </td>
-                    <td class="px-6 py-4 font-body-md text-body-md text-on-surface-variant">Jan 18, 2024</td>
-                    <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button class="p-1.5 text-tertiary hover:bg-tertiary/10 rounded transition-colors" title="Manage Permissions"><span class="material-symbols-outlined">rule</span></button>
-                            <button class="p-1.5 text-on-surface-variant hover:bg-surface-gray rounded transition-colors" title="Edit Role"><span class="material-symbols-outlined">edit</span></button>
-                            <button class="p-1.5 text-danger hover:bg-danger/10 rounded transition-colors" title="Delete Role"><span class="material-symbols-outlined">delete</span></button>
-                        </div>
-                    </td>
-                </tr>
-                <tr class="hover:bg-surface-container-low/20 transition-colors group">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-2 h-2 rounded-full bg-tertiary"></div>
-                            <span class="font-headline-md text-headline-md text-on-surface">Support</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 max-w-xs">
-                        <p class="font-body-md text-body-md text-on-surface-variant truncate">Handle customer inquiries and order status tracking.</p>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md">15</span>
-                    </td>
-                    <td class="px-6 py-4 font-body-md text-body-md text-on-surface-variant">Feb 02, 2024</td>
-                    <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button class="p-1.5 text-tertiary hover:bg-tertiary/10 rounded transition-colors" title="Manage Permissions"><span class="material-symbols-outlined">rule</span></button>
-                            <button class="p-1.5 text-on-surface-variant hover:bg-surface-gray rounded transition-colors" title="Edit Role"><span class="material-symbols-outlined">edit</span></button>
-                            <button class="p-1.5 text-danger hover:bg-danger/10 rounded transition-colors" title="Delete Role"><span class="material-symbols-outlined">delete</span></button>
-                        </div>
-                    </td>
-                </tr>
+            <tbody class="divide-y divide-surface-container text-body-md text-on-surface">
+                @forelse($roles as $role)
+                    <tr class="hover:bg-surface-container-low/30 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-lg {{ $role->is_system ? 'bg-primary/10 text-primary' : 'bg-surface-container text-on-surface-variant' }} flex items-center justify-center shrink-0">
+                                    <span class="material-symbols-outlined text-[20px]">
+                                        {{ $role->is_system ? 'verified_user' : 'group' }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <strong class="font-bold block text-on-surface">{{ $role->name }}</strong>
+                                    <span class="text-xs font-mono text-on-surface-variant">{{ $role->slug }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 max-w-xs text-on-surface-variant truncate">
+                            {{ $role->description ?: '-' }}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-2.5 py-1 bg-surface-container rounded-full text-xs font-semibold font-mono text-on-surface">
+                                Level {{ $role->level }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold font-mono">
+                                {{ $role->permissions_count }} Akses
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="text-xs font-medium text-on-surface">
+                                {{ $role->admins_count }} Pengguna
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            @if($role->is_system)
+                                <span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 bg-warning/10 text-warning rounded-full font-medium">
+                                    <span class="material-symbols-outlined text-[13px]">lock</span>
+                                    Sistem
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 bg-success/10 text-success rounded-full font-medium">
+                                    <span class="material-symbols-outlined text-[13px]">tune</span>
+                                    Kustom
+                                </span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-1.5">
+                                @can('roles.show')
+                                    <a href="{{ route('roles.show', $role->id) }}" class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="Lihat Detail">
+                                        <span class="material-symbols-outlined text-[18px]">visibility</span>
+                                    </a>
+                                @endcan
+                                @can('roles.edit')
+                                    <a href="{{ route('roles.edit', $role->id) }}" class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="Edit Role">
+                                        <span class="material-symbols-outlined text-[18px]">edit</span>
+                                    </a>
+                                @endcan
+                                @can('roles.destroy')
+                                    @if(!$role->is_system && !in_array($role->slug, ['admin', 'super-admin']))
+                                        <form method="POST" action="{{ route('roles.destroy', $role->id) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus role \'{{ $role->name }}\'?')" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="p-1.5 text-on-surface-variant hover:text-danger hover:bg-danger/10 rounded-lg transition-colors" title="Hapus Role">
+                                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endcan
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-on-surface-variant">
+                            <span class="material-symbols-outlined text-[48px] text-outline-variant mb-2 block">shield_person</span>
+                            <p class="font-medium text-body-lg">Tidak ada data role ditemukan.</p>
+                            <p class="text-body-sm text-on-surface-variant mt-1">Coba gunakan kata kunci pencarian lain atau buat role baru.</p>
+                        </td>
+                    </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
-    <div class="p-6 border-t border-surface-container flex items-center justify-between bg-surface-container-low/10">
-        <p class="font-body-md text-body-md text-on-surface-variant">Showing 1 to 4 of 12 roles</p>
-        <div class="flex gap-1">
-            <button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant hover:bg-surface-gray disabled:opacity-30" disabled="">
-                <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-            </button>
-            <button class="w-8 h-8 flex items-center justify-center rounded bg-primary-container text-on-primary-container font-label-md font-bold text-label-sm">1</button>
-            <button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant hover:bg-surface-gray font-label-sm">2</button>
-            <button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant hover:bg-surface-gray font-label-sm">3</button>
-            <button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant hover:bg-surface-gray">
-                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-            </button>
-        </div>
-    </div>
-</div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-container-gap">
-    <div class="relative overflow-hidden bg-primary-container text-white p-8 rounded-xl flex items-center justify-between">
-        <div class="relative z-10 max-w-sm">
-            <h4 class="font-headline-lg text-headline-lg mb-2">Need a custom workflow?</h4>
-            <p class="font-body-md opacity-90 mb-4">You can combine existing permissions to create a hybrid role specifically for seasonal contractors.</p>
-            <button class="bg-white text-primary px-6 py-2 rounded-lg font-label-md hover:bg-surface-bright transition-colors">
-                Explore Permissions
-            </button>
+    @if($roles->hasPages())
+        <div class="p-4 border-t border-surface-container flex justify-between items-center">
+            {{ $roles->links() }}
         </div>
-        <div class="absolute -right-10 -bottom-10 opacity-20 transform rotate-12 pointer-events-none">
-            <span class="material-symbols-outlined text-[200px]" style="font-variation-settings: 'FILL' 1;">admin_panel_settings</span>
-        </div>
-    </div>
-    <div class="bg-white p-8 rounded-xl border border-outline-variant shadow-subtle flex flex-col justify-center">
-        <h4 class="font-headline-lg text-headline-lg text-on-surface mb-4">Role Integrity Logs</h4>
-        <div class="space-y-4">
-            <div class="flex items-start gap-4">
-                <div class="mt-1 w-2 h-2 rounded-full bg-success"></div>
-                <div>
-                    <p class="font-label-md text-label-md text-on-surface">Super Admin modified Editor permissions</p>
-                    <p class="font-label-sm text-label-sm text-on-surface-variant">2 hours ago</p>
-                </div>
-            </div>
-            <div class="flex items-start gap-4">
-                <div class="mt-1 w-2 h-2 rounded-full bg-primary"></div>
-                <div>
-                    <p class="font-label-md text-label-md text-on-surface">New role "Warehouse Manager" successfully created</p>
-                    <p class="font-label-sm text-label-sm text-on-surface-variant">1 day ago</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    @endif
 </div>
 @endsection

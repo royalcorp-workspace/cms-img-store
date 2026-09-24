@@ -146,10 +146,14 @@
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-medium">Rp{{ number_format($order->total, 2, ',', '.') }}</td>
                             <td class="px-gutter py-4">
                                 <div class="flex gap-2 justify-center">
-                                    <button type="button" onclick="openResiModal('{{ $order->id }}', '{{ ($order->resi || $order->delivery_status) ? 'tracking' : 'manual' }}')" class="text-on-surface-variant hover:text-primary transition-colors" title="Resi & Log Pengiriman">
-                                        <span class="material-symbols-outlined text-[18px]">local_shipping</span>
-                                    </button>
-                                    <a href="{{ route('orders.show', $order->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
+                                    @can('orders.biteship.track')
+                                        <button type="button" onclick="openResiModal('{{ $order->id }}', '{{ ($order->resi || $order->delivery_status) ? 'tracking' : 'manual' }}')" class="text-on-surface-variant hover:text-primary transition-colors" title="Resi & Log Pengiriman">
+                                            <span class="material-symbols-outlined text-[18px]">local_shipping</span>
+                                        </button>
+                                    @endcan
+                                    @can('orders.show')
+                                        <a href="{{ route('orders.show', $order->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
+                                    @endcan
                                 </div>
                             </td>
                         </tr>
