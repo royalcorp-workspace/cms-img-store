@@ -13,18 +13,24 @@
             </nav>
         </div>
         <div class="flex items-center gap-2.5">
-            <a href="{{ route('products.export', request()->query()) }}" target="_blank" rel="noopener noreferrer" data-no-loader="true" class="flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-md font-label-md text-label-md transition-all shadow-xs" title="Export seluruh produk atau hasil filter ke file Excel Item Master">
-                <span class="material-symbols-outlined text-[18px]">download</span>
-                <span>Export Excel</span>
-            </a>
-            <a href="{{ route('products.import.form') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-md font-label-md text-label-md transition-all border border-outline-variant/30">
-                <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
-                Bulk Import
-            </a>
-            <a href="{{ route('products.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
-                <span class="material-symbols-outlined text-[18px]">add</span>
-                Create Product
-            </a>
+            @can('products.export')
+                <a href="{{ route('products.export', request()->query()) }}" target="_blank" rel="noopener noreferrer" data-no-loader="true" class="flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-md font-label-md text-label-md transition-all shadow-xs" title="Export seluruh produk atau hasil filter ke file Excel Item Master">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    <span>Export Excel</span>
+                </a>
+            @endcan
+            @can('products.import.form')
+                <a href="{{ route('products.import.form') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-md font-label-md text-label-md transition-all border border-outline-variant/30">
+                    <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+                    Bulk Import
+                </a>
+            @endcan
+            @can('products.create')
+                <a href="{{ route('products.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all">
+                    <span class="material-symbols-outlined text-[18px]">add</span>
+                    Create Product
+                </a>
+            @endcan
         </div>
     </div>
 
@@ -54,12 +60,20 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="w-full sm:w-44">
+                        <select name="tag_id" class="w-full h-10 px-3 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-sm bg-white text-on-surface cursor-pointer transition-all" onchange="this.form.submit()">
+                            <option value="">Semua Tag</option>
+                            @foreach($tags ?? [] as $tag)
+                                <option value="{{ $tag->id }}" {{ request('tag_id') == $tag->id ? 'selected' : '' }}>{{ $tag->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <button type="submit" class="h-10 px-4 bg-primary text-white hover:bg-primary/90 rounded-lg text-sm font-medium transition-colors shadow-sm inline-flex items-center gap-1.5">
+                        <button type="submit" class="h-10 px-4 bg-primary text-white hover:bg-primary/90 rounded-lg text-sm font-medium transition-colors shadow-sm inline-flex items-center gap-1.5 cursor-pointer">
                             <span class="material-symbols-outlined text-[18px]">filter_list</span>
                             <span>Filter</span>
                         </button>
-                        @if(request()->hasAny(['search', 'category_id', 'brand_id']))
+                        @if(request()->hasAny(['search', 'category_id', 'brand_id', 'tag_id']))
                             <a href="{{ route('products.index') }}" class="h-10 px-3 bg-danger/10 text-danger hover:bg-danger/20 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1" title="Reset Filters">
                                 <span class="material-symbols-outlined text-[18px]">restart_alt</span>
                                 <span class="hidden sm:inline">Reset</span>
@@ -141,9 +155,15 @@
                             </td>
                             <td class="px-6 py-4 text-on-surface-variant">
                                 <div class="flex items-center gap-1.5 justify-center">
-                                    <a href="{{ route('products.show', $product->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
-                                    <a href="{{ route('products.edit', $product->id) }}" class="text-on-surface-variant hover:text-secondary transition-colors" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
-                                    <button class="text-on-surface-variant hover:text-danger transition-colors" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                                    @can('products.show')
+                                        <a href="{{ route('products.show', $product->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
+                                    @endcan
+                                    @can('products.edit')
+                                        <a href="{{ route('products.edit', $product->id) }}" class="text-on-surface-variant hover:text-secondary transition-colors" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
+                                    @endcan
+                                    @can('products.destroy')
+                                        <button class="text-on-surface-variant hover:text-danger transition-colors" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                                    @endcan
                                 </div>
                             </td>
                         </tr>

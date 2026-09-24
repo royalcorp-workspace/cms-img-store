@@ -96,9 +96,7 @@ class CategoryController extends Controller
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
 
-        if (empty($validated['slug'])) {
-            $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
-        }
+        $validated['slug'] = \Illuminate\Support\Str::slug(!empty($validated['slug']) ? $validated['slug'] : $validated['name']);
         $validated['is_active'] = $request->has('status') ? (bool)$request->input('status') : true;
         $validated['has_warranty'] = $request->has('has_warranty') ? (bool)$request->input('has_warranty') : true;
         $validated['sort_order'] = (int)($validated['sort_order'] ?? 0);
@@ -176,9 +174,7 @@ class CategoryController extends Controller
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
 
-        if (empty($validated['slug'])) {
-            $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
-        }
+        $validated['slug'] = \Illuminate\Support\Str::slug(!empty($validated['slug']) ? $validated['slug'] : $validated['name']);
         $validated['is_active'] = $request->has('status') ? (bool)$request->input('status') : false;
         $validated['has_warranty'] = $request->has('has_warranty') ? (bool)$request->input('has_warranty') : false;
         $validated['sort_order'] = (int)($validated['sort_order'] ?? 0);

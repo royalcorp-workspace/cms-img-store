@@ -25,6 +25,8 @@
                 <tr>
                     <th class="px-6 py-4">Title</th>
                     <th class="px-6 py-4">Section Key</th>
+                    <th class="px-6 py-4">Platform</th>
+                    <th class="px-6 py-4">Tipe Konten</th>
                     <th class="px-6 py-4">Sort Order</th>
                     <th class="px-6 py-4 text-center">Visibility</th>
                     <th class="px-6 py-4 text-center">Actions</th>
@@ -32,9 +34,40 @@
             </thead>
             <tbody class="divide-y divide-outline-variant">
                 @forelse($sections as $section)
+                @php
+                    $sMeta = is_array($section->meta) ? $section->meta : [];
+                    $sPlatform = $sMeta['platform'] ?? 'all';
+                    $sContentType = $sMeta['content_type'] ?? 'product';
+                @endphp
                 <tr class="hover:bg-surface-container-lowest transition-colors">
                     <td class="px-6 py-4 font-bold">{{ $section->title }}</td>
-                    <td class="px-6 py-4">{{ $section->section_key }}</td>
+                    <td class="px-6 py-4 font-mono text-xs text-on-surface-variant">{{ $section->section_key }}</td>
+                    <td class="px-6 py-4">
+                        @if($sPlatform === 'web')
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                                <span class="material-symbols-outlined text-[14px]">desktop_windows</span> Web Saja
+                            </span>
+                        @elseif($sPlatform === 'mobile')
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold">
+                                <span class="material-symbols-outlined text-[14px]">smartphone</span> Mobile Saja
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs font-semibold">
+                                <span class="material-symbols-outlined text-[14px]">devices</span> Semua
+                            </span>
+                        @endif
+                    </td>
+                    <td class="px-6 py-4">
+                        @if($sContentType === 'brand')
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">Brand</span>
+                        @elseif($sContentType === 'category')
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">Kategori</span>
+                        @elseif($sContentType === 'combination')
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">Kombinasi</span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200">Produk</span>
+                        @endif
+                    </td>
                     <td class="px-6 py-4">
                         <input type="number" 
                                value="{{ $section->sort_order }}" 
@@ -63,7 +96,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-6 py-8 text-center text-on-surface-variant">
+                    <td colspan="7" class="px-6 py-8 text-center text-on-surface-variant">
                         No homepage sections found. Click "Add Section" to create one.
                     </td>
                 </tr>

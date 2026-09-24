@@ -14,14 +14,18 @@
             </nav>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('inventory.import.form') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-lg text-sm font-medium transition-all border border-outline-variant/30">
-                <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
-                Import Incoming
-            </a>
-            <a href="{{ route('inventory.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all rounded-lg shadow-sm">
-                <span class="material-symbols-outlined text-[18px]">add</span>
-                Tambah Stok
-            </a>
+            @can('inventory.import.form')
+                <a href="{{ route('inventory.import.form') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-lg text-sm font-medium transition-all border border-outline-variant/30">
+                    <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+                    Import Incoming
+                </a>
+            @endcan
+            @can('inventory.create')
+                <a href="{{ route('inventory.create') }}" class="flex items-center gap-2 px-5 py-2 bg-primary text-white font-label-md hover:opacity-90 transition-all rounded-lg shadow-sm">
+                    <span class="material-symbols-outlined text-[18px]">add</span>
+                    Tambah Stok
+                </a>
+            @endcan
         </div>
     </div>
 

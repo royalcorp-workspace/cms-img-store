@@ -10,6 +10,8 @@ use App\Models\Product\Brand;
 use App\Models\Product\Category;
 use App\Models\Product\Variant;
 use App\Models\Product\Tag;
+use App\Models\Product\ProductTag;
+use App\Models\Product\TagRelation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -47,19 +49,28 @@ class ProductController extends Controller
             $query->where('courier_type', $courierType);
         }
 
+        if ($tagId = $request->query('tag_id')) {
+            $query->whereHas('tags', function ($q) use ($tagId) {
+                $q->where('product_tags.id', $tagId);
+            });
+        }
+
         $products = $query->latest()->paginate(15)->appends($request->query());
         
         $categories = Category::orderBy('name')->get();
         $brands = Brand::orderBy('name')->get();
+        $tags = \App\Models\Product\ProductTag::where('deleted', false)->orderBy('name')->get();
         
-        return view('pages.products.index', compact('products', 'categories', 'brands'));
+        return view('pages.products.index', compact('products', 'categories', 'brands', 'tags'));
     }
 
     public function create()
     {
         $product = new Product();
         $allProducts = Product::orderBy('name')->get();
-        return view('pages.products.create', compact('product', 'allProducts'));
+        $tags = ProductTag::where('deleted', false)->orderBy('name')->get();
+        $selectedTagIds = [];
+        return view('pages.products.create', compact('product', 'allProducts', 'tags', 'selectedTagIds'));
     }
 
     public function store(Request $request)
@@ -115,6 +126,8 @@ class ProductController extends Controller
             'status' => 'boolean',
             'suggested_products' => 'nullable|array',
             'suggested_products.*' => 'exists:products,id',
+            'tags' => 'nullable|array',
+            'tags.*' => 'nullable|string|exists:product_tags,id',
             'colors' => 'nullable|array',
             'colors.*.color_name' => 'nullable|string|max:255',
             'colors.*.color_code' => 'nullable|string|max:255',
@@ -157,6 +170,16 @@ class ProductController extends Controller
             $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
             $validated['show_on_web'] = $request->has('show_on_web') ? (bool)$request->input('show_on_web') : true;
             $product = Product::create($validated);
+
+            if ($request->has('tags')) {
+                $tagIds = is_array($request->tags) ? array_filter($request->tags) : [];
+                foreach ($tagIds as $tagId) {
+                    TagRelation::create([
+                        'product_id' => $product->id,
+                        'tag_id' => $tagId,
+                    ]);
+                }
+            }
 
             if (!empty($validated['thumbnail'])) {
                 \Illuminate\Support\Facades\Log::channel('media')->info('Product thumbnail saved to S3 path', [
@@ -273,15 +296,17 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $product = Product::with(['variants', 'colors', 'category', 'brand', 'images', 'suggestedProducts'])->findOrFail($id);
+        $product = Product::with(['variants', 'colors', 'category', 'brand', 'images', 'suggestedProducts', 'tags'])->findOrFail($id);
         return view('pages.products.show', compact('product'));
     }
 
     public function edit($id)
     {
-        $product = Product::with('variants', 'colors', 'suggestedProducts', 'images')->findOrFail($id);
+        $product = Product::with('variants', 'colors', 'suggestedProducts', 'images', 'tags')->findOrFail($id);
         $allProducts = Product::where('id', '!=', $id)->orderBy('name')->get();
-        return view('pages.products.create', compact('product', 'allProducts'));
+        $tags = ProductTag::where('deleted', false)->orderBy('name')->get();
+        $selectedTagIds = $product->tags->pluck('id')->toArray();
+        return view('pages.products.create', compact('product', 'allProducts', 'tags', 'selectedTagIds'));
     }
 
     public function update(Request $request, $id)
@@ -336,6 +361,8 @@ class ProductController extends Controller
             'show_on_web' => 'nullable|boolean',
             'category_id' => 'nullable|string|exists:product_category,id',
             'brand_id' => 'nullable|string|exists:brands,id',
+            'tags' => 'nullable|array',
+            'tags.*' => 'nullable|string|exists:product_tags,id',
             'colors' => 'nullable|array',
             'colors.*.id' => 'nullable|string|exists:product_colors,id',
             'colors.*.color_name' => 'nullable|string|max:255',
@@ -558,6 +585,27 @@ class ProductController extends Controller
             } else {
                 \App\Models\Product\Image::where('product_id', $product->id)->whereNotNull('variant_id')->delete();
                 \App\Models\Product\Variant::where('product_id', $product->id)->delete();
+            }
+
+            if ($request->has('tags') || $request->ajax() || $request->wantsJson()) {
+                $submittedTagIds = is_array($request->tags) ? array_filter($request->tags) : [];
+                $existingRelations = TagRelation::where('product_id', $product->id)->get();
+                $existingTagIds = $existingRelations->pluck('tag_id')->toArray();
+
+                $toDelete = array_diff($existingTagIds, $submittedTagIds);
+                if (!empty($toDelete)) {
+                    TagRelation::where('product_id', $product->id)
+                        ->whereIn('tag_id', $toDelete)
+                        ->delete();
+                }
+
+                $toInsert = array_diff($submittedTagIds, $existingTagIds);
+                foreach ($toInsert as $tId) {
+                    TagRelation::create([
+                        'product_id' => $product->id,
+                        'tag_id' => $tId,
+                    ]);
+                }
             }
 
             \Log::channel('product')->info("Product updated successfully: " . $product->id);
