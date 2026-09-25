@@ -13,6 +13,15 @@ Route::get('/products/import/template', [ProductController::class, 'importTempla
 Route::get('/products/export', [ProductController::class, 'export'])->name('products.export');
 Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
 Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+
+use App\Http\Controllers\Product\ProductDisplayWebController;
+Route::get('/products/display-web', [ProductDisplayWebController::class, 'index'])->name('products.display-web.index');
+Route::post('/products/display-web/reorder', [ProductDisplayWebController::class, 'reorder'])->name('products.display-web.reorder');
+Route::post('/products/display-web/reorder-suggestions', [ProductDisplayWebController::class, 'reorderSuggestions'])->name('products.display-web.reorder-suggestions');
+Route::post('/products/display-web/add-suggestion', [ProductDisplayWebController::class, 'addSuggestion'])->name('products.display-web.add-suggestion');
+Route::post('/products/display-web/remove-suggestion', [ProductDisplayWebController::class, 'removeSuggestion'])->name('products.display-web.remove-suggestion');
+Route::post('/products/display-web/toggle-visibility', [ProductDisplayWebController::class, 'toggleVisibility'])->name('products.display-web.toggle-visibility');
+
 Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
 Route::get('/products/{id}/edit', [ProductController::class, 'edit'])->name('products.edit');
 Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');

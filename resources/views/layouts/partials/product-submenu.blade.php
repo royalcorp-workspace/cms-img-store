@@ -1,7 +1,10 @@
 <div class="flex border-b border-outline-variant mb-6 overflow-x-auto">
     @can('products.index')
-        <a href="{{ route('products.index') }}" class="{{ request()->routeIs('products.*') && !request()->routeIs('product-suggestions.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Product</a>
+        <a href="{{ route('products.index') }}" class="{{ (request()->routeIs('products.*') && !request()->routeIs('products.display-web.*') && !request()->routeIs('product-suggestions.*')) ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Product</a>
     @endcan
+    @canany(['products.index', 'products.display-web.index'])
+        <a href="{{ route('products.display-web.index') }}" class="{{ request()->routeIs('products.display-web.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Display Web</a>
+    @endcanany
     @can('categories.index')
         <a href="{{ route('categories.index') }}" class="{{ request()->routeIs('categories.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Category</a>
     @endcan
