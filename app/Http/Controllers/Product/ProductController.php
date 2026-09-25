@@ -151,7 +151,12 @@ class ProductController extends Controller
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
             'variants.*.sort_order' => 'nullable|integer|min:0',
-            'variants.*.status' => 'boolean',
+        ], [
+            'name.required' => 'Nama produk wajib diisi.',
+            'category_id.required' => 'Kategori produk wajib dipilih.',
+            'category_id.exists' => 'Kategori yang dipilih tidak valid.',
+            'brand_id.required' => 'Brand wajib dipilih.',
+            'brand_id.exists' => 'Brand yang dipilih tidak valid.',
         ]);
 
         try {
@@ -387,8 +392,10 @@ class ProductController extends Controller
             'variants.*.package_weight' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
-            'variants.*.sort_order' => 'nullable|integer|min:0',
-            'variants.*.status' => 'boolean',
+        ], [
+            'name.required' => 'Nama produk wajib diisi.',
+            'category_id.exists' => 'Kategori yang dipilih tidak valid.',
+            'brand_id.exists' => 'Brand yang dipilih tidak valid.',
         ]);
 
         try {
