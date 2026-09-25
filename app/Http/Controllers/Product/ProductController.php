@@ -591,17 +591,18 @@ class ProductController extends Controller
                     }
                 }
 
-                // Delete removed variants and their images
+                // Soft delete removed variants and their images to preserve foreign key constraints
                 $deletedVariants = \App\Models\Product\Variant::where('product_id', $product->id)
+                    ->where('deleted', false)
                     ->whereNotIn('id', $submittedVariantIds)
                     ->get();
                 foreach ($deletedVariants as $delV) {
                     \App\Models\Product\Image::where('variant_id', $delV->id)->delete();
-                    $delV->delete();
+                    $delV->update(['deleted' => true]);
                 }
-            } else {
+            } elseif ($request->has('variants') && is_array($request->variants) && empty($request->variants)) {
                 \App\Models\Product\Image::where('product_id', $product->id)->whereNotNull('variant_id')->delete();
-                \App\Models\Product\Variant::where('product_id', $product->id)->delete();
+                \App\Models\Product\Variant::where('product_id', $product->id)->update(['deleted' => true]);
             }
 
             if ($request->has('tags') || $request->ajax() || $request->wantsJson()) {

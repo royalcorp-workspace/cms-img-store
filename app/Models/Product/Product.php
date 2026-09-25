@@ -259,7 +259,7 @@ class Product extends Model
 
     public function variants(): HasMany
     {
-        return $this->hasMany(Variant::class, 'product_id');
+        return $this->hasMany(Variant::class, 'product_id')->where('deleted', false);
     }
 
     public function colors(): HasMany
