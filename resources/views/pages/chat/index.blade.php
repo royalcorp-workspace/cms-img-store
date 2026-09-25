@@ -164,8 +164,10 @@
                 }
                 // Sort ascending chronologically with tiebreaker
                 res.data.sort((a, b) => {
-                    const diff = new Date(a.created_at) - new Date(b.created_at);
-                    return diff !== 0 ? diff : ((a.id || 0) - (b.id || 0));
+                    const timeA = new Date(a.created_at).getTime() || 0;
+                    const timeB = new Date(b.created_at).getTime() || 0;
+                    if (timeA !== timeB) return timeA - timeB;
+                    return String(a.id || '').localeCompare(String(b.id || ''));
                 });
                 res.data.forEach(msg => appendMessage(msg));
                 scrollToBottom();
@@ -184,7 +186,7 @@
         const div = document.createElement('div');
         div.id = 'msg-' + msg.id;
         div.dataset.timestamp = new Date(msg.created_at).getTime() || 0;
-        div.dataset.id = msg.id || 0;
+        div.dataset.id = String(msg.id || '');
         div.className = `flex flex-col max-w-[80%] ${isMe ? 'self-end items-end' : 'self-start items-start'}`;
         
         const bubble = document.createElement('div');
@@ -198,17 +200,17 @@
         div.appendChild(bubble);
         div.appendChild(time);
 
-        // Deterministic chronological insertion
+        // Deterministic chronological insertion (ASC)
         const existingMessages = Array.from(list.children).filter(c => c.id && c.id.startsWith('msg-'));
         let inserted = false;
         for (let i = existingMessages.length - 1; i >= 0; i--) {
             const el = existingMessages[i];
             const itemTime = parseInt(el.dataset.timestamp || '0', 10);
-            const itemId = parseInt(el.dataset.id || '0', 10);
+            const itemId = String(el.dataset.id || '');
             const currentItemTime = parseInt(div.dataset.timestamp, 10);
-            const currentItemId = parseInt(div.dataset.id, 10);
+            const currentItemId = String(div.dataset.id || '');
 
-            if (currentItemTime > itemTime || (currentItemTime === itemTime && currentItemId >= itemId)) {
+            if (currentItemTime > itemTime || (currentItemTime === itemTime && currentItemId.localeCompare(itemId) >= 0)) {
                 el.after(div);
                 inserted = true;
                 break;

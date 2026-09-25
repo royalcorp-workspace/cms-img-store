@@ -166,6 +166,27 @@
         <input type="hidden" name="variants" id="variantsInput" value="">
         <input type="hidden" name="colors" id="colorsInput" value="{{ json_encode($colorData) }}">
 
+        <!-- Draft Recovery Banner -->
+        <div id="draftRecoveryPrompt" class="hidden w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[24px]">history_edu</span>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-amber-900">Ditemukan draf pengisian sebelumnya</h4>
+                    <p class="text-xs text-amber-700" id="draftTimestampText">Tersimpan: -</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <button type="button" onclick="discardDraft()" class="px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-amber-800 text-xs font-semibold hover:bg-amber-100 transition-colors shadow-2xs">
+                    Hapus Draft / Mulai Baru
+                </button>
+                <button type="button" onclick="applyDraft()" class="px-3.5 py-1.5 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 shadow-2xs transition-colors flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[16px]">restore</span> Lanjutkan Draft
+                </button>
+            </div>
+        </div>
+
         <!-- 1. INFORMASI DASAR PRODUK & FOTO UTAMA -->
         <div class="w-full bg-white rounded-2xl shadow-sm border border-outline-variant/30 p-6 space-y-6">
             <div class="border-b border-outline-variant/20 pb-3">
@@ -222,7 +243,7 @@
                     <!-- Brand -->
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                            Brand / Merek
+                            Brand / Merek <span class="text-danger">*</span>
                         </label>
                         <select name="brand_id" id="brandSelect" class="w-full px-3.5 py-2 border border-outline-variant rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable">
                             <option value="">Pilih Brand</option>
@@ -1687,6 +1708,14 @@ function rebuildCombinations() {
                 // Default SKU
                 const defaultSku = generateAutoSku(sizeStr, compCode, (hasThickness && thicknessMode === 'multi') ? thVal : null);
 
+                const fallbackSellPrice = (document.getElementById('batchSellPrice')?.value && parseFloat(document.getElementById('batchSellPrice').value) > 0)
+                    ? parseFloat(document.getElementById('batchSellPrice').value)
+                    : (variantRows.find(r => r.sell_price && parseFloat(r.sell_price) > 0)?.sell_price || 0);
+
+                const fallbackBasePrice = (document.getElementById('batchBasePrice')?.value && parseFloat(document.getElementById('batchBasePrice').value) > 0)
+                    ? parseFloat(document.getElementById('batchBasePrice').value)
+                    : (variantRows.find(r => r.base_price && parseFloat(r.base_price) > 0)?.base_price || fallbackSellPrice || 0);
+
                 newRows.push({
                     key: key,
                     id: cached.id || null,
@@ -1696,8 +1725,8 @@ function rebuildCombinations() {
                     variant_name: cached.variant_name || defaultName,
                     sku: cached.sku || defaultSku,
                     has_db_sku: cached.has_db_sku || false,
-                    base_price: (cached.base_price !== undefined && cached.base_price !== '') ? cached.base_price : (document.getElementById('batchBasePrice')?.value || 0),
-                    sell_price: (cached.sell_price !== undefined && cached.sell_price !== '') ? cached.sell_price : (document.getElementById('batchSellPrice')?.value || 0),
+                    base_price: (cached.base_price !== undefined && cached.base_price !== '') ? cached.base_price : fallbackBasePrice,
+                    sell_price: (cached.sell_price !== undefined && cached.sell_price !== '') ? cached.sell_price : fallbackSellPrice,
                     shipping_cost: cached.shipping_cost !== undefined ? cached.shipping_cost : (document.getElementById('batchShippingCost')?.value || document.getElementById('productShippingCost')?.value || 0),
                     length: cached.length !== undefined && cached.length !== '' ? cached.length : (dims.length || 200),
                     width: cached.width !== undefined && cached.width !== '' ? cached.width : (dims.width || ''),
@@ -2525,17 +2554,19 @@ function initVariantsFromBackend() {
 
             const compVal = rawAttrs._completeness_title ? rawAttrs[rawAttrs._completeness_title] : (rawAttrs.Kelengkapan || rawAttrs[completenessAttributeTitle] || null);
             if (compVal) {
-                let cName = compVal;
-                if (cName.toLowerCase().includes('kasur saja') || cName.toLowerCase().includes('mattress')) {
+                let cName = String(compVal).trim();
+                const lower = cName.toLowerCase();
+                if (lower === 'kasur saja' || lower === 'mattress only' || lower === 'mattress') {
                     cName = 'Kasur Saja';
-                } else if (cName.toLowerCase().includes('divan') || cName.toLowerCase().includes('full') || cName.toLowerCase().includes('set')) {
+                } else if (lower === 'set kasur + divan' || lower === 'full set' || lower === 'fullset' || lower === 'full bed set') {
                     cName = 'Set Kasur + Divan';
                 }
                 detectedComps.add(cName);
             } else if (v.variant_name) {
-                if (v.variant_name.includes('Kasur Saja') || v.variant_name.includes('Mattress Only')) {
+                const vName = String(v.variant_name).trim();
+                if (vName.match(/\b(kasur saja|mattress only)\b/i)) {
                     detectedComps.add('Kasur Saja');
-                } else if (v.variant_name.includes('Fullset') || v.variant_name.includes('Full Set') || v.variant_name.includes('Divan') || v.variant_name.includes('Set Kasur')) {
+                } else if (vName.match(/\b(fullset|full set|set kasur \+ divan|full bed set)\b/i)) {
                     detectedComps.add('Set Kasur + Divan');
                 }
             }
@@ -2652,11 +2683,18 @@ function initVariantsFromBackend() {
             const sizeStr = rawAttrs.Ukuran || formatStandardSize(v.variant_name);
             let compStr = rawAttrs.Kelengkapan || (completenessAttributeTitle ? rawAttrs[completenessAttributeTitle] : '') || '';
             if (compStr) {
-                if (compStr.toLowerCase().includes('kasur saja') || compStr.toLowerCase().includes('mattress')) compStr = 'Kasur Saja';
-                else if (compStr.toLowerCase().includes('divan') || compStr.toLowerCase().includes('full') || compStr.toLowerCase().includes('set')) compStr = 'Set Kasur + Divan';
+                const lower = String(compStr).trim().toLowerCase();
+                if (lower === 'kasur saja' || lower === 'mattress only' || lower === 'mattress') {
+                    compStr = 'Kasur Saja';
+                } else if (lower === 'set kasur + divan' || lower === 'full set' || lower === 'fullset' || lower === 'full bed set') {
+                    compStr = 'Set Kasur + Divan';
+                } else {
+                    compStr = String(compStr).trim();
+                }
             } else if (hasCompleteness && v.variant_name) {
-                if (v.variant_name.includes('Kasur Saja') || v.variant_name.includes('Mattress Only')) compStr = 'Kasur Saja';
-                else if (v.variant_name.includes('Fullset') || v.variant_name.includes('Full Set') || v.variant_name.includes('Divan') || v.variant_name.includes('Set Kasur')) compStr = 'Set Kasur + Divan';
+                const vName = String(v.variant_name).trim();
+                if (vName.match(/\b(kasur saja|mattress only)\b/i)) compStr = 'Kasur Saja';
+                else if (vName.match(/\b(fullset|full set|set kasur \+ divan|full bed set)\b/i)) compStr = 'Set Kasur + Divan';
             }
 
             const thVal = (thicknessMode === 'multi') ? (v.height || singleThickness) : (singleThickness || v.height || 25);
@@ -2724,6 +2762,199 @@ function initVariantsFromBackend() {
 
         rebuildCombinations();
     }
+
+    checkDraftOnLoad();
+    initDraftAutoSave();
+}
+
+// ==================== DRAFT AUTO-SAVE & RECOVERY ====================
+const DRAFT_KEY = 'cms_product_draft_' + (isEditMode ? '{{ $product->id ?? "edit" }}' : 'create');
+let draftSaveTimeout = null;
+
+function scheduleDraftSave() {
+    clearTimeout(draftSaveTimeout);
+    draftSaveTimeout = setTimeout(saveDraft, 1200);
+}
+
+function saveDraft() {
+    try {
+        saveCurrentTableInputs();
+        const draft = {
+            timestamp: new Date().toISOString(),
+            displayTime: new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }),
+            name: document.getElementById('productNameInput')?.value || '',
+            code: document.getElementById('productCodeInput')?.value || '',
+            category_id: document.getElementById('categorySelect')?.value || '',
+            brand_id: document.getElementById('brandSelect')?.value || '',
+            warranty_duration: document.getElementById('warrantyInput')?.value || '',
+            shipping_cost: document.getElementById('shippingCostInput')?.value || '',
+            length: document.getElementById('productLength')?.value || '',
+            width: document.getElementById('productWidth')?.value || '',
+            height: document.getElementById('productHeight')?.value || '',
+            weight: document.getElementById('productWeight')?.value || '',
+            short_description: document.getElementById('short_description')?.value || '',
+            description: window.quill ? window.quill.root.innerHTML : '',
+            tags: $('#tagsSelect').val() || [],
+            selectedSizes: selectedSizes || [],
+            hasCompleteness: hasCompleteness,
+            completenessAttributeTitle: completenessAttributeTitle,
+            activeCompleteness: activeCompleteness || [],
+            hasThickness: hasThickness,
+            thicknessMode: thicknessMode,
+            singleThickness: singleThickness,
+            multiThicknesses: multiThicknesses || [],
+            productColorsList: productColorsList || [],
+            variantRows: variantRows || []
+        };
+
+        if (draft.name || draft.category_id || draft.brand_id || (draft.selectedSizes && draft.selectedSizes.length > 0)) {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        }
+    } catch (e) {
+        console.warn('Failed to auto-save draft:', e);
+    }
+}
+
+function checkDraftOnLoad() {
+    try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        if (!draft || (!draft.name && !draft.category_id && !draft.brand_id && (!draft.selectedSizes || draft.selectedSizes.length === 0))) return;
+
+        const prompt = document.getElementById('draftRecoveryPrompt');
+        const timeText = document.getElementById('draftTimestampText');
+        if (prompt && timeText) {
+            timeText.textContent = `Terakhir disimpan: ${draft.displayTime || draft.timestamp}. Ingin melanjutkan pengisian dari draf ini?`;
+            prompt.classList.remove('hidden');
+        }
+    } catch (e) {
+        console.warn('Error reading draft:', e);
+    }
+}
+
+function applyDraft() {
+    try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+
+        if (draft.name) {
+            const nameInput = document.getElementById('productNameInput');
+            if (nameInput) {
+                nameInput.value = draft.name;
+                if (typeof updateSlug === 'function') updateSlug(draft.name);
+            }
+        }
+        if (draft.code) {
+            const codeInput = document.getElementById('productCodeInput');
+            if (codeInput) codeInput.value = draft.code;
+        }
+        if (draft.category_id) {
+            $('#categorySelect').val(draft.category_id).trigger('change');
+        }
+        if (draft.brand_id) {
+            $('#brandSelect').val(draft.brand_id).trigger('change');
+        }
+        if (draft.warranty_duration) {
+            const wInput = document.getElementById('warrantyInput');
+            if (wInput) wInput.value = draft.warranty_duration;
+        }
+        if (draft.shipping_cost) {
+            const scInput = document.getElementById('shippingCostInput');
+            if (scInput) scInput.value = draft.shipping_cost;
+        }
+        if (draft.length) {
+            const lInput = document.getElementById('productLength');
+            if (lInput) lInput.value = draft.length;
+        }
+        if (draft.width) {
+            const wInput = document.getElementById('productWidth');
+            if (wInput) wInput.value = draft.width;
+        }
+        if (draft.height) {
+            const hInput = document.getElementById('productHeight');
+            if (hInput) hInput.value = draft.height;
+        }
+        if (draft.weight) {
+            const wtInput = document.getElementById('productWeight');
+            if (wtInput) wtInput.value = draft.weight;
+        }
+        if (draft.short_description) {
+            const sdInput = document.getElementById('short_description');
+            if (sdInput) sdInput.value = draft.short_description;
+        }
+        if (draft.description && window.quill) {
+            window.quill.root.innerHTML = draft.description;
+        }
+        if (draft.tags && Array.isArray(draft.tags)) {
+            $('#tagsSelect').val(draft.tags).trigger('change');
+        }
+
+        if (Array.isArray(draft.selectedSizes) && draft.selectedSizes.length > 0) {
+            selectedSizes = draft.selectedSizes;
+        }
+        if (typeof draft.hasCompleteness === 'boolean') {
+            hasCompleteness = draft.hasCompleteness;
+            if (draft.completenessAttributeTitle) completenessAttributeTitle = draft.completenessAttributeTitle;
+            if (Array.isArray(draft.activeCompleteness)) activeCompleteness = draft.activeCompleteness;
+            const toggle = document.getElementById('completenessToggle');
+            if (toggle) toggle.checked = hasCompleteness;
+            toggleCompletenessMode(hasCompleteness);
+        }
+        if (typeof draft.hasThickness === 'boolean') {
+            hasThickness = draft.hasThickness;
+            if (draft.thicknessMode) {
+                thicknessMode = draft.thicknessMode;
+                setThicknessMode(thicknessMode);
+            }
+            if (draft.singleThickness) singleThickness = draft.singleThickness;
+            if (Array.isArray(draft.multiThicknesses)) multiThicknesses = draft.multiThicknesses;
+        }
+        if (Array.isArray(draft.productColorsList)) {
+            productColorsList = draft.productColorsList;
+        }
+        if (Array.isArray(draft.variantRows) && draft.variantRows.length > 0) {
+            variantRows = draft.variantRows;
+            variantRows.forEach(r => {
+                if (r.key) rowCache[r.key] = { ...r };
+            });
+        }
+
+        renderStandardSizes();
+        renderCompletenessCheckboxes();
+        renderColorChips();
+        renderVariantsTable();
+
+        const prompt = document.getElementById('draftRecoveryPrompt');
+        if (prompt) prompt.classList.add('hidden');
+        showToast('success', 'Draf berhasil dipulihkan!');
+    } catch (e) {
+        console.error('Error applying draft:', e);
+        showToast('error', 'Gagal memulihkan draf: ' + e.message);
+    }
+}
+
+function discardDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+    const prompt = document.getElementById('draftRecoveryPrompt');
+    if (prompt) prompt.classList.add('hidden');
+    showToast('info', 'Draf dihapus. Memulai form baru.');
+}
+
+function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+}
+
+function initDraftAutoSave() {
+    const form = document.getElementById('productForm');
+    if (!form) return;
+
+    form.addEventListener('input', scheduleDraftSave);
+    form.addEventListener('change', scheduleDraftSave);
+    if (window.quill) {
+        window.quill.on('text-change', scheduleDraftSave);
+    }
 }
 
 // ==================== 8. S3 UPLOAD HELPER ====================
@@ -2788,31 +3019,80 @@ async function uploadProductImage(file, folder = 'products') {
     return resJson.file_path;
 }
 
+// ==================== INLINE VALIDATION UTILITIES ====================
+function clearFieldErrors() {
+    document.querySelectorAll('.field-error-msg').forEach(el => el.remove());
+    document.querySelectorAll('.field-error-border').forEach(el => {
+        el.classList.remove('field-error-border', 'border-danger', 'ring-1', 'ring-danger');
+    });
+}
+
+function showFieldError(elementId, message) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    el.classList.add('field-error-border', 'border-danger', 'ring-1', 'ring-danger');
+
+    const nextSelect2 = el.nextElementSibling;
+    if (nextSelect2 && nextSelect2.classList.contains('select2-container')) {
+        const selBox = nextSelect2.querySelector('.select2-selection');
+        if (selBox) selBox.classList.add('field-error-border', 'border-danger', 'ring-1', 'ring-danger');
+    }
+
+    const parent = el.closest('.space-y-1\\.5') || el.parentElement;
+    if (parent && !parent.querySelector('.field-error-msg')) {
+        const msgEl = document.createElement('p');
+        msgEl.className = 'field-error-msg text-danger text-[11px] font-semibold mt-1 flex items-center gap-1';
+        msgEl.innerHTML = `<span class="material-symbols-outlined text-[13px]">error</span><span>${message}</span>`;
+        parent.appendChild(msgEl);
+    }
+}
+
 // ==================== 9. FORM SUBMISSION ====================
 async function submitProductForm() {
     const form = document.getElementById('productForm');
-    const nameInput = document.getElementById('productNameInput');
+    clearFieldErrors();
+    const errors = [];
 
-    if (!nameInput.value.trim()) {
-        alert('Nama Produk wajib diisi.');
-        nameInput.focus();
-        return;
+    const nameInput = document.getElementById('productNameInput');
+    if (!nameInput || !nameInput.value.trim()) {
+        showFieldError('productNameInput', 'Nama produk wajib diisi.');
+        errors.push({ id: 'productNameInput', msg: 'Nama produk wajib diisi.' });
+    }
+
+    const categorySelect = document.getElementById('categorySelect');
+    if (!categorySelect || !categorySelect.value) {
+        showFieldError('categorySelect', 'Kategori produk wajib dipilih.');
+        errors.push({ id: 'categorySelect', msg: 'Kategori produk wajib dipilih.' });
+    }
+
+    const brandSelect = document.getElementById('brandSelect');
+    if (!brandSelect || !brandSelect.value) {
+        showFieldError('brandSelect', 'Brand wajib dipilih.');
+        errors.push({ id: 'brandSelect', msg: 'Brand wajib dipilih.' });
     }
 
     saveCurrentTableInputs();
 
     const activeRows = variantRows.filter(r => !r.excluded);
     if (activeRows.length === 0) {
-        alert('Mohon tentukan minimal 1 kombinasi variasi produk yang aktif.');
-        return;
+        const vContainer = document.getElementById('variantTableSectionCard') || document.getElementById('variantRowsContainer');
+        if (vContainer) {
+            const err = document.createElement('div');
+            err.className = 'field-error-msg p-3 bg-red-50 border border-danger/40 rounded-xl text-danger text-xs font-semibold flex items-center gap-2 mb-3';
+            err.innerHTML = '<span class="material-symbols-outlined text-[18px]">error</span><span>Mohon tentukan minimal 1 kombinasi variasi produk yang aktif.</span>';
+            vContainer.parentElement.insertBefore(err, vContainer);
+        }
+        errors.push({ id: 'variantRowsContainer', msg: 'Mohon tentukan minimal 1 kombinasi variasi produk yang aktif.' });
     }
 
     // Ensure active rows have default 0 for sell_price & base_price if empty or invalid
     for (let i = 0; i < activeRows.length; i++) {
         const r = activeRows[i];
         if (!r.variant_name || !r.variant_name.trim()) {
-            alert(`Nama kombinasi pada baris ke-${i + 1} tidak boleh kosong.`);
-            return;
+            const rowInput = document.querySelector(`tr.variant-row[data-index="${i}"] input.v-name`);
+            if (rowInput) rowInput.classList.add('field-error-border', 'border-danger', 'ring-1', 'ring-danger');
+            errors.push({ id: 'variant_row_' + i, msg: `Nama kombinasi pada baris ke-${i + 1} tidak boleh kosong.` });
         }
         if (r.sell_price === '' || r.sell_price === null || isNaN(parseFloat(r.sell_price)) || parseFloat(r.sell_price) < 0) {
             r.sell_price = 0;
@@ -2820,6 +3100,16 @@ async function submitProductForm() {
         if (r.base_price === '' || r.base_price === null || isNaN(parseFloat(r.base_price)) || parseFloat(r.base_price) < 0) {
             r.base_price = 0;
         }
+    }
+
+    if (errors.length > 0) {
+        const firstErr = document.querySelector('.field-error-border, .field-error-msg');
+        if (firstErr) {
+            firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (typeof firstErr.focus === 'function') firstErr.focus();
+        }
+        showToast('error', 'Mohon lengkapi field yang ditandai merah sebelum menyimpan.');
+        return;
     }
 
     // Loading State on Buttons
@@ -2886,6 +3176,10 @@ async function submitProductForm() {
                 if (!attrObj['Ukuran']) {
                     attrObj['Ukuran'] = v.size ? formatStandardSize(v.size) : (finalWidth + ' x ' + finalLength);
                 }
+            }
+
+            if (!attrObj['Ukuran']) {
+                attrObj['Ukuran'] = v.size ? formatStandardSize(v.size) : ((finalWidth && finalLength) ? (finalWidth + ' x ' + finalLength) : v.variant_name);
             }
 
             const shippingVal = (v.shipping_cost !== '' && v.shipping_cost !== null && !isNaN(parseFloat(v.shipping_cost))) 
@@ -2985,9 +3279,23 @@ async function submitProductForm() {
         const data = await res.json().catch(() => ({}));
 
         if (res.ok && data.success !== false) {
+            clearDraft();
             window.location.href = '{{ route("products.index") }}';
         } else {
-            alert(data.message || 'Gagal menyimpan produk. Mohon periksa kembali input Anda.');
+            if (data.errors) {
+                for (const field in data.errors) {
+                    const errMsg = data.errors[field][0];
+                    if (field === 'name') showFieldError('productNameInput', errMsg);
+                    else if (field === 'category_id') showFieldError('categorySelect', errMsg);
+                    else if (field === 'brand_id') showFieldError('brandSelect', errMsg);
+                }
+            }
+            const firstErr = document.querySelector('.field-error-border, .field-error-msg');
+            if (firstErr) {
+                firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (typeof firstErr.focus === 'function') firstErr.focus();
+            }
+            showToast('error', data.message || 'Gagal menyimpan produk. Mohon periksa kembali input Anda.');
             saveBtns.forEach(b => {
                 b.disabled = false;
                 b.classList.remove('opacity-70');
@@ -2996,7 +3304,7 @@ async function submitProductForm() {
         }
     } catch (err) {
         console.error(err);
-        alert('Terjadi kesalahan: ' + err.message);
+        showToast('error', 'Terjadi kesalahan sistem: ' + err.message);
         saveBtns.forEach(b => {
             b.disabled = false;
             b.classList.remove('opacity-70');
