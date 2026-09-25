@@ -162,7 +162,7 @@
                                         <a href="{{ route('products.edit', $product->id) }}" class="text-on-surface-variant hover:text-secondary transition-colors" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
                                     @endcan
                                     @can('products.destroy')
-                                        <button class="text-on-surface-variant hover:text-danger transition-colors" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                                        <button type="button" onclick="confirmDeleteProduct('{{ $product->id }}', '{{ addslashes($product->name) }}')" class="text-on-surface-variant hover:text-danger transition-colors cursor-pointer" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
                                     @endcan
                                 </div>
                             </td>
@@ -185,3 +185,78 @@
         @endif
     </div>
 @endsection
+
+@push('scripts')
+<script>
+function confirmDeleteProduct(id, name) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Hapus Produk?',
+            text: `Apakah Anda yakin ingin menghapus produk "${name}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Ya, Hapus',
+            cancelButtonText: 'Batal',
+            showLoaderOnConfirm: true,
+            preConfirm: () => {
+                return fetch(`{{ url('products') }}/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Gagal menghapus produk');
+                    }
+                    return data;
+                })
+                .catch(error => {
+                    Swal.showValidationMessage(error.message);
+                });
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: result.value.message || 'Produk berhasil dihapus.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.reload();
+                });
+            }
+        });
+    } else {
+        if (!confirm(`Apakah Anda yakin ingin menghapus produk "${name}"?`)) return;
+        fetch(`{{ url('products') }}/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) {
+                alert(data.message || 'Gagal menghapus produk');
+            } else {
+                alert(data.message || 'Produk berhasil dihapus.');
+                window.location.reload();
+            }
+        })
+        .catch(err => {
+            alert('Terjadi kesalahan koneksi saat menghapus produk');
+        });
+    }
+}
+</script>
+@endpush
