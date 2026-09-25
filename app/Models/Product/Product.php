@@ -93,6 +93,7 @@ class Product extends Model
         'status',
         'show_on_web',
         'is_bundle',
+        'previous_slugs',
         'creator',
         'editor',
         'deleted',
@@ -102,6 +103,7 @@ class Product extends Model
     {
         return [
             'segments' => 'array',
+            'previous_slugs' => 'array',
             'best_seller' => 'boolean',
             'is_new' => 'boolean',
             'sort_order' => 'integer',

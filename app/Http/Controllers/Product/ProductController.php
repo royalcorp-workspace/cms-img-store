@@ -421,6 +421,16 @@ class ProductController extends Controller
             $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
             $validated['show_on_web'] = $request->has('show_on_web') ? (bool)$request->input('show_on_web') : ($product->show_on_web ?? true);
 
+            $targetSlug = !empty($validated['slug']) ? $validated['slug'] : \Illuminate\Support\Str::slug($validated['name'] ?? $product->name);
+            $oldSlug = $product->slug;
+            if (!empty($oldSlug) && !empty($targetSlug) && $oldSlug !== $targetSlug) {
+                $previousSlugs = is_array($product->previous_slugs) ? $product->previous_slugs : (json_decode($product->previous_slugs, true) ?: []);
+                if (!in_array($oldSlug, $previousSlugs)) {
+                    $previousSlugs[] = $oldSlug;
+                }
+                $validated['previous_slugs'] = array_values(array_unique($previousSlugs));
+            }
+
             $product->update($validated);
 
             if (!empty($validated['thumbnail'])) {
@@ -640,23 +650,53 @@ class ProductController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $product = Product::with('images')->findOrFail($id);
+        $product = Product::withoutGlobalScope('not-deleted')->with(['images', 'variants'])->findOrFail($id);
         
-        if ($product->thumbnail) {
-            unlink_media($product->thumbnail);
-        }
+        // Guard: Check if this product or any of its variants has orders
+        $variantIds = $product->variants->pluck('id')->filter()->toArray();
+        $hasOrders = DB::table('order_items')
+            ->where('product_id', $product->id)
+            ->when(!empty($variantIds), function ($q) use ($variantIds) {
+                $q->orWhereIn('product_variant_id', $variantIds);
+            })
+            ->exists();
 
-        foreach ($product->images as $img) {
-            if ($img->image) {
-                unlink_media($img->image);
+        if ($hasOrders) {
+            $msg = 'Produk tidak dapat dihapus karena sudah memiliki transaksi / pesanan.';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $msg,
+                ], 422);
             }
+            return redirect()->route('products.index')->with('error', $msg);
         }
 
-        $product->delete();
-        \Log::channel('product')->info("Product deleted successfully: " . $id);
-        return redirect()->route('products.index')->with('success', 'Product deleted successfully');
+        // Soft delete product & variants
+        $product->update([
+            'deleted' => true,
+            'status' => false,
+            'show_on_web' => false,
+        ]);
+
+        \App\Models\Product\Variant::where('product_id', $product->id)->update([
+            'deleted' => true,
+            'status' => false,
+        ]);
+
+        \Log::channel('product')->info("Product marked as deleted successfully: " . $id);
+
+        $msg = 'Produk berhasil dihapus.';
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+            ]);
+        }
+
+        return redirect()->route('products.index')->with('success', $msg);
     }
 
     public function importForm()
