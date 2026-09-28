@@ -16,8 +16,8 @@ return new class extends Migration
                 $table->uuid('customer_id');
                 $table->timestamps();
 
-                $table->foreign('store_id')->references('id')->on('stores')->onDelete('cascade');
-                $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
+                // $table->foreign('store_id')->references('id')->on('stores')->onDelete('cascade');
+                // $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
                 $table->unique(['store_id', 'customer_id']);
             });
         }
@@ -30,8 +30,8 @@ return new class extends Migration
                 $table->timestampTz('claimed_at')->default(DB::raw('NOW()'));
                 $table->timestamps();
 
-                $table->foreign('voucher_id')->references('id')->on('vouchers')->onDelete('cascade');
-                $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
+                // $table->foreign('voucher_id')->references('id')->on('vouchers')->onDelete('cascade');
+                // $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
                 $table->unique(['voucher_id', 'customer_id']);
             });
         }

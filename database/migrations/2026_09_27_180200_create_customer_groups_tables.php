@@ -34,8 +34,8 @@ return new class extends Migration
                 $table->boolean('deleted')->default(false);
                 $table->timestamps();
 
-                $table->foreign('customer_group_id')->references('id')->on('customer_groups')->onDelete('cascade');
-                $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
+                // $table->foreign('customer_group_id')->references('id')->on('customer_groups')->onDelete('cascade');
+                // $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
                 $table->unique(['customer_group_id', 'customer_id']);
             });
         }
