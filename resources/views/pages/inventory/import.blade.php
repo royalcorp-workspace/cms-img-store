@@ -231,7 +231,7 @@
             </div>
             
             <div class="pt-4 border-t border-outline-variant/20 mt-4">
-                <a href="{{ route('inventory.import.template') }}" class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary/10 text-primary hover:bg-primary/20 transition-colors rounded-xl text-sm font-semibold border border-primary/20">
+                <a href="{{ route('inventory.import.template') }}" data-no-loader download="template_import_incoming_sku.xlsx" class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary/10 text-primary hover:bg-primary/20 transition-colors rounded-xl text-sm font-semibold border border-primary/20">
                     <span class="material-symbols-outlined text-[20px]">download</span>
                     Download Template Excel
                 </a>

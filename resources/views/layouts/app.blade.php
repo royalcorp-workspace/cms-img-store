@@ -779,11 +779,11 @@
             const loader = document.getElementById('page-loader');
             if (!loader) return;
             // Ignore new tab, download, javascript, anchor, or explicit no-loader links
-            if (e.target.closest('a[target="_blank"], a[download], a[data-no-loader], a[href*="/export"]')) {
+            if (e.target.closest('a[target="_blank"], a[download], a[data-no-loader], a[href*="/export"], a[href*="/template"], a[href*="/download"]')) {
                 loader.classList.add('hidden');
                 return;
             }
-            const target = e.target.closest('a[href]:not([target="_blank"]):not([download]):not([data-no-loader]):not([href^="#"]):not([href^="javascript"])');
+            const target = e.target.closest('a[href]:not([target="_blank"]):not([download]):not([data-no-loader]):not([href*="/export"]):not([href*="/template"]):not([href*="/download"]):not([href^="#"]):not([href^="javascript"])');
             if (target) {
                 loader.classList.remove('hidden');
             }

@@ -2,6 +2,10 @@
     @can('customers.index')
         <a href="{{ route('customers.index') }}" class="{{ request()->routeIs('customers.index') || request()->routeIs('customers.create') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Semua Customers</a>
     @endcan
+
+    @if(auth()->user()->can('customer-groups.index') || auth()->user()->can('customers.index'))
+        <a href="{{ route('customer-groups.index') }}" class="{{ request()->routeIs('customer-groups.*') ? 'bg-primary text-white font-bold px-6 py-2.5 text-sm whitespace-nowrap rounded-t-lg transition-colors focus:outline-none' : 'text-secondary hover:text-primary px-6 py-2.5 text-sm transition-colors whitespace-nowrap focus:outline-none' }}">Customer Groups</a>
+    @endif
     
     @if(isset($customer) && $customer->id)
         @can('customers.show')

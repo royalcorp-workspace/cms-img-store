@@ -13,7 +13,7 @@
             // Mapping active route patterns per module
             $moduleActivePatterns = [
                 'dashboard' => ['dashboard'],
-                'customers' => ['customers.*'],
+                'customers' => ['customers.*', 'customer-groups.*'],
                 'chat' => ['chat.*'],
                 'products' => ['products.*', 'categories.*', 'brands.*', 'product-suggestions.*'],
                 'inventory' => ['inventory.*', 'warehouses.*'],

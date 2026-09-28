@@ -87,13 +87,23 @@
                                 </span>
                                 @endif
 
-                                @if($voucher->show_on_web)
-                                <span class="inline-flex items-center gap-1 text-[11px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium" title="Ditampilkan di Web">
-                                    <span class="material-symbols-outlined text-[13px]">public</span> Web
+                                @if(($voucher->visibility ?? 'public') === 'claimable')
+                                <span class="inline-flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-medium" title="Harus Diklaim">
+                                    <span class="material-symbols-outlined text-[13px]">loyalty</span> Claimable
+                                </span>
+                                @elseif(($voucher->visibility ?? 'public') === 'hidden')
+                                <span class="inline-flex items-center gap-1 text-[11px] text-secondary bg-surface-container px-1.5 py-0.5 rounded font-medium" title="Kode Rahasia">
+                                    <span class="material-symbols-outlined text-[13px]">key</span> Kode Saja
                                 </span>
                                 @else
-                                <span class="inline-flex items-center gap-1 text-[11px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded" title="Tidak ditampilkan di Web">
-                                    <span class="material-symbols-outlined text-[13px]">visibility_off</span> Hidden
+                                <span class="inline-flex items-center gap-1 text-[11px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium" title="Publik">
+                                    <span class="material-symbols-outlined text-[13px]">public</span> Publik
+                                </span>
+                                @endif
+
+                                @if($voucher->require_follow)
+                                <span class="inline-flex items-center gap-1 text-[11px] text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded font-medium" title="Wajib Ikuti Toko">
+                                    <span class="material-symbols-outlined text-[13px]">person_add</span> Follow
                                 </span>
                                 @endif
                             </div>
