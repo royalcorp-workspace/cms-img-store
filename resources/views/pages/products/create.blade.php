@@ -48,10 +48,19 @@
         }
     }
 
-    $variantData = $variants->map(function ($v) {
+    $hasExplicitActiveVariants = $variants->contains(fn($v) => ($v->status === true || (string)$v->status === '1' || (int)$v->status === 1));
+
+    $variantData = $variants->map(function ($v) use ($hasExplicitActiveVariants) {
         $img = \App\Models\Product\Image::where('variant_id', $v->id)->first();
         $imgPath = $img ? $img->image : ($v->attributes['image'] ?? null);
         $imgUrl = $img ? $img->url : ($imgPath ? media_url($imgPath) : null);
+
+        $varStatus = 1;
+        if ($hasExplicitActiveVariants) {
+            $varStatus = ($v->status === false || (string)$v->status === '0') ? 0 : 1;
+        } elseif ($v->status !== null && ($v->status === false || (string)$v->status === '0') && (float)$v->sell_price <= 0) {
+            $varStatus = 0;
+        }
 
         return [
             'id' => $v->id,
@@ -69,7 +78,7 @@
             'package_width' => $v->package_width !== null && $v->package_width !== '' ? (float)$v->package_width : null,
             'package_height' => $v->package_height !== null && $v->package_height !== '' ? (float)$v->package_height : null,
             'package_weight' => $v->package_weight !== null && $v->package_weight !== '' ? (float)$v->package_weight : null,
-            'status' => $v->status ?? 1,
+            'status' => $varStatus,
             'attributes' => $v->attributes ?? null,
             'image' => $imgPath,
             'image_url' => $imgUrl,
@@ -2805,6 +2814,18 @@ function initVariantsFromBackend() {
 
         updateBatchTargetSelector();
         renderVariantsTable();
+
+        // Auto-fill batch price inputs in edit mode from existing variants if not already filled
+        const validSellPrices = existingVariants.map(v => parseFloat(v.sell_price) || 0).filter(p => p > 0);
+        const validBasePrices = existingVariants.map(v => parseFloat(v.base_price) || 0).filter(p => p > 0);
+        const batchSellInput = document.getElementById('batchSellPrice');
+        const batchBaseInput = document.getElementById('batchBasePrice');
+        if (batchSellInput && validSellPrices.length > 0 && !batchSellInput.value) {
+            batchSellInput.value = Math.min(...validSellPrices);
+        }
+        if (batchBaseInput && validBasePrices.length > 0 && !batchBaseInput.value) {
+            batchBaseInput.value = Math.min(...validBasePrices);
+        }
     } else {
         // Create mode default: start with 3 popular sizes
         selectedSizes = ['160 X 200', '180 X 200', '200 X 200'];
