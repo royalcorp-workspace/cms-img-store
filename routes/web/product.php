@@ -47,6 +47,16 @@ Route::get('/vouchers/{id}/edit', [VoucherController::class, 'edit'])->name('vou
 Route::put('/vouchers/{id}', [VoucherController::class, 'update'])->name('vouchers.update');
 Route::delete('/vouchers/{id}', [VoucherController::class, 'destroy'])->name('vouchers.destroy');
 
+// Customer Groups
+use App\Http\Controllers\Customer\CustomerGroupController;
+Route::get('/customer-groups', [CustomerGroupController::class, 'index'])->name('customer-groups.index');
+Route::get('/customer-groups/create', [CustomerGroupController::class, 'create'])->name('customer-groups.create');
+Route::post('/customer-groups', [CustomerGroupController::class, 'store'])->name('customer-groups.store');
+Route::get('/customer-groups/{id}/edit', [CustomerGroupController::class, 'edit'])->name('customer-groups.edit');
+Route::put('/customer-groups/{id}', [CustomerGroupController::class, 'update'])->name('customer-groups.update');
+Route::delete('/customer-groups/{id}', [CustomerGroupController::class, 'destroy'])->name('customer-groups.destroy');
+
+
 Route::post('/price-settings/bulk', [PriceProductSettingController::class, 'bulkStore'])->name('price-settings.bulk.store');
 Route::get('/price-settings', [PriceProductSettingController::class, 'index'])->name('price-settings.index');
 Route::get('/price-settings/bulk', [PriceProductSettingController::class, 'bulk'])->name('price-settings.bulk');

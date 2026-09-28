@@ -43,15 +43,14 @@ class InventoryController extends Controller
             }
         ])->where('deleted', false)->where('is_bundle', false);
 
-        // Search by Product name, Code, or Variant name, SKU, Barcode
+        // Search by Product name, Code, or Variant name, SKU
         if ($search) {
             $productQuery->where(function ($q) use ($search) {
                 $q->where('name', 'ilike', "%{$search}%")
                   ->orWhere('code', 'ilike', "%{$search}%")
                   ->orWhereHas('variants', function ($vq) use ($search) {
                       $vq->where('variant_name', 'ilike', "%{$search}%")
-                         ->orWhere('sku', 'ilike', "%{$search}%")
-                         ->orWhere('barcode', 'ilike', "%{$search}%");
+                         ->orWhere('sku', 'ilike', "%{$search}%");
                   });
             });
         }
