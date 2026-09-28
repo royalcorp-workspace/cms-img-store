@@ -19,8 +19,8 @@ return new class extends Migration
                 $table->boolean('deleted')->default(false);
                 $table->timestamps();
 
-                $table->foreign('voucher_id')->references('id')->on('vouchers')->onDelete('cascade');
-                $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
+                // $table->foreign('voucher_id')->references('id')->on('vouchers')->onDelete('cascade');
+                // $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
                 $table->unique(['voucher_id', 'product_id']);
             });
         }
