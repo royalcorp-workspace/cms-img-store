@@ -24,7 +24,14 @@ class Product extends Model
         
         static::creating(function ($product) {
             if (empty($product->slug)) {
-                $product->slug = \Illuminate\Support\Str::slug($product->name);
+                $baseSlug = \Illuminate\Support\Str::slug($product->name);
+                $slug = $baseSlug;
+                $count = 1;
+                while (static::where('slug', $slug)->where('deleted', false)->exists()) {
+                    $slug = "{$baseSlug}-{$count}";
+                    $count++;
+                }
+                $product->slug = $slug;
             }
             if (empty($product->code)) {
                 $datePrefix = 'PRD' . date('dmy');
@@ -46,7 +53,14 @@ class Product extends Model
 
         static::updating(function ($product) {
             if (empty($product->slug)) {
-                $product->slug = \Illuminate\Support\Str::slug($product->name);
+                $baseSlug = \Illuminate\Support\Str::slug($product->name);
+                $slug = $baseSlug;
+                $count = 1;
+                while (static::where('slug', $slug)->where('id', '!=', $product->id)->where('deleted', false)->exists()) {
+                    $slug = "{$baseSlug}-{$count}";
+                    $count++;
+                }
+                $product->slug = $slug;
             }
             if (empty($product->code)) {
                 $datePrefix = 'PRD' . date('dmy');

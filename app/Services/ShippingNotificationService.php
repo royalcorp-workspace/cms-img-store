@@ -29,6 +29,17 @@ class ShippingNotificationService
             // Status label mapping
             $normalizedStatus = strtolower(trim($status));
             $statusLabels = [
+                '1' => 'Pesanan Diterima',
+                '2' => 'Pesanan Dikonfirmasi',
+                '3' => 'Pesanan Sedang Diproses',
+                '4' => 'Pesanan Telah Dikirim',
+                '5' => 'Pesanan Telah Diterima',
+                '6' => 'Pesanan Dibatalkan',
+                '7' => 'Pesanan Dikembalikan',
+                'ordered' => 'Pesanan Diterima',
+                'confirmed' => 'Pesanan Dikonfirmasi',
+                'processing' => 'Pesanan Sedang Diproses',
+                'shipped' => 'Pesanan Telah Dikirim',
                 'allocated' => 'Kurir Telah Dialokasikan',
                 'picking_up' => 'Kurir Menuju Lokasi Penjemputan',
                 'picked' => 'Paket Telah Diambil Kurir',
@@ -38,30 +49,33 @@ class ShippingNotificationService
                 'delivered' => 'Pesanan Telah Diterima',
                 'returned' => 'Paket Dikembalikan ke Gudang',
                 'return_in_transit' => 'Paket Dalam Pengembalian',
-                'cancelled' => 'Pengiriman Dibatalkan',
+                'cancelled' => 'Pesanan Dibatalkan',
                 'rejected' => 'Pengiriman Ditolak Kurir',
             ];
             $statusLabel = $statusLabels[$normalizedStatus] ?? ucfirst(str_replace('_', ' ', $normalizedStatus));
 
             // Default title & message based on status
-            if ($normalizedStatus === 'delivered') {
+            if ($normalizedStatus === 'delivered' || $normalizedStatus === '5') {
                 $title = $customTitle ?: "Pesanan #{$orderNumber} Telah Diterima! 🎉";
                 $message = $customMessage ?: "Pesanan Anda dengan nomor #{$orderNumber} telah berhasil tiba di alamat tujuan.";
-            } elseif (in_array($normalizedStatus, ['dropping_off', 'in_transit'], true)) {
+            } elseif (in_array($normalizedStatus, ['dropping_off', 'in_transit', 'shipped', '4'], true)) {
                 $title = $customTitle ?: "Pesanan #{$orderNumber} Sedang Diantar 🚚";
                 $message = $customMessage ?: "Paket Anda sedang diantar oleh {$courier} menuju alamat tujuan." . ($tracking ? " No. Resi: {$tracking}." : "");
-            } elseif (in_array($normalizedStatus, ['picking_up', 'picked', 'allocated', 'on_process'], true)) {
-                $title = $customTitle ?: "Pesanan #{$orderNumber} Diproses Kurir 📦";
-                $message = $customMessage ?: "Kurir {$courier} telah mengambil/memproses paket pesanan #{$orderNumber}." . ($tracking ? " No. Resi: {$tracking}." : "");
-            } elseif (in_array($normalizedStatus, ['returned', 'return_in_transit'], true)) {
+            } elseif (in_array($normalizedStatus, ['picking_up', 'picked', 'allocated', 'on_process', 'processing', '3'], true)) {
+                $title = $customTitle ?: "Pesanan #{$orderNumber} Sedang Diproses 📦";
+                $message = $customMessage ?: "Pesanan #{$orderNumber} sedang disiapkan dan diproses oleh tim kami.";
+            } elseif (in_array($normalizedStatus, ['confirmed', '2'], true)) {
+                $title = $customTitle ?: "Pesanan #{$orderNumber} Dikonfirmasi ✅";
+                $message = $customMessage ?: "Pembayaran dan pesanan #{$orderNumber} telah berhasil dikonfirmasi.";
+            } elseif (in_array($normalizedStatus, ['returned', 'return_in_transit', '7'], true)) {
                 $title = $customTitle ?: "Status Retur Pesanan #{$orderNumber} ⚠️";
                 $message = $customMessage ?: "Paket pesanan #{$orderNumber} mengalami kendala dan dikembalikan oleh kurir.";
-            } elseif (in_array($normalizedStatus, ['cancelled', 'rejected'], true)) {
-                $title = $customTitle ?: "Pengiriman #{$orderNumber} Dibatalkan ❌";
-                $message = $customMessage ?: "Pengiriman pesanan #{$orderNumber} telah dibatalkan oleh kurir.";
+            } elseif (in_array($normalizedStatus, ['cancelled', 'rejected', '6'], true)) {
+                $title = $customTitle ?: "Pesanan #{$orderNumber} Dibatalkan ❌";
+                $message = $customMessage ?: "Pesanan #{$orderNumber} telah dibatalkan.";
             } else {
-                $title = $customTitle ?: "Update Pengiriman Pesanan #{$orderNumber}";
-                $message = $customMessage ?: "Status pengiriman pesanan #{$orderNumber}: {$statusLabel}.";
+                $title = $customTitle ?: "Update Pesanan #{$orderNumber}";
+                $message = $customMessage ?: "Status pesanan #{$orderNumber}: {$statusLabel}.";
             }
 
             // Resolve Customer & User ID
@@ -75,6 +89,12 @@ class ShippingNotificationService
             }
             if (!$userId && !empty($order->customer?->email)) {
                 $userId = DB::table('users')->where('email', $order->customer->email)->value('id');
+            }
+            if (!$userId && !empty($order->meta['customer']['user_id'])) {
+                $userId = $order->meta['customer']['user_id'];
+            }
+            if (!$userId && !empty($order->meta['customer']['email'])) {
+                $userId = DB::table('users')->where('email', $order->meta['customer']['email'])->value('id');
             }
 
             // Persist to notifications table so it appears in the notification bell

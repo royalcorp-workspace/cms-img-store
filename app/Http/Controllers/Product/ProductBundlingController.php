@@ -11,6 +11,7 @@ use App\Models\Product\Brand;
 use App\Models\Product\Variant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ProductBundlingController extends Controller
 {
@@ -20,11 +21,24 @@ class ProductBundlingController extends Controller
             ->with(['bundleItems.product', 'bundleItems.variant', 'variants', 'brand', 'category']);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+            $search = trim($request->search);
+            $tokens = array_filter(preg_split('/\s+/', $search));
+            $query->where(function ($q) use ($search, $tokens) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('slug', 'ilike', "%{$search}%")
+                  ->orWhere('code', 'ilike', "%{$search}%");
+
+                if (count($tokens) > 1) {
+                    $q->orWhere(function ($qSub) use ($tokens) {
+                        foreach ($tokens as $token) {
+                            $qSub->where(function ($tokQ) use ($token) {
+                                $tokQ->where('name', 'ilike', "%{$token}%")
+                                     ->orWhere('slug', 'ilike', "%{$token}%")
+                                     ->orWhere('code', 'ilike', "%{$token}%");
+                            });
+                        }
+                    });
+                }
             });
         }
 
@@ -73,7 +87,12 @@ class ProductBundlingController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug',
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'slug')->where(fn ($q) => $q->where('deleted', false)),
+            ],
             'category_id' => 'nullable|string|exists:product_category,id',
             'brand_id' => 'nullable|string|exists:brands,id',
             'description' => 'nullable|string',
@@ -282,7 +301,12 @@ class ProductBundlingController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug,' . $id,
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'slug')->ignore($id)->where(fn ($q) => $q->where('deleted', false)),
+            ],
             'category_id' => 'nullable|string|exists:product_category,id',
             'brand_id' => 'nullable|string|exists:brands,id',
             'description' => 'nullable|string',
@@ -425,7 +449,12 @@ class ProductBundlingController extends Controller
     public function destroy($id)
     {
         $product = Product::where('is_bundle', true)->findOrFail($id);
-        $product->update(['deleted' => true, 'status' => 0]);
+        $product->update([
+            'deleted' => true,
+            'status' => 0,
+            'show_on_web' => false,
+            'slug' => $product->slug . '-deleted-' . time(),
+        ]);
 
         ProductBundlingItem::where('product_bundling_id', $product->id)->delete();
         ProductBundling::where('id', $product->id)->update(['deleted' => true, 'is_active' => false]);

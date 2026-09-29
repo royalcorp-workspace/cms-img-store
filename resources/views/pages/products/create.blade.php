@@ -2701,8 +2701,6 @@ function initVariantsFromBackend() {
             if (rawAttrs.Ketebalan) {
                 const num = parseFloat(String(rawAttrs.Ketebalan).replace(/\D+/g, ''));
                 if (num) detectedHeights.add(num);
-            } else if (v.height && parseFloat(v.height) > 0) {
-                detectedHeights.add(parseFloat(v.height));
             }
 
             // Detect size with robust fallbacks
@@ -2733,19 +2731,36 @@ function initVariantsFromBackend() {
             hasCompleteness = false;
         }
 
-        if (detectedHeights.size > 1) {
-            thicknessMode = 'multi';
-            activeThicknesses = Array.from(detectedHeights).sort((a, b) => a - b);
-            activeThicknesses.forEach(h => {
-                if (!availableThicknesses.includes(h)) availableThicknesses.push(h);
-            });
-            availableThicknesses.sort((a, b) => a - b);
+        const explicitThicknessFalse = existingVariants.some(v => v.attributes && (v.attributes._has_thickness === false || v.attributes._has_thickness === 'false'));
+        const explicitThicknessTrue = existingVariants.some(v => v.attributes && (v.attributes._has_thickness === true || v.attributes._has_thickness === 'true'));
+
+        if (explicitThicknessFalse) {
+            hasThickness = false;
+        } else if (explicitThicknessTrue) {
+            hasThickness = true;
         } else {
-            thicknessMode = 'single';
-            if (detectedHeights.size === 1) {
-                singleThickness = Array.from(detectedHeights)[0];
-                const sInput = document.getElementById('singleThicknessInput');
-                if (sInput) sInput.value = singleThickness;
+            hasThickness = (detectedHeights.size > 0);
+        }
+
+        if (!hasThickness) {
+            detectedHeights.clear();
+            activeThicknesses = [];
+            singleThickness = null;
+        } else {
+            if (detectedHeights.size > 1) {
+                thicknessMode = 'multi';
+                activeThicknesses = Array.from(detectedHeights).sort((a, b) => a - b);
+                activeThicknesses.forEach(h => {
+                    if (!availableThicknesses.includes(h)) availableThicknesses.push(h);
+                });
+                availableThicknesses.sort((a, b) => a - b);
+            } else {
+                thicknessMode = 'single';
+                if (detectedHeights.size === 1) {
+                    singleThickness = Array.from(detectedHeights)[0];
+                    const sInput = document.getElementById('singleThicknessInput');
+                    if (sInput) sInput.value = singleThickness;
+                }
             }
         }
 
@@ -2775,7 +2790,6 @@ function initVariantsFromBackend() {
         renderCompletenessCheckboxes();
 
         // Setup Thickness UI silently
-        hasThickness = (detectedHeights.size > 0 || existingVariants.some(v => v.height && parseFloat(v.height) > 0));
         const thToggle = document.getElementById('thicknessToggle');
         if (thToggle) thToggle.checked = hasThickness;
         const thNotice = document.getElementById('thicknessDisabledNotice');
@@ -3307,6 +3321,7 @@ async function submitProductForm() {
 
             // If thickness is enabled, pass Ketebalan & Ukuran attributes for pos-dealer-web
             if (hasThickness) {
+                attrObj['_has_thickness'] = true;
                 if (thicknessMode === 'multi' && v.tebal) {
                     attrObj['Ketebalan'] = String(v.tebal) + ' cm';
                 } else if (singleThickness) {
@@ -3315,6 +3330,9 @@ async function submitProductForm() {
                 if (!attrObj['Ukuran']) {
                     attrObj['Ukuran'] = v.size ? formatStandardSize(v.size) : (finalWidth + ' x ' + finalLength);
                 }
+            } else {
+                attrObj['_has_thickness'] = false;
+                delete attrObj['Ketebalan'];
             }
 
             if (!attrObj['Ukuran']) {
@@ -3419,7 +3437,15 @@ async function submitProductForm() {
 
         if (res.ok && data.success !== false) {
             clearDraft();
-            window.location.href = '{{ route("products.index") }}';
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                @if($isEdit)
+                    window.location.href = '{{ route("products.show", $product->id) }}';
+                @else
+                    window.location.href = '{{ route("products.index") }}';
+                @endif
+            }
         } else {
             if (data.errors) {
                 for (const field in data.errors) {
