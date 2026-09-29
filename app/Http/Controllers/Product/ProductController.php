@@ -259,7 +259,7 @@ class ProductController extends Controller
             if (isset($validated['variants']) && is_array($validated['variants'])) {
                 foreach ($validated['variants'] as $idx => $variantData) {
                     $vImage = $variantData['image'] ?? null;
-                    unset($variantData['image']);
+                    unset($variantData['image'], $variantData['id']);
 
                     // Map stock_qty from frontend to stock_quantity for database
                     if (array_key_exists('stock_qty', $variantData)) {
@@ -598,30 +598,27 @@ class ProductController extends Controller
                         $variantData['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
                     }
                     
-                    if (isset($variantData['id'])) {
-                        $submittedVariantIds[] = $variantData['id'];
-                        $variant = \App\Models\Product\Variant::find($variantData['id']);
-                        if ($variant) {
-                            $variantData['deleted'] = false;
-                            $variantData['status'] = $variantData['status'] ?? true;
-                            $variant->update($variantData);
-                        }
+                    $vId = !empty($variantData['id']) ? $variantData['id'] : null;
+                    unset($variantData['id']);
+
+                    $variant = null;
+                    if ($vId) {
+                        $variant = \App\Models\Product\Variant::find($vId);
+                    }
+                    if (!$variant && !empty($variantData['sku'])) {
+                        $variant = \App\Models\Product\Variant::where('product_id', $product->id)
+                            ->where('sku', $variantData['sku'])
+                            ->first();
+                    }
+
+                    if ($variant) {
+                        $variantData['deleted'] = false;
+                        $variantData['status'] = $variantData['status'] ?? true;
+                        $variant->update($variantData);
+                        $submittedVariantIds[] = $variant->id;
                     } else {
-                        // Check if a soft-deleted or existing variant with the same SKU exists under this product
-                        $existingDelV = null;
-                        if (!empty($variantData['sku'])) {
-                            $existingDelV = \App\Models\Product\Variant::where('product_id', $product->id)
-                                ->where('sku', $variantData['sku'])
-                                ->first();
-                        }
-                        if ($existingDelV) {
-                            $variantData['deleted'] = false;
-                            $variantData['status'] = $variantData['status'] ?? true;
-                            $existingDelV->update($variantData);
-                            $variant = $existingDelV;
-                            $submittedVariantIds[] = $variant->id;
-                        } else {
-                            $variant = \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
+                        $variant = \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
+                        if ($variant) {
                             $submittedVariantIds[] = $variant->id;
                         }
                     }
