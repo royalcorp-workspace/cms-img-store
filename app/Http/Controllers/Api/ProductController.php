@@ -9,6 +9,7 @@ use App\Models\Product\Color;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class ProductController extends ApiController
 {
@@ -50,7 +51,12 @@ class ProductController extends ApiController
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug',
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'slug')->where(fn ($q) => $q->where('deleted', false)),
+            ],
             'thumbnail' => 'nullable|string|max:255',
             'alt_text' => 'nullable|string|max:255',
             'short_description' => 'nullable|string|max:500',
@@ -137,7 +143,12 @@ class ProductController extends ApiController
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug,' . $product->id,
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'slug')->ignore($product->id)->where(fn ($q) => $q->where('deleted', false)),
+            ],
             'thumbnail' => 'nullable|string|max:255',
             'alt_text' => 'nullable|string|max:255',
             'short_description' => 'nullable|string|max:500',
@@ -243,7 +254,16 @@ class ProductController extends ApiController
         if (!$product) {
             return $this->errorResponse('Product not found', 404);
         }
-        $product->delete();
+        $product->update([
+            'deleted' => true,
+            'status' => false,
+            'show_on_web' => false,
+            'slug' => $product->slug . '-deleted-' . time(),
+        ]);
+        Variant::where('product_id', $product->id)->update([
+            'deleted' => true,
+            'status' => false,
+        ]);
         return $this->successResponse(null, 'Product deleted', 204);
     }
 

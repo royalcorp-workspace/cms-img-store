@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -25,15 +26,32 @@ class ProductController extends Controller
             ->where('is_bundle', false);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%")
+            $search = trim($request->search);
+            $tokens = array_filter(preg_split('/\s+/', $search));
+            $query->where(function ($q) use ($search, $tokens) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('slug', 'ilike', "%{$search}%")
+                  ->orWhere('code', 'ilike', "%{$search}%")
                   ->orWhereHas('variants', function ($q2) use ($search) {
-                      $q2->where('sku', 'like', "%{$search}%")
-                         ->orWhere('variant_name', 'like', "%{$search}%");
+                      $q2->where('sku', 'ilike', "%{$search}%")
+                         ->orWhere('variant_name', 'ilike', "%{$search}%");
                   });
+
+                if (count($tokens) > 1) {
+                    $q->orWhere(function ($qSub) use ($tokens) {
+                        foreach ($tokens as $token) {
+                            $qSub->where(function ($tokQ) use ($token) {
+                                $tokQ->where('name', 'ilike', "%{$token}%")
+                                     ->orWhere('slug', 'ilike', "%{$token}%")
+                                     ->orWhere('code', 'ilike', "%{$token}%")
+                                     ->orWhereHas('variants', function ($vq) use ($token) {
+                                         $vq->where('sku', 'ilike', "%{$token}%")
+                                            ->orWhere('variant_name', 'ilike', "%{$token}%");
+                                     });
+                            });
+                        }
+                    });
+                }
             });
         }
 
@@ -104,7 +122,12 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug',
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'slug')->where(fn ($q) => $q->where('deleted', false)),
+            ],
             'thumbnail' => 'nullable|string|max:255',
             'alt_text' => 'nullable|string|max:255',
             'short_description' => 'nullable|string|max:500',
@@ -279,12 +302,12 @@ class ProductController extends Controller
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Product created successfully',
-                    'redirect_url' => route('products.index'),
+                    'message' => 'Produk berhasil ditambahkan.',
+                    'redirect_url' => route('products.show', $product->id),
                 ]);
             }
 
-            return redirect()->route('products.index')->with('success', 'Product created successfully');
+            return redirect()->route('products.show', $product->id)->with('success', 'Produk berhasil ditambahkan.');
         } catch (\Exception $e) {
             \Log::channel('product')->error("Create Product Error: " . $e->getMessage());
 
@@ -307,7 +330,21 @@ class ProductController extends Controller
 
     public function edit($id)
     {
-        $product = Product::with('variants', 'colors', 'suggestedProducts', 'images', 'tags')->findOrFail($id);
+        $product = Product::with(['variants' => function ($q) {
+            $q->where('deleted', false);
+        }, 'colors', 'suggestedProducts', 'images', 'tags'])->findOrFail($id);
+        
+        $variantOrderCounts = DB::table('order_items')
+            ->whereIn('product_variant_id', $product->variants->pluck('id'))
+            ->groupBy('product_variant_id')
+            ->selectRaw('product_variant_id, count(*) as count')
+            ->pluck('count', 'product_variant_id')
+            ->toArray();
+        
+        foreach ($product->variants as $v) {
+            $v->has_orders = ($variantOrderCounts[$v->id] ?? 0) > 0;
+        }
+
         $allProducts = Product::where('id', '!=', $id)->orderBy('name')->get();
         $tags = ProductTag::where('deleted', false)->orderBy('name')->get();
         $selectedTagIds = $product->tags->pluck('id')->toArray();
@@ -347,7 +384,12 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug,' . $id,
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'slug')->ignore($id)->where(fn ($q) => $q->where('deleted', false)),
+            ],
             'thumbnail' => 'nullable|string|max:255',
             'alt_text' => 'nullable|string|max:255',
             'short_description' => 'nullable|string|max:500',
@@ -560,11 +602,28 @@ class ProductController extends Controller
                         $submittedVariantIds[] = $variantData['id'];
                         $variant = \App\Models\Product\Variant::find($variantData['id']);
                         if ($variant) {
+                            $variantData['deleted'] = false;
+                            $variantData['status'] = $variantData['status'] ?? true;
                             $variant->update($variantData);
                         }
                     } else {
-                        $variant = \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
-                        $submittedVariantIds[] = $variant->id;
+                        // Check if a soft-deleted or existing variant with the same SKU exists under this product
+                        $existingDelV = null;
+                        if (!empty($variantData['sku'])) {
+                            $existingDelV = \App\Models\Product\Variant::where('product_id', $product->id)
+                                ->where('sku', $variantData['sku'])
+                                ->first();
+                        }
+                        if ($existingDelV) {
+                            $variantData['deleted'] = false;
+                            $variantData['status'] = $variantData['status'] ?? true;
+                            $existingDelV->update($variantData);
+                            $variant = $existingDelV;
+                            $submittedVariantIds[] = $variant->id;
+                        } else {
+                            $variant = \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
+                            $submittedVariantIds[] = $variant->id;
+                        }
                     }
 
                     if ($variant) {
@@ -591,18 +650,24 @@ class ProductController extends Controller
                     }
                 }
 
-                // Soft delete removed variants and their images to preserve foreign key constraints
+                // Inactivate / soft-delete removed variants to preserve order history
                 $deletedVariants = \App\Models\Product\Variant::where('product_id', $product->id)
                     ->where('deleted', false)
                     ->whereNotIn('id', $submittedVariantIds)
                     ->get();
                 foreach ($deletedVariants as $delV) {
                     \App\Models\Product\Image::where('variant_id', $delV->id)->delete();
-                    $delV->update(['deleted' => true]);
+                    $delV->update([
+                        'deleted' => true,
+                        'status' => false,
+                    ]);
                 }
             } elseif ($request->has('variants') && is_array($request->variants) && empty($request->variants)) {
                 \App\Models\Product\Image::where('product_id', $product->id)->whereNotNull('variant_id')->delete();
-                \App\Models\Product\Variant::where('product_id', $product->id)->update(['deleted' => true]);
+                \App\Models\Product\Variant::where('product_id', $product->id)->update([
+                    'deleted' => true,
+                    'status' => false,
+                ]);
             }
 
             if ($request->has('tags') || $request->ajax() || $request->wantsJson()) {
@@ -631,12 +696,12 @@ class ProductController extends Controller
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Product updated successfully',
-                    'redirect_url' => route('products.index'),
+                    'message' => 'Produk berhasil diperbarui.',
+                    'redirect_url' => route('products.show', $product->id),
                 ]);
             }
 
-            return redirect()->route('products.index')->with('success', 'Product updated successfully');
+            return redirect()->route('products.show', $product->id)->with('success', 'Produk berhasil diperbarui.');
         } catch (\Exception $e) {
             \Log::channel('product')->error("Update Product Error: " . $e->getMessage());
 
@@ -665,7 +730,7 @@ class ProductController extends Controller
             ->exists();
 
         if ($hasOrders) {
-            $msg = 'Produk tidak dapat dihapus karena sudah memiliki transaksi / pesanan.';
+            $msg = 'Produk tidak dapat dihapus karena sudah memiliki riwayat pesanan (order).';
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -680,6 +745,7 @@ class ProductController extends Controller
             'deleted' => true,
             'status' => false,
             'show_on_web' => false,
+            'slug' => $product->slug . '-deleted-' . time(),
         ]);
 
         \App\Models\Product\Variant::where('product_id', $product->id)->update([

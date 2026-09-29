@@ -226,6 +226,12 @@ class OrderController extends Controller
                 'target_status' => $newStatus,
                 'fulfillment_type' => 'status_override',
             ]);
+        } elseif ($oldStatus !== $newStatus) {
+            try {
+                \App\Services\ShippingNotificationService::notifyShippingUpdate($order, (string) $newStatus);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Failed to dispatch order status notification for #{$order->order_number}: " . $e->getMessage());
+            }
         }
 
         $order->load(['courier', 'delivery.courier', 'handover.courier', 'pickingList', 'packingSlip', 'packingOut']);
@@ -355,6 +361,16 @@ class OrderController extends Controller
             \Illuminate\Support\Facades\Log::warning("Gagal memperbarui dokumen alur gudang otomatis saat input resi manual #{$order->order_number}: " . $e->getMessage(), [
                 'order_id' => $order->id,
             ]);
+            try {
+                \App\Services\ShippingNotificationService::notifyShippingUpdate(
+                    $order,
+                    'in_transit',
+                    null,
+                    null,
+                    $trackingNumber,
+                    $order->courier?->name ?? 'Kurir'
+                );
+            } catch (\Throwable $ne) {}
         }
 
         $order->load(['courier', 'delivery.courier', 'handover.courier', 'pickingList', 'packingSlip', 'packingOut']);
