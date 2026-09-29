@@ -159,7 +159,11 @@ function addAdjustmentRow(name, desc, amount) {
 function removeAdjustmentRow(btn) {
     const row = btn.closest('[data-row-index]');
     if (document.getElementById('adjustmentList').children.length <= 1) {
-        alert('At least one adjustment row is required');
+        if (typeof showToast === 'function') {
+            showToast('warning', 'Minimal harus ada 1 baris penyesuaian.');
+        } else if (typeof showWarningPopup === 'function') {
+            showWarningPopup('Minimal harus ada 1 baris penyesuaian.');
+        }
         return;
     }
     row.remove();

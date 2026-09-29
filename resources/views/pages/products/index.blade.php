@@ -247,14 +247,14 @@ function confirmDeleteProduct(id, name) {
         .then(async response => {
             const data = await response.json();
             if (!response.ok) {
-                alert(data.message || 'Gagal menghapus produk');
+                showToast('error', data.message || 'Gagal menghapus produk');
             } else {
-                alert(data.message || 'Produk berhasil dihapus.');
-                window.location.reload();
+                showToast('success', data.message || 'Produk berhasil dihapus.');
+                setTimeout(() => window.location.reload(), 1000);
             }
         })
         .catch(err => {
-            alert('Terjadi kesalahan koneksi saat menghapus produk');
+            showToast('error', 'Terjadi kesalahan koneksi saat menghapus produk');
         });
     }
 }

@@ -191,6 +191,15 @@ class BiteshipWebhookController extends Controller
         $order->meta = $meta;
         $order->save();
 
+        // Push realtime shipping notification to customer & persist in DB
+        \App\Services\ShippingNotificationService::notifyShippingUpdate(
+            $order,
+            $biteshipStatus,
+            null,
+            !empty($note) ? $note : null,
+            !empty($waybillId) ? $waybillId : ($order->resi ?? null)
+        );
+
         return [
             'status' => $biteshipStatus,
             'summary' => $summary,

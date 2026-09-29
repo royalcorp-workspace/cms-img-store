@@ -913,6 +913,23 @@
                 }
             });
         };
+
+        // Intercept native browser alert() and route to styled template popup
+        window.alert = function(message) {
+            if (typeof window.showWarningPopup === 'function') {
+                window.showWarningPopup(message, 'Pemberitahuan');
+            } else if (typeof window.showToast === 'function') {
+                window.showToast('warning', message);
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Pemberitahuan',
+                    html: message,
+                    confirmButtonText: 'Mengerti',
+                    confirmButtonColor: '#1e3a8a'
+                });
+            }
+        };
     </script>
 
     <!-- Toast Container -->

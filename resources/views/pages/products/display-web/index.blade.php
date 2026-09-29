@@ -514,8 +514,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         title: 'Gagal Menyimpan',
                         text: data.message || 'Terjadi kesalahan saat menyimpan urutan.'
                     });
-                } else {
-                    alert(data.message || 'Gagal menyimpan');
+                } else if (typeof showErrorPopup === 'function') {
+                    showErrorPopup(data.message || 'Gagal menyimpan');
+                } else if (typeof showToast === 'function') {
+                    showToast('error', data.message || 'Gagal menyimpan');
                 }
             }
         })
@@ -528,8 +530,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     title: 'Kesalahan Jaringan',
                     text: err.message
                 });
-            } else {
-                alert('Kesalahan jaringan: ' + err.message);
+            } else if (typeof showErrorPopup === 'function') {
+                showErrorPopup('Kesalahan jaringan: ' + err.message);
+            } else if (typeof showToast === 'function') {
+                showToast('error', 'Kesalahan jaringan: ' + err.message);
             }
         });
     }
@@ -580,39 +584,83 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                window.location.reload();
+                if (typeof showToast === 'function') {
+                    showToast('success', 'Produk saran berhasil ditambahkan.');
+                }
+                setTimeout(() => window.location.reload(), 500);
             } else {
-                alert(data.message || 'Gagal menambahkan produk saran.');
+                if (typeof showErrorPopup === 'function') {
+                    showErrorPopup(data.message || 'Gagal menambahkan produk saran.');
+                } else if (typeof showToast === 'function') {
+                    showToast('error', data.message || 'Gagal menambahkan produk saran.');
+                }
             }
         })
-        .catch(err => alert('Terjadi kesalahan: ' + err.message));
+        .catch(err => {
+            if (typeof showErrorPopup === 'function') {
+                showErrorPopup('Terjadi kesalahan: ' + err.message);
+            } else if (typeof showToast === 'function') {
+                showToast('error', 'Terjadi kesalahan: ' + err.message);
+            }
+        });
     };
 
     window.removeSuggestion = function(suggestedProductId) {
         if (!currentProductId || !suggestedProductId) return;
-        if (!confirm('Hapus produk ini dari daftar saran?')) return;
 
-        fetch('{{ route("products.display-web.remove-suggestion") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({
-                product_id: currentProductId,
-                suggested_product_id: suggestedProductId
+        const doRemove = () => {
+            fetch('{{ route("products.display-web.remove-suggestion") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    product_id: currentProductId,
+                    suggested_product_id: suggestedProductId
+                })
             })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert(data.message || 'Gagal menghapus produk saran.');
-            }
-        })
-        .catch(err => alert('Terjadi kesalahan: ' + err.message));
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (typeof showToast === 'function') {
+                        showToast('success', 'Produk saran berhasil dihapus.');
+                    }
+                    setTimeout(() => window.location.reload(), 500);
+                } else {
+                    if (typeof showErrorPopup === 'function') {
+                        showErrorPopup(data.message || 'Gagal menghapus produk saran.');
+                    } else if (typeof showToast === 'function') {
+                        showToast('error', data.message || 'Gagal menghapus produk saran.');
+                    }
+                }
+            })
+            .catch(err => {
+                if (typeof showErrorPopup === 'function') {
+                    showErrorPopup('Terjadi kesalahan: ' + err.message);
+                } else if (typeof showToast === 'function') {
+                    showToast('error', 'Terjadi kesalahan: ' + err.message);
+                }
+            });
+        };
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Hapus Produk Saran?',
+                text: 'Hapus produk ini dari daftar saran?',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) doRemove();
+            });
+        } else if (confirm('Hapus produk ini dari daftar saran?')) {
+            doRemove();
+        }
     };
 
     // Warn before navigating if changes are unsaved

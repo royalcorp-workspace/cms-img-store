@@ -31,4 +31,9 @@ class Conversation extends Model
     {
         return $this->hasOne(Message::class)->latest('created_at');
     }
+
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return \Illuminate\Support\Carbon::instance($date)->toISOString();
+    }
 }

@@ -23,4 +23,9 @@ class Message extends Model
     {
         return $this->belongsTo(Conversation::class);
     }
+
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return \Illuminate\Support\Carbon::instance($date)->toISOString();
+    }
 }

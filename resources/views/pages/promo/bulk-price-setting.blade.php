@@ -291,15 +291,27 @@
             body: JSON.stringify(payload),
         })
         .then(response => response.json())
-        .then(result => {
             if (result.success) {
-                alert('Prices updated successfully!');
-                location.reload();
+                if (typeof showToast === 'function') {
+                    showToast('success', 'Harga berhasil diperbarui!');
+                }
+                setTimeout(() => location.reload(), 600);
             } else {
-                alert('Failed to update prices: ' + (result.message || 'Unknown error'));
+                var errMsg = 'Gagal memperbarui harga: ' + (result.message || 'Terjadi kesalahan');
+                if (typeof showErrorPopup === 'function') {
+                    showErrorPopup(errMsg);
+                } else if (typeof showToast === 'function') {
+                    showToast('error', errMsg);
+                }
             }
         })
-        .catch(() => alert('An error occurred.'));
+        .catch(() => {
+            if (typeof showErrorPopup === 'function') {
+                showErrorPopup('Terjadi kesalahan sistem saat memperbarui harga.');
+            } else if (typeof showToast === 'function') {
+                showToast('error', 'Terjadi kesalahan sistem saat memperbarui harga.');
+            }
+        });
     });
 
     function resetAll() {

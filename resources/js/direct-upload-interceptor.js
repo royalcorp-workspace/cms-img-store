@@ -160,7 +160,18 @@ document.addEventListener('submit', async function(e) {
         form.setAttribute('data-direct-upload-handled', 'true');
         form.submit();
     } catch (err) {
-        alert('Upload Error: ' + err.message);
+        if (typeof window.showErrorPopup === 'function') {
+            window.showErrorPopup('Upload Error: ' + err.message);
+        } else if (typeof window.showToast === 'function') {
+            window.showToast('error', 'Upload Error: ' + err.message);
+        } else if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Upload Error',
+                text: err.message,
+                confirmButtonColor: '#dc2626'
+            });
+        }
         if (loader) loader.classList.add('hidden');
         imageInputs.forEach(input => input.disabled = false);
     }

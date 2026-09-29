@@ -210,7 +210,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (banksContainer.querySelectorAll('.bank-row').length > 1) {
                     row.remove();
                 } else {
-                    alert('Minimal harus ada 1 detail bank.');
+                    if (typeof showToast === 'function') {
+                        showToast('warning', 'Minimal harus ada 1 detail bank.');
+                    } else if (typeof showWarningPopup === 'function') {
+                        showWarningPopup('Minimal harus ada 1 detail bank.');
+                    }
                 }
             }
         });

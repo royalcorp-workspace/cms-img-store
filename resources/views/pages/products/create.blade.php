@@ -1130,11 +1130,53 @@ let selectedSizes = ['160 X 200', '180 X 200', '200 X 200'];
 let hasCompleteness = false;
 let completenessAttributeTitle = 'Kelengkapan';
 const PRESET_COMPLETENESS = [
-    { name: 'Kasur Saja', short: 'Kasur Saja', code: 'KS' },
-    { name: 'Set Kasur + Divan', short: 'Set Kasur + Divan', code: 'SD' }
+    { name: 'Kasur Saja', short: 'Kasur Saja', label: 'Kasur Saja', code: 'KS' },
+    { name: 'Set Kasur + Divan', short: 'Set Kasur + Divan', label: 'Set Kasur + Divan', code: 'SD' },
+    { name: 'Set Kasur + Sandaran', short: 'Set Kasur + Sandaran', label: 'Set Kasur + Sandaran', code: 'SS' },
+    { name: 'Full Set', short: 'Full Set', label: 'Full Set (Kasur + Divan + Sandaran)', code: 'FS' }
 ];
 let completenessList = [...PRESET_COMPLETENESS];
 let activeCompleteness = ['Kasur Saja', 'Set Kasur + Divan'];
+
+function normalizeCompletenessName(str) {
+    if (!str) return '';
+    const trimmed = String(str).trim();
+    const lower = trimmed.toLowerCase();
+    if (lower === 'kasur saja' || lower === 'mattress only' || lower === 'mattress') {
+        return 'Kasur Saja';
+    }
+    if (lower === 'set kasur + divan' || lower === 'set kasur divan' || lower === 'kasur + divan') {
+        return 'Set Kasur + Divan';
+    }
+    if (lower === 'set kasur + sandaran' || lower === 'set kasur sandaran' || lower === 'kasur + sandaran') {
+        return 'Set Kasur + Sandaran';
+    }
+    if (lower === 'full set' || lower === 'fullset' || lower === 'full bed set' || lower.includes('full set') || lower.includes('fullset')) {
+        return 'Full Set';
+    }
+    return trimmed;
+}
+
+function detectCompletenessFromVariantName(vName) {
+    if (!vName) return null;
+    const str = String(vName).trim();
+    if (str.match(/\b(kasur saja|mattress only)\b/i)) return 'Kasur Saja';
+    if (str.match(/\b(set kasur \+ divan|kasur \+ divan)\b/i)) return 'Set Kasur + Divan';
+    if (str.match(/\b(set kasur \+ sandaran|kasur \+ sandaran)\b/i)) return 'Set Kasur + Sandaran';
+    if (str.match(/\b(fullset|full set|full bed set)\b/i)) return 'Full Set';
+    return null;
+}
+
+function findCompleteness(str) {
+    if (!str) return null;
+    const s = String(str).toLowerCase().trim();
+    return completenessList.find(c => 
+        c.name.toLowerCase() === s || 
+        (c.short && c.short.toLowerCase() === s) ||
+        (c.label && c.label.toLowerCase() === s) ||
+        (s.includes('full set') && (c.name.toLowerCase().includes('full set') || c.short?.toLowerCase().includes('full set')))
+    );
+}
 
 // Thickness Configuration
 let hasThickness = true;
@@ -1291,7 +1333,7 @@ function addCustomColor() {
     const hex = hexInput.value.trim() || '#1e293b';
 
     if (!name) {
-        alert('Mohon isi nama warna.');
+        showToast('warning', 'Mohon isi nama warna.');
         nameInput.focus();
         return;
     }
@@ -1417,34 +1459,55 @@ function renderCompletenessCheckboxes() {
 
     container.innerHTML = '';
     completenessList.forEach((c) => {
-        const isChecked = activeCompleteness.includes(c.name);
+        const isChecked = activeCompleteness.some(item => {
+            const iLower = String(item).toLowerCase().trim();
+            return iLower === c.name.toLowerCase() || 
+                (c.short && iLower === c.short.toLowerCase()) ||
+                (c.label && iLower === c.label.toLowerCase()) ||
+                (iLower.includes('full set') && (c.name.toLowerCase().includes('full set') || c.short?.toLowerCase().includes('full set')));
+        });
         const item = document.createElement('div');
-        item.className = 'flex items-center justify-between p-2 rounded-xl border ' + 
-            (isChecked ? 'border-primary/40 bg-primary/5' : 'border-outline-variant/60 bg-white') + ' transition-colors';
+        item.className = 'flex items-center justify-between p-2.5 rounded-xl border cursor-pointer select-none transition-all ' + 
+            (isChecked ? 'border-primary/50 bg-primary/5 shadow-2xs' : 'border-outline-variant/60 bg-white hover:border-primary/40');
 
         item.innerHTML = `
-            <label class="flex items-center gap-2 cursor-pointer flex-1 select-none">
-                <input type="checkbox" class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4 cursor-pointer" ${isChecked ? 'checked' : ''} onchange="toggleCompletenessOption('${escapeHtml(c.name)}')">
-                <span class="text-xs font-semibold text-on-surface">${escapeHtml(c.name)}</span>
-            </label>
-            <span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono font-bold text-[10px] uppercase ml-2">${escapeHtml(c.code || 'VAR')}</span>
+            <div class="flex items-center gap-2.5 flex-1 pointer-events-none">
+                <div class="w-4 h-4 rounded border flex items-center justify-center transition-colors ${isChecked ? 'bg-primary border-primary text-white' : 'border-outline-variant bg-white'}">
+                    ${isChecked ? '<span class="material-symbols-outlined text-[13px] leading-none">check</span>' : ''}
+                </div>
+                <span class="text-xs font-semibold ${isChecked ? 'text-primary font-bold' : 'text-on-surface'}">${escapeHtml(c.label || c.name)}</span>
+            </div>
+            <span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono font-bold text-[10px] uppercase ml-2 pointer-events-none">${escapeHtml(c.code || 'VAR')}</span>
         `;
+        item.onclick = (e) => {
+            e.preventDefault();
+            toggleCompletenessOption(c.name);
+        };
         container.appendChild(item);
     });
 }
 
 function toggleCompletenessOption(compName) {
     saveCurrentTableInputs();
-    const idx = activeCompleteness.indexOf(compName);
+    const cObj = findCompleteness(compName);
+    const targetName = cObj ? cObj.name : compName;
+    const targetShort = cObj ? cObj.short : compName;
+
+    const idx = activeCompleteness.findIndex(item => {
+        const iLower = String(item).toLowerCase().trim();
+        return iLower === targetName.toLowerCase() || 
+            (targetShort && iLower === targetShort.toLowerCase()) ||
+            (iLower.includes('full set') && targetName.toLowerCase().includes('full set'));
+    });
+
     if (idx !== -1) {
         if (activeCompleteness.length === 1) {
-            alert('Minimal harus ada 1 kelengkapan paket yang aktif jika opsi ini dinyalakan.');
-            renderCompletenessCheckboxes();
+            showToast('warning', 'Minimal harus ada 1 kelengkapan paket yang aktif jika opsi ini dinyalakan.');
             return;
         }
         activeCompleteness.splice(idx, 1);
     } else {
-        activeCompleteness.push(compName);
+        activeCompleteness.push(targetName);
     }
     renderCompletenessCheckboxes();
     rebuildCombinations();
@@ -1557,7 +1620,7 @@ function toggleMultiThickness(th) {
     const idx = activeThicknesses.indexOf(th);
     if (idx !== -1) {
         if (activeThicknesses.length === 1) {
-            alert('Minimal harus ada 1 ketebalan yang aktif.');
+            showToast('warning', 'Minimal harus ada 1 ketebalan yang aktif.');
             return;
         }
         activeThicknesses.splice(idx, 1);
@@ -1722,7 +1785,7 @@ function rebuildCombinations() {
         const dims = parseSizeDimensions(sizeStr);
 
         comps.forEach(compName => {
-            const compObj = compName ? completenessList.find(c => c.name === compName) : null;
+            const compObj = compName ? findCompleteness(compName) : null;
             const compShort = compObj ? compObj.short : null;
             const compCode = compObj ? compObj.code : null;
 
@@ -1735,7 +1798,7 @@ function rebuildCombinations() {
                 const cached = rowCache[key] 
                     || rowCache[altKey1] 
                     || rowCache[altKey2] 
-                    || rowCache[altKey3] 
+                    || (!hasCompleteness ? rowCache[altKey3] : null) 
                     || variantRows.find(r => r.key === key || (r.size === sizeStr && (r.kelengkapan || '') === (compShort || compName || '')))
                     || {};
 
@@ -1752,6 +1815,21 @@ function rebuildCombinations() {
                 // Default SKU
                 const defaultSku = generateAutoSku(sizeStr, compCode, (hasThickness && thicknessMode === 'multi') ? thVal : null);
 
+                // Ensure cached id & SKU only attach if completeness genuinely matches
+                const cachedComp = (cached.kelengkapan || '').toLowerCase();
+                const targetCompName = (compName || '').toLowerCase();
+                const targetCompShort = (compShort || '').toLowerCase();
+                const isExactCompMatch = !hasCompleteness || (cachedComp !== '' && (
+                    cachedComp === targetCompName || 
+                    cachedComp === targetCompShort || 
+                    (cachedComp.includes('full set') && targetCompShort.includes('full set'))
+                ));
+
+                const resolvedId = isExactCompMatch ? (cached.id || null) : null;
+                const resolvedVariantName = (isExactCompMatch && cached.variant_name) ? cached.variant_name : defaultName;
+                const resolvedSku = (isExactCompMatch && cached.sku) ? cached.sku : defaultSku;
+                const resolvedHasDbSku = isExactCompMatch ? (cached.has_db_sku || false) : false;
+
                 const fallbackSellPrice = (document.getElementById('batchSellPrice')?.value && parseFloat(document.getElementById('batchSellPrice').value) > 0)
                     ? parseFloat(document.getElementById('batchSellPrice').value)
                     : (variantRows.find(r => r.sell_price && parseFloat(r.sell_price) > 0)?.sell_price || 0);
@@ -1762,13 +1840,13 @@ function rebuildCombinations() {
 
                 newRows.push({
                     key: key,
-                    id: cached.id || null,
+                    id: resolvedId,
                     size: sizeStr,
                     kelengkapan: compShort || compName || null,
                     tebal: hasThickness ? (thicknessMode === 'multi' ? thVal : (singleThickness || 25)) : null,
-                    variant_name: cached.variant_name || defaultName,
-                    sku: cached.sku || defaultSku,
-                    has_db_sku: cached.has_db_sku || false,
+                    variant_name: resolvedVariantName,
+                    sku: resolvedSku,
+                    has_db_sku: resolvedHasDbSku,
                     base_price: (cached.base_price !== undefined && cached.base_price !== '') ? cached.base_price : fallbackBasePrice,
                     sell_price: (cached.sell_price !== undefined && cached.sell_price !== '') ? cached.sell_price : fallbackSellPrice,
                     shipping_cost: cached.shipping_cost !== undefined ? cached.shipping_cost : (document.getElementById('batchShippingCost')?.value || document.getElementById('productShippingCost')?.value || 0),
@@ -1805,7 +1883,7 @@ function updateBatchTargetSelector() {
         const groupOpt = document.createElement('optgroup');
         groupOpt.label = `Filter ${completenessAttributeTitle || 'Kelengkapan Paket'}`;
         activeCompleteness.forEach(compName => {
-            const compObj = completenessList.find(c => c.name === compName);
+            const compObj = findCompleteness(compName);
             const shortName = compObj ? compObj.short : compName;
             const count = variantRows.filter(r => r.kelengkapan === shortName || r.kelengkapan === compName).length;
             const opt = document.createElement('option');
@@ -1857,7 +1935,7 @@ function applyBatchSettings() {
     const bPkgWeight = document.getElementById('batchPkgWeight')?.value.trim() || '';
 
     if (!bBase && !bSell && !bShipping && !bPrefix && !bLength && !bWidth && !bHeight && !bWeight && !bPkgLength && !bPkgWidth && !bPkgHeight && !bPkgWeight) {
-        alert('Mohon isi minimal salah satu kolom pada Ubah Sekaligus.');
+        showToast('warning', 'Mohon isi minimal salah satu kolom pada Ubah Sekaligus.');
         return;
     }
 
@@ -1889,7 +1967,7 @@ function applyBatchSettings() {
             if (bPkgHeight !== '') v.package_height = bPkgHeight;
             if (bPkgWeight !== '') v.package_weight = bPkgWeight;
             if (bPrefix !== '') {
-                const compObj = completenessList.find(c => c.name === v.kelengkapan || c.short === v.kelengkapan);
+                const compObj = findCompleteness(v.kelengkapan);
                 v.sku = generateAutoSku(v.size, compObj?.code, thicknessMode === 'multi' ? v.tebal : null, bPrefix);
                 v.has_db_sku = true;
                 if (v.key && rowCache[v.key]) {
@@ -2215,7 +2293,7 @@ function applyPriceToSize(sizeStr) {
     const input = document.getElementById(`quickPrice_${cardSlug}`);
     const val = input ? parseFloat(input.value) : 0;
     if (!val || val <= 0) {
-        alert('Mohon masukkan nominal harga jual yang valid.');
+        showToast('warning', 'Mohon masukkan nominal harga jual yang valid.');
         if (input) input.focus();
         return;
     }
@@ -2239,7 +2317,7 @@ function applyShippingToSize(sizeStr) {
     const input = document.getElementById(`quickShipping_${cardSlug}`);
     const val = input ? parseFloat(input.value) : 0;
     if (isNaN(val) || val < 0) {
-        alert('Mohon masukkan nominal ongkir yang valid (minimal Rp 0).');
+        showToast('warning', 'Mohon masukkan nominal ongkir yang valid (minimal Rp 0).');
         if (input) input.focus();
         return;
     }
@@ -2260,12 +2338,12 @@ function applyShippingToSize(sizeStr) {
 function applyDefaultShippingToAllVariants() {
     const defaultVal = parseFloat(document.getElementById('shippingCostInput')?.value) || 0;
     if (isNaN(defaultVal) || defaultVal < 0) {
-        alert('Masukkan nominal ongkos kirim default yang valid.');
+        showToast('warning', 'Masukkan nominal ongkos kirim default yang valid.');
         return;
     }
     saveCurrentTableInputs();
     if (variantRows.length === 0) {
-        alert('Belum ada varian produk.');
+        showToast('warning', 'Belum ada varian produk.');
         return;
     }
     variantRows.forEach(v => {
@@ -2614,21 +2692,11 @@ function initVariantsFromBackend() {
 
             const compVal = rawAttrs._completeness_title ? rawAttrs[rawAttrs._completeness_title] : (rawAttrs.Kelengkapan || rawAttrs[completenessAttributeTitle] || null);
             if (compVal) {
-                let cName = String(compVal).trim();
-                const lower = cName.toLowerCase();
-                if (lower === 'kasur saja' || lower === 'mattress only' || lower === 'mattress') {
-                    cName = 'Kasur Saja';
-                } else if (lower === 'set kasur + divan' || lower === 'full set' || lower === 'fullset' || lower === 'full bed set') {
-                    cName = 'Set Kasur + Divan';
-                }
-                detectedComps.add(cName);
+                const cName = normalizeCompletenessName(compVal);
+                if (cName) detectedComps.add(cName);
             } else if (v.variant_name) {
-                const vName = String(v.variant_name).trim();
-                if (vName.match(/\b(kasur saja|mattress only)\b/i)) {
-                    detectedComps.add('Kasur Saja');
-                } else if (vName.match(/\b(fullset|full set|set kasur \+ divan|full bed set)\b/i)) {
-                    detectedComps.add('Set Kasur + Divan');
-                }
+                const detected = detectCompletenessFromVariantName(v.variant_name);
+                if (detected) detectedComps.add(detected);
             }
             if (rawAttrs.Ketebalan) {
                 const num = parseFloat(String(rawAttrs.Ketebalan).replace(/\D+/g, ''));
@@ -2655,8 +2723,10 @@ function initVariantsFromBackend() {
             activeCompleteness = Array.from(detectedComps);
             // Ensure they exist in completenessList
             activeCompleteness.forEach(cName => {
-                if (!completenessList.some(c => c.name === cName || c.short === cName)) {
-                    completenessList.push({ name: cName, short: cName, code: (cName.toLowerCase().includes('kasur') ? 'KS' : 'SD') });
+                const existing = findCompleteness(cName);
+                if (!existing) {
+                    const initials = cName.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 3) || 'CST';
+                    completenessList.push({ name: cName, short: cName, label: cName, code: initials });
                 }
             });
         } else {
@@ -2749,24 +2819,15 @@ function initVariantsFromBackend() {
             const sizeStr = rawAttrs.Ukuran || formatStandardSize(v.variant_name) || (v.width && v.length ? `${v.width} X ${v.length}` : (v.variant_name || 'Standar'));
             let compStr = rawAttrs.Kelengkapan || (completenessAttributeTitle ? rawAttrs[completenessAttributeTitle] : '') || '';
             if (compStr) {
-                const lower = String(compStr).trim().toLowerCase();
-                if (lower === 'kasur saja' || lower === 'mattress only' || lower === 'mattress') {
-                    compStr = 'Kasur Saja';
-                } else if (lower === 'set kasur + divan' || lower === 'full set' || lower === 'fullset' || lower === 'full bed set') {
-                    compStr = 'Set Kasur + Divan';
-                } else {
-                    compStr = String(compStr).trim();
-                }
+                compStr = normalizeCompletenessName(compStr);
             } else if (hasCompleteness && v.variant_name) {
-                const vName = String(v.variant_name).trim();
-                if (vName.match(/\b(kasur saja|mattress only)\b/i)) compStr = 'Kasur Saja';
-                else if (vName.match(/\b(fullset|full set|set kasur \+ divan|full bed set)\b/i)) compStr = 'Set Kasur + Divan';
+                compStr = detectCompletenessFromVariantName(v.variant_name) || '';
             }
 
             const thVal = (thicknessMode === 'multi') ? (v.height || singleThickness) : (singleThickness || v.height || 25);
             const key = getCombinationKey(sizeStr, compStr, thVal);
 
-            const compObj = compStr ? completenessList.find(c => c.name === compStr || c.short === compStr) : null;
+            const compObj = compStr ? findCompleteness(compStr) : null;
             const autoSku = generateAutoSku(sizeStr, compObj ? compObj.code : null, thicknessMode === 'multi' ? thVal : null);
             const resolvedSku = (v.sku && String(v.sku).trim()) ? String(v.sku).trim() : autoSku;
 
@@ -3394,7 +3455,7 @@ async function submitProductForm() {
 function updateAllNewRowSkus() {
     variantRows.forEach((v) => {
         if (!v.has_db_sku) {
-            const compObj = completenessList.find(c => c.name === v.kelengkapan || c.short === v.kelengkapan);
+            const compObj = findCompleteness(v.kelengkapan);
             v.sku = generateAutoSku(v.size, compObj?.code, thicknessMode === 'multi' ? v.tebal : null);
         }
     });

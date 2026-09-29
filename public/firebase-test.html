@@ -348,7 +348,11 @@
     const projectId  = document.getElementById('projectId').value.trim();
 
     if (!apiKey) {
-      alert('Masukkan Firebase API Key terlebih dahulu!');
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({ icon: 'warning', title: 'Pemberitahuan', text: 'Masukkan Firebase API Key terlebih dahulu!' });
+      } else {
+        console.warn('Masukkan Firebase API Key terlebih dahulu!');
+      }
       return;
     }
 
@@ -404,14 +408,21 @@
       console.error(err);
       const step = document.querySelector('.step.active');
       if (step) step.classList.replace('active', 'error');
-      alert('Error: ' + err.message);
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+      }
     } finally {
       document.getElementById('btnGoogleLogin').disabled = false;
     }
   }
 
   async function hitApi() {
-    if (!idToken) { alert('Login Google dulu!'); return; }
+    if (!idToken) { 
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({ icon: 'warning', title: 'Pemberitahuan', text: 'Login Google dulu!' });
+      }
+      return; 
+    }
 
     document.getElementById('responseCard').style.display = 'block';
     document.getElementById('btnHitApi').disabled = true;
