@@ -118,18 +118,43 @@
 const csrfToken = '{{ csrf_token() }}';
 
 function deleteCategory(id) {
-    if (!confirm('Hapus kategori ini? Subkategori juga akan terhapus jika ada.')) return;
-    $.ajax({
-        url: '{{ url('categories') }}/' + id,
-        method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': csrfToken },
-        success: function () {
-            window.location.reload();
-        },
-        error: function () {
-            alert('Gagal menghapus kategori');
-        }
-    });
+    const doDelete = () => {
+        $.ajax({
+            url: '{{ url('categories') }}/' + id,
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken },
+            success: function () {
+                if (typeof showToast === 'function') {
+                    showToast('success', 'Kategori berhasil dihapus');
+                }
+                setTimeout(() => window.location.reload(), 500);
+            },
+            error: function () {
+                if (typeof showErrorPopup === 'function') {
+                    showErrorPopup('Gagal menghapus kategori');
+                } else if (typeof showToast === 'function') {
+                    showToast('error', 'Gagal menghapus kategori');
+                }
+            }
+        });
+    };
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Hapus Kategori?',
+            text: 'Subkategori juga akan terhapus jika ada.',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) doDelete();
+        });
+    } else if (confirm('Hapus kategori ini? Subkategori juga akan terhapus jika ada.')) {
+        doDelete();
+    }
 }
 </script>
 @endpush

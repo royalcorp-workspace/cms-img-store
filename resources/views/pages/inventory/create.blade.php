@@ -636,8 +636,8 @@
                     e.preventDefault();
                     if (typeof showErrorPopup === 'function') {
                         showErrorPopup('Pilih minimal 1 varian produk untuk disimpan.', 'Validasi Form');
-                    } else {
-                        alert('Pilih minimal 1 varian produk untuk disimpan.');
+                    } else if (typeof showToast === 'function') {
+                        showToast('error', 'Pilih minimal 1 varian produk untuk disimpan.');
                     }
                 }
             });

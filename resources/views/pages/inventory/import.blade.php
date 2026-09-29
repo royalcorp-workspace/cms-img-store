@@ -275,10 +275,13 @@
             filePreview.classList.add('hidden');
         });
 
-        importForm.addEventListener('submit', function(e) {
             if (!fileInput.files || !fileInput.files[0]) {
                 e.preventDefault();
-                alert('Silakan pilih file spreadsheet terlebih dahulu.');
+                if (typeof showWarningPopup === 'function') {
+                    showWarningPopup('Silakan pilih file spreadsheet terlebih dahulu.');
+                } else if (typeof showToast === 'function') {
+                    showToast('warning', 'Silakan pilih file spreadsheet terlebih dahulu.');
+                }
                 return;
             }
 

@@ -247,7 +247,11 @@
             })
             .catch(err => {
                 console.error("Failed to send", err);
-                alert("Failed to send message");
+                if (typeof showToast === 'function') {
+                    showToast('error', 'Gagal mengirim pesan');
+                } else if (typeof showErrorPopup === 'function') {
+                    showErrorPopup('Gagal mengirim pesan');
+                }
             });
     });
 

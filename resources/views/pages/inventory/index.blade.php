@@ -479,7 +479,13 @@
 
         const val = parseInt(input.value);
         if (isNaN(val) || val < 0) {
-            alert('Jumlah stok harus berupa angka minimal 0');
+            if (typeof showToastQuick === 'function') {
+                showToastQuick('Jumlah stok harus berupa angka minimal 0', false);
+            } else if (typeof showToast === 'function') {
+                showToast('warning', 'Jumlah stok harus berupa angka minimal 0');
+            } else if (typeof showWarningPopup === 'function') {
+                showWarningPopup('Jumlah stok harus berupa angka minimal 0');
+            }
             input.focus();
             return;
         }

@@ -505,6 +505,17 @@ class OrderFulfillmentService
                 ]);
             }
 
+            // Trigger realtime shipping notification to customer
+            $shippingStatus = $isDelivered ? 'delivered' : 'in_transit';
+            \App\Services\ShippingNotificationService::notifyShippingUpdate(
+                $order,
+                $shippingStatus,
+                null,
+                null,
+                $trackingNumber,
+                $courier?->name ?? $driverName
+            );
+
             return [
                 'picking_list' => $pickingList,
                 'packing_slip' => $packingSlip,

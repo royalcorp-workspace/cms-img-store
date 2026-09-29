@@ -699,8 +699,8 @@ async function handleQuickStatusSubmit(e) {
     if (isStatusLocked) {
         if (typeof showToast === 'function') {
             showToast('error', 'Status pesanan sudah terkunci dan tidak dapat diubah lagi.');
-        } else {
-            alert('Status pesanan sudah terkunci dan tidak dapat diubah lagi.');
+        } else if (typeof showErrorPopup === 'function') {
+            showErrorPopup('Status pesanan sudah terkunci dan tidak dapat diubah lagi.');
         }
         return;
     }
@@ -775,16 +775,16 @@ async function handleQuickStatusSubmit(e) {
         } else {
             if (typeof showToast === 'function') {
                 showToast('error', data.message || 'Gagal memperbarui status pesanan.');
-            } else {
-                alert(data.message || 'Gagal memperbarui status pesanan.');
+            } else if (typeof showErrorPopup === 'function') {
+                showErrorPopup(data.message || 'Gagal memperbarui status pesanan.');
             }
         }
     } catch (err) {
         console.error(err);
         if (typeof showToast === 'function') {
             showToast('error', 'Terjadi gangguan sistem saat memperbarui status.');
-        } else {
-            alert('Terjadi gangguan sistem saat memperbarui status.');
+        } else if (typeof showErrorPopup === 'function') {
+            showErrorPopup('Terjadi gangguan sistem saat memperbarui status.');
         }
     } finally {
         btn.disabled = false;
