@@ -149,12 +149,20 @@ class Product extends Model
 
     public function getThumbnailUrlAttribute(): ?string
     {
-        if ($this->thumbnail) {
-            return media_url($this->thumbnail);
+        $rawThumb = trim((string) ($this->thumbnail ?? ''));
+        if ($rawThumb !== '' && $rawThumb !== 'null') {
+            return media_url($rawThumb);
         }
 
-        if ($this->relationLoaded('images') && $this->images->isNotEmpty()) {
-            return $this->images->first()->url;
+        if ($this->relationLoaded('images')) {
+            if ($this->images && $this->images->isNotEmpty()) {
+                return $this->images->first()->url;
+            }
+        } else {
+            $firstImg = $this->images()->orderBy('sort_order')->first();
+            if ($firstImg) {
+                return $firstImg->url;
+            }
         }
 
         return null;

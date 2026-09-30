@@ -195,9 +195,12 @@ class BufferController extends ApiController
             'meta' => 'nullable|array',
         ]);
 
+        $orderNumber = 'ORD-' . date('Ymd') . '-' . rand(1000, 9999);
+
         $order = Order::create([
+            'order_number' => $orderNumber,
             'customer_id' => $buffer->customer_id,
-            'status' => Order::STATUS_DRAFT,
+            'status' => Order::STATUS_PENDING_APPROVAL,
             'payment_method' => $validated['payment_method'] ?? null,
             'payment_status' => $validated['payment_status'] ?? Order::PAYMENT_UNPAID,
             'subtotal' => $buffer->subtotal,

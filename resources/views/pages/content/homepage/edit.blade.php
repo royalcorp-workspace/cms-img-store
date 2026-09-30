@@ -118,19 +118,25 @@
         <div x-show="contentType === 'product' || contentType === 'combination'" x-cloak class="space-y-3 p-4 bg-surface-container-low/40 rounded-xl border border-outline-variant/40">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/30 pb-2.5">
                 <div>
-                    <label class="block text-xs font-bold text-on-surface uppercase tracking-wider">Pilih Produk / Paket Terkait</label>
-                    <span class="text-xs text-on-surface-variant font-normal">Centang produk reguler atau paket bundling yang ingin ditampilkan di section ini</span>
+                    <div class="flex items-center gap-2">
+                        <label class="block text-xs font-bold text-on-surface uppercase tracking-wider">Pilih Produk / Paket Terkait</label>
+                        <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-full text-[10px] font-medium flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
+                            <span>Khusus Produk Aktif di Web</span>
+                        </span>
+                    </div>
+                    <span class="text-xs text-on-surface-variant font-normal">Hanya menampilkan produk yang memenuhi syarat tampil di web (memiliki varian & harga jual aktif)</span>
                 </div>
                 {{-- Tabs --}}
-                <div class="inline-flex items-center p-1 bg-surface-container rounded-lg gap-1 border border-outline-variant/30 self-start sm:self-auto">
-                    <button type="button" @click="productTab = 'regular'" :class="productTab === 'regular' ? 'bg-white text-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'" class="px-3 py-1 text-xs rounded-md transition-all flex items-center gap-1.5">
+                <div class="inline-flex items-center p-1 bg-surface-container rounded-lg gap-1 border border-outline-variant/30 self-start sm:self-auto shrink-0">
+                    <button type="button" @click="productTab = 'regular'" :class="productTab === 'regular' ? 'bg-white text-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'" class="px-3 py-1 text-xs rounded-md transition-all flex items-center gap-1.5 cursor-pointer">
                         <span class="material-symbols-outlined text-[15px]">inventory_2</span>
                         <span>Produk Reguler</span>
                         @if(count($selectedProducts) > 0)
                             <span class="px-1.5 py-0.2 bg-primary/10 text-primary text-[10px] rounded-full font-bold">{{ count($selectedProducts) }}</span>
                         @endif
                     </button>
-                    <button type="button" @click="productTab = 'bundling'" :class="productTab === 'bundling' ? 'bg-white text-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'" class="px-3 py-1 text-xs rounded-md transition-all flex items-center gap-1.5">
+                    <button type="button" @click="productTab = 'bundling'" :class="productTab === 'bundling' ? 'bg-white text-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'" class="px-3 py-1 text-xs rounded-md transition-all flex items-center gap-1.5 cursor-pointer">
                         <span class="material-symbols-outlined text-[15px]">all_in_one</span>
                         <span>Paket Bundling</span>
                         @if(count($selectedBundles) > 0)
@@ -140,58 +146,143 @@
                 </div>
             </div>
 
+            {{-- Ineligible products warning banner if previously checked products don't meet web criteria --}}
+            @if(isset($ineligibleProducts) && $ineligibleProducts->isNotEmpty())
+                <div class="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-amber-600 text-[20px] shrink-0 mt-0.5">warning</span>
+                    <div class="space-y-1">
+                        <div class="font-bold text-amber-900">
+                            {{ $ineligibleProducts->count() }} Produk Pilihan Sebelumnya Tidak Memenuhi Syarat Web
+                        </div>
+                        <p class="text-[11px] text-amber-800 leading-relaxed">
+                            Produk di bawah ini sebelumnya tersimpan di section ini, tetapi tidak tampil di website karena belum memiliki varian aktif dengan harga jual (sell price &gt; 0) atau dinonaktifkan:
+                        </p>
+                        <div class="flex flex-wrap gap-1.5 pt-1">
+                            @foreach($ineligibleProducts as $ineligible)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100/90 text-amber-900 rounded-md text-[10px] font-medium border border-amber-300/60">
+                                    <span class="material-symbols-outlined text-[12px] text-amber-600">block</span>
+                                    <span>{{ $ineligible->name }}</span>
+                                    @if($ineligible->code)
+                                        <span class="text-amber-700 font-mono">({{ $ineligible->code }})</span>
+                                    @endif
+                                </span>
+                            @endforeach
+                        </div>
+                        <p class="text-[10px] text-amber-700 italic pt-0.5">
+                            Produk di atas otomatis tidak disertakan pada pilihan agar tampilan website tetap valid.
+                        </p>
+                    </div>
+                </div>
+            @endif
+
             {{-- Tab 1: Produk Reguler --}}
             <div x-show="productTab === 'regular'" class="space-y-2">
-                <div class="flex items-center gap-2">
-                    <input type="text" x-model="productSearch" placeholder="Cari produk reguler berdasarkan nama atau SKU..." class="w-full px-3 py-1.5 border border-outline-variant rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary">
-                    <span class="text-[11px] text-on-surface-variant whitespace-nowrap">{{ count($products ?? []) }} Produk</span>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="relative flex-1">
+                        <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px]">search</span>
+                        <input type="text" x-model="productSearch" placeholder="Cari nama produk, brand, atau SKU..." class="w-full pl-8 pr-3 py-1.5 border border-outline-variant rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                    </div>
+                    <span class="text-[11px] text-on-surface-variant whitespace-nowrap bg-surface-container px-2 py-1 rounded-md font-medium">{{ count($products ?? []) }} Produk Siap Web</span>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 bg-white rounded-lg border border-outline-variant/30">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-80 overflow-y-auto p-2 bg-white rounded-xl border border-outline-variant/30">
                     @forelse($products ?? [] as $prod)
-                        <label x-show="!productSearch || '{{ strtolower(addslashes($prod->name . ' ' . ($prod->code ?? ''))) }}'.includes(productSearch.toLowerCase())" class="flex items-center gap-2.5 text-xs text-on-surface p-1.5 hover:bg-surface-container/30 rounded cursor-pointer border border-transparent hover:border-outline-variant/40 transition-colors">
-                            <input type="checkbox" name="selected_products[]" value="{{ $prod->id }}" {{ in_array($prod->id, $selectedProducts) ? 'checked' : '' }} class="rounded text-primary focus:ring-primary shrink-0">
-                            @if(!empty($prod->thumbnail))
-                                <img src="{{ Str::startsWith($prod->thumbnail, ['http://', 'https://']) ? $prod->thumbnail : asset('storage/' . $prod->thumbnail) }}" class="w-8 h-8 object-cover rounded shrink-0 border border-outline-variant/40" onerror="this.style.display='none'">
-                            @else
-                                <div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-on-surface-variant shrink-0 border border-outline-variant/30">
-                                    <span class="material-symbols-outlined text-[16px]">image</span>
-                                </div>
-                            @endif
+                        @php
+                            $prodImg = $prod->thumbnail_url ?: ($prod->images->first()?->url ?? ($prod->thumbnail ? media_url($prod->thumbnail) : null));
+                            $minPrice = $prod->variants->min('sell_price') ?? $prod->final_price ?? 0;
+                            $searchHaystack = strtolower(addslashes($prod->name . ' ' . ($prod->code ?? '') . ' ' . ($prod->brand->name ?? '')));
+                        @endphp
+                        <label x-show="!productSearch || '{{ $searchHaystack }}'.includes(productSearch.toLowerCase())"
+                               class="flex items-center gap-2.5 p-2 rounded-xl border border-outline-variant/40 hover:border-primary/50 hover:bg-primary/[0.02] cursor-pointer transition-all bg-white group select-none">
+                            <input type="checkbox" name="selected_products[]" value="{{ $prod->id }}" {{ in_array($prod->id, $selectedProducts) ? 'checked' : '' }} class="rounded text-primary focus:ring-primary shrink-0 w-4 h-4 cursor-pointer">
+                            
+                            {{-- Product Thumbnail --}}
+                            <div class="w-11 h-11 rounded-lg bg-surface-container-low border border-outline-variant/30 flex items-center justify-center overflow-hidden shrink-0 relative group-hover:border-primary/40 transition-colors p-0.5">
+                                @if(!empty($prodImg))
+                                    <img src="{{ $prodImg }}" alt="{{ $prod->name }}" class="w-full h-full object-contain" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');" loading="lazy">
+                                    <div class="hidden w-full h-full flex items-center justify-center text-on-surface-variant bg-surface-container">
+                                        <span class="material-symbols-outlined text-[16px]">image</span>
+                                    </div>
+                                @else
+                                    <div class="w-full h-full flex items-center justify-center text-on-surface-variant/60 bg-surface-container-low">
+                                        <span class="material-symbols-outlined text-[18px]">image</span>
+                                    </div>
+                                @endif
+                            </div>
+
                             <div class="min-w-0 flex-1">
-                                <div class="font-medium truncate text-xs">{{ $prod->name }}</div>
-                                @if($prod->code)<div class="text-[10px] text-on-surface-variant font-mono">{{ $prod->code }}</div>@endif
+                                <div class="font-medium text-xs text-on-surface truncate group-hover:text-primary transition-colors" title="{{ $prod->name }}">
+                                    {{ $prod->name }}
+                                </div>
+                                <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                    @if($prod->code)
+                                        <span class="text-[9px] text-on-surface-variant font-mono bg-surface-container px-1 py-0.2 rounded border border-outline-variant/30">{{ $prod->code }}</span>
+                                    @endif
+                                    @if($prod->brand)
+                                        <span class="text-[9px] text-secondary font-medium truncate max-w-[90px]">{{ $prod->brand->name }}</span>
+                                    @endif
+                                </div>
+                                @if($minPrice > 0)
+                                    <div class="text-[10px] font-bold text-primary mt-0.5">
+                                        Rp {{ number_format($minPrice, 0, ',', '.') }}
+                                    </div>
+                                @endif
                             </div>
                         </label>
                     @empty
-                        <p class="text-xs text-on-surface-variant p-2 col-span-3">Tidak ada produk ditemukan.</p>
+                        <div class="col-span-1 sm:col-span-2 md:col-span-3 text-center py-8 text-on-surface-variant text-xs">
+                            <span class="material-symbols-outlined text-3xl mb-1 text-on-surface-variant/50">inventory_2</span>
+                            <p>Tidak ada produk aktif yang memenuhi syarat web.</p>
+                        </div>
                     @endforelse
                 </div>
             </div>
 
             {{-- Tab 2: Paket Bundling --}}
             <div x-show="productTab === 'bundling'" class="space-y-2">
-                <div class="flex items-center gap-2">
-                    <input type="text" x-model="bundleSearch" placeholder="Cari paket bundling berdasarkan nama..." class="w-full px-3 py-1.5 border border-outline-variant rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary">
-                    <span class="text-[11px] text-on-surface-variant whitespace-nowrap">{{ count($bundles ?? []) }} Paket</span>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="relative flex-1">
+                        <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px]">search</span>
+                        <input type="text" x-model="bundleSearch" placeholder="Cari nama paket bundling..." class="w-full pl-8 pr-3 py-1.5 border border-outline-variant rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                    </div>
+                    <span class="text-[11px] text-on-surface-variant whitespace-nowrap bg-surface-container px-2 py-1 rounded-md font-medium">{{ count($bundles ?? []) }} Paket</span>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 bg-white rounded-lg border border-outline-variant/30">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-80 overflow-y-auto p-2 bg-white rounded-xl border border-outline-variant/30">
                     @forelse($bundles ?? [] as $bundle)
-                        <label x-show="!bundleSearch || '{{ strtolower(addslashes($bundle->name)) }}'.includes(bundleSearch.toLowerCase())" class="flex items-center gap-2.5 text-xs text-on-surface p-1.5 hover:bg-surface-container/30 rounded cursor-pointer border border-transparent hover:border-outline-variant/40 transition-colors">
-                            <input type="checkbox" name="selected_bundles[]" value="{{ $bundle->id }}" {{ in_array($bundle->id, $selectedBundles) ? 'checked' : '' }} class="rounded text-primary focus:ring-primary shrink-0">
-                            @if(!empty($bundle->image_url))
-                                <img src="{{ Str::startsWith($bundle->image_url, ['http://', 'https://']) ? $bundle->image_url : asset('storage/' . $bundle->image_url) }}" class="w-8 h-8 object-cover rounded shrink-0 border border-outline-variant/40" onerror="this.style.display='none'">
-                            @else
-                                <div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-on-surface-variant shrink-0 border border-outline-variant/30">
-                                    <span class="material-symbols-outlined text-[16px]">inventory_2</span>
-                                </div>
-                            @endif
+                        @php
+                            $bundleImg = $bundle->image_full_url ?: ($bundle->image_url ? media_url($bundle->image_url) : null);
+                        @endphp
+                        <label x-show="!bundleSearch || '{{ strtolower(addslashes($bundle->name)) }}'.includes(bundleSearch.toLowerCase())"
+                               class="flex items-center gap-2.5 p-2 rounded-xl border border-outline-variant/40 hover:border-primary/50 hover:bg-primary/[0.02] cursor-pointer transition-all bg-white group select-none">
+                            <input type="checkbox" name="selected_bundles[]" value="{{ $bundle->id }}" {{ in_array($bundle->id, $selectedBundles) ? 'checked' : '' }} class="rounded text-primary focus:ring-primary shrink-0 w-4 h-4 cursor-pointer">
+                            
+                            {{-- Bundle Thumbnail --}}
+                            <div class="w-11 h-11 rounded-lg bg-surface-container-low border border-outline-variant/30 flex items-center justify-center overflow-hidden shrink-0 relative group-hover:border-primary/40 transition-colors p-0.5">
+                                @if(!empty($bundleImg))
+                                    <img src="{{ $bundleImg }}" alt="{{ $bundle->name }}" class="w-full h-full object-contain" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');" loading="lazy">
+                                    <div class="hidden w-full h-full flex items-center justify-center text-on-surface-variant bg-surface-container">
+                                        <span class="material-symbols-outlined text-[16px]">inventory_2</span>
+                                    </div>
+                                @else
+                                    <div class="w-full h-full flex items-center justify-center text-on-surface-variant/60 bg-surface-container-low">
+                                        <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+                                    </div>
+                                @endif
+                            </div>
+
                             <div class="min-w-0 flex-1">
-                                <div class="font-medium truncate text-xs">{{ $bundle->name }}</div>
-                                <div class="text-[10px] text-primary font-bold">Rp {{ number_format($bundle->price ?? 0, 0, ',', '.') }}</div>
+                                <div class="font-medium text-xs text-on-surface truncate group-hover:text-primary transition-colors" title="{{ $bundle->name }}">
+                                    {{ $bundle->name }}
+                                </div>
+                                <div class="text-[10px] text-primary font-bold mt-0.5">
+                                    Rp {{ number_format($bundle->price ?? 0, 0, ',', '.') }}
+                                </div>
                             </div>
                         </label>
                     @empty
-                        <p class="text-xs text-on-surface-variant p-2 col-span-3">Tidak ada paket bundling ditemukan.</p>
+                        <div class="col-span-1 sm:col-span-2 md:col-span-3 text-center py-8 text-on-surface-variant text-xs">
+                            <span class="material-symbols-outlined text-3xl mb-1 text-on-surface-variant/50">all_in_one</span>
+                            <p>Tidak ada paket bundling aktif ditemukan.</p>
+                        </div>
                     @endforelse
                 </div>
             </div>
