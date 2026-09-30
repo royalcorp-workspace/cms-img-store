@@ -725,6 +725,16 @@
                                 </label>
                                 <span id="sizeCountBadge" class="text-[11px] font-bold text-primary">0 Ukuran</span>
                             </div>
+
+                            <!-- Dynamic Title for Web (Editable label like Kelengkapan) -->
+                            <div class="mb-2 pb-2 border-b border-outline-variant/30">
+                                <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Judul Atribut di Web:</label>
+                                <div class="relative">
+                                    <input type="text" id="sizeTitleInput" value="Ukuran" placeholder="Contoh: Ukuran, Dimensi, Size..." class="w-full px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none" oninput="onSizeTitleChanged(this.value)">
+                                </div>
+                                <p class="text-[10px] text-on-surface-variant mt-1">Dinamis disesuaikan di toko online (misal: <em>Ukuran</em> atau <em>Dimensi</em> atau <em>Size</em>).</p>
+                            </div>
+
                             <p class="text-[11px] text-on-surface-variant">Klik untuk mengaktifkan / menonaktifkan ukuran produk:</p>
 
                             <!-- Size toggle chips container -->
@@ -1125,6 +1135,8 @@ let currentUploadContext = null;
 const STANDARD_SIZES = ['080 X 200', '090 X 200', '100 X 200', '120 X 200', '140 X 200', '160 X 200', '180 X 200', '200 X 200'];
 let allAvailableSizes = [...STANDARD_SIZES];
 let selectedSizes = ['160 X 200', '180 X 200', '200 X 200'];
+
+let sizeAttributeTitle = 'Ukuran';
 
 // Completeness Configuration
 let hasCompleteness = false;
@@ -1674,6 +1686,11 @@ function toggleThicknessSwitch(isChecked) {
     }
 
     rebuildCombinations();
+}
+
+function onSizeTitleChanged(val) {
+    sizeAttributeTitle = val.trim() || 'Ukuran';
+    renderVariantsTable();
 }
 
 function onCompletenessTitleChanged(val) {
@@ -2678,6 +2695,11 @@ function initVariantsFromBackend() {
         existingVariants.forEach(v => {
             const rawAttrs = v.attributes || {};
 
+            // Detect custom size attribute title (e.g. Ukuran or Dimensi)
+            if (rawAttrs._size_title) {
+                sizeAttributeTitle = rawAttrs._size_title;
+            }
+
             // Detect custom completeness / attribute title (e.g. Feel or Kelengkapan)
             if (rawAttrs._completeness_title) {
                 completenessAttributeTitle = rawAttrs._completeness_title;
@@ -2773,6 +2795,8 @@ function initVariantsFromBackend() {
 
         // Setup Controls UI silently without triggering rebuildCombinations
         renderStandardSizes();
+        const sizeTitleInput = document.getElementById('sizeTitleInput');
+        if (sizeTitleInput) sizeTitleInput.value = sizeAttributeTitle || 'Ukuran';
         const compToggle = document.getElementById('completenessToggle');
         if (compToggle) compToggle.checked = hasCompleteness;
         const compTitleInput = document.getElementById('completenessTitleInput');
@@ -3311,12 +3335,18 @@ async function submitProductForm() {
                 status: true
             };
 
+            // Dynamic Size Attribute Title (Editable label for web)
+            const sizeTitle = (document.getElementById('sizeTitleInput')?.value || sizeAttributeTitle || 'Ukuran').trim();
+            const formattedSize = v.size ? formatStandardSize(v.size) : ((finalWidth && finalLength) ? (finalWidth + ' x ' + finalLength) : (v.variant_name || 'Standar'));
+            attrObj['_size_title'] = sizeTitle;
+            attrObj['Ukuran'] = formattedSize;
+            attrObj[sizeTitle] = formattedSize;
+
             // If kelengkapan/custom option is enabled, pass dynamic attribute title & Ukuran attributes for pos-dealer-web
             if (hasCompleteness && v.kelengkapan) {
                 const compTitle = (document.getElementById('completenessTitleInput')?.value || completenessAttributeTitle || 'Kelengkapan').trim();
                 attrObj[compTitle] = v.kelengkapan;
                 attrObj['_completeness_title'] = compTitle;
-                attrObj['Ukuran'] = v.size ? formatStandardSize(v.size) : (finalWidth + ' x ' + finalLength);
             }
 
             // If thickness is enabled, pass Ketebalan & Ukuran attributes for pos-dealer-web
@@ -3327,16 +3357,9 @@ async function submitProductForm() {
                 } else if (singleThickness) {
                     attrObj['Ketebalan'] = String(singleThickness) + ' cm';
                 }
-                if (!attrObj['Ukuran']) {
-                    attrObj['Ukuran'] = v.size ? formatStandardSize(v.size) : (finalWidth + ' x ' + finalLength);
-                }
             } else {
                 attrObj['_has_thickness'] = false;
                 delete attrObj['Ketebalan'];
-            }
-
-            if (!attrObj['Ukuran']) {
-                attrObj['Ukuran'] = v.size ? formatStandardSize(v.size) : ((finalWidth && finalLength) ? (finalWidth + ' x ' + finalLength) : v.variant_name);
             }
 
             const shippingVal = (v.shipping_cost !== '' && v.shipping_cost !== null && !isNaN(parseFloat(v.shipping_cost))) 
@@ -3759,6 +3782,7 @@ $(document).ready(function() {
     window.toggleCompletenessOption = toggleCompletenessOption;
     window.addCustomCompleteness = addCustomCompleteness;
     window.onCompletenessTitleChanged = onCompletenessTitleChanged;
+    window.onSizeTitleChanged = onSizeTitleChanged;
     window.toggleThicknessSwitch = toggleThicknessSwitch;
     window.setThicknessMode = setThicknessMode;
     window.onSingleThicknessChange = onSingleThicknessChange;
