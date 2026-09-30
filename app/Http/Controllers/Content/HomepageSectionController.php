@@ -23,8 +23,36 @@ class HomepageSectionController extends Controller
     {
         $brands = Brand::where('deleted', false)->orderBy('name')->get();
         $categories = Category::where('deleted', false)->orderBy('name')->get();
-        $products = Product::where('deleted', false)->where('status', true)->orderBy('name')->get(['id', 'name', 'code', 'thumbnail']);
-        $bundles = ProductBundling::where('deleted', false)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'price', 'image_url']);
+        $products = Product::where('deleted', false)
+            ->where('status', true)
+            ->where(function ($q) {
+                $q->where('show_on_web', true)->orWhereNull('show_on_web');
+            })
+            ->where(function ($q) {
+                $q->where('is_bundle', false)->orWhereNull('is_bundle');
+            })
+            ->whereHas('variants', function ($q) {
+                $q->where('deleted', false)
+                  ->where('status', true)
+                  ->where('sell_price', '>', 0);
+            })
+            ->with([
+                'images' => fn($q) => $q->orderBy('sort_order'),
+                'brand:id,name',
+                'category:id,name',
+                'variants' => fn($q) => $q->where('deleted', false)->where('status', true)->where('sell_price', '>', 0)->select(['id', 'product_id', 'variant_name', 'sell_price']),
+            ])
+            ->orderBy('name')
+            ->get();
+
+        $bundles = ProductBundling::where('deleted', false)
+            ->where('is_active', true)
+            ->with([
+                'items.product.images' => fn($q) => $q->orderBy('sort_order'),
+            ])
+            ->orderBy('name')
+            ->get(['id', 'name', 'price', 'image_url', 'banner_image']);
+
         return view('pages.content.homepage.create', compact('brands', 'categories', 'products', 'bundles'));
     }
 
@@ -76,11 +104,47 @@ class HomepageSectionController extends Controller
     public function edit($id)
     {
         $section = HomepageSection::findOrFail($id);
+        $selectedProductIds = (array) ($section->meta['selected_products'] ?? []);
         $brands = Brand::where('deleted', false)->orderBy('name')->get();
         $categories = Category::where('deleted', false)->orderBy('name')->get();
-        $products = Product::where('deleted', false)->where('status', true)->orderBy('name')->get(['id', 'name', 'code', 'thumbnail']);
-        $bundles = ProductBundling::where('deleted', false)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'price', 'image_url']);
-        return view('pages.content.homepage.edit', compact('section', 'brands', 'categories', 'products', 'bundles'));
+
+        $products = Product::where('deleted', false)
+            ->where('status', true)
+            ->where(function ($q) {
+                $q->where('show_on_web', true)->orWhereNull('show_on_web');
+            })
+            ->where(function ($q) {
+                $q->where('is_bundle', false)->orWhereNull('is_bundle');
+            })
+            ->whereHas('variants', function ($q) {
+                $q->where('deleted', false)
+                  ->where('status', true)
+                  ->where('sell_price', '>', 0);
+            })
+            ->with([
+                'images' => fn($q) => $q->orderBy('sort_order'),
+                'brand:id,name',
+                'category:id,name',
+                'variants' => fn($q) => $q->where('deleted', false)->where('status', true)->where('sell_price', '>', 0)->select(['id', 'product_id', 'variant_name', 'sell_price']),
+            ])
+            ->orderBy('name')
+            ->get();
+
+        $eligibleProductIds = $products->pluck('id')->toArray();
+        $ineligibleSelectedIds = array_values(array_diff($selectedProductIds, $eligibleProductIds));
+        $ineligibleProducts = !empty($ineligibleSelectedIds)
+            ? Product::withoutGlobalScopes()->whereIn('id', $ineligibleSelectedIds)->get(['id', 'name', 'code'])
+            : collect();
+
+        $bundles = ProductBundling::where('deleted', false)
+            ->where('is_active', true)
+            ->with([
+                'items.product.images' => fn($q) => $q->orderBy('sort_order'),
+            ])
+            ->orderBy('name')
+            ->get(['id', 'name', 'price', 'image_url', 'banner_image']);
+
+        return view('pages.content.homepage.edit', compact('section', 'brands', 'categories', 'products', 'bundles', 'ineligibleProducts'));
     }
 
     public function update(Request $request, $id)

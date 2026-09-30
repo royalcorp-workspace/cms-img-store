@@ -19,7 +19,21 @@ class ProductBundling extends Model
 
     public function getImageFullUrlAttribute(): ?string
     {
-        return media_url($this->image_url);
+        $rawImage = trim((string) ($this->image_url ?? ''));
+        if ($rawImage !== '' && $rawImage !== 'null') {
+            return media_url($rawImage);
+        }
+
+        $rawBanner = trim((string) ($this->banner_image ?? ''));
+        if ($rawBanner !== '' && $rawBanner !== 'null') {
+            return media_url($rawBanner);
+        }
+
+        if ($this->relationLoaded('items') && $this->items->isNotEmpty()) {
+            return $this->items->first()->product?->thumbnail_url;
+        }
+
+        return null;
     }
 
     public function getBannerImageFullUrlAttribute(): ?string

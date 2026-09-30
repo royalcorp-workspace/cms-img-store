@@ -82,6 +82,15 @@ class Order extends Model
         static::addGlobalScope('active', function ($query) {
             $query->where('deleted', false);
         });
+
+        static::creating(function ($model) {
+            if (!$model->order_number) {
+                $model->order_number = 'ORD-' . date('Ymd') . '-' . rand(1000, 9999);
+            }
+            if ($model->status === null || $model->status === self::STATUS_DRAFT || $model->status === 0) {
+                $model->status = self::STATUS_PENDING_APPROVAL;
+            }
+        });
     }
 
     public function customer(): BelongsTo
