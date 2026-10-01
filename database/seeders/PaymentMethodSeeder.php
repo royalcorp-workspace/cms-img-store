@@ -119,6 +119,18 @@ class PaymentMethodSeeder extends Seeder
                 'deleted' => false,
             ],
             [
+                'code' => 'DEBITCARD',
+                'name' => 'Kartu Debit (Debit Online)',
+                'type' => 6,
+                'provider' => 'espay',
+                'image' => 'https://img.icons8.com/color/48/bank-card-back-side.png',
+                'has_charge' => false,
+                'minimum_amount' => 10000,
+                'sort_order' => 7,
+                'status' => 1,
+                'deleted' => false,
+            ],
+            [
                 'code' => 'cod',
                 'name' => 'Cash on Delivery',
                 'type' => 7,
