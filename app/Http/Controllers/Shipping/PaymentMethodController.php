@@ -49,7 +49,7 @@ class PaymentMethodController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:payment_methods,code',
+            'code' => 'required|string|max:50',
             'name' => 'required|string|max:150',
             'type' => 'required|integer|in:1,2,3,4,5,6,7,8',
             'provider' => 'nullable|string|max:100',
@@ -136,7 +136,7 @@ class PaymentMethodController extends Controller
         $paymentMethod = PaymentMethod::withoutGlobalScope('active')->findOrFail($id);
 
         $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:payment_methods,code,' . $id,
+            'code' => 'required|string|max:50',
             'name' => 'required|string|max:150',
             'type' => 'required|integer|in:1,2,3,4,5,6,7,8',
             'provider' => 'nullable|string|max:100',
