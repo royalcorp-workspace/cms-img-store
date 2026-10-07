@@ -132,8 +132,8 @@
                     <!-- 2. Incoming -->
                     <div class="p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl">
                         <label class="block text-[11px] font-bold text-blue-700 uppercase mb-1">Incoming</label>
-                        <input type="number" name="incoming" id="inputIncoming" min="0" value="{{ old('incoming', $inventory->incoming ?? 0) }}" class="w-full h-10 px-3 border border-blue-300 rounded-lg text-base font-bold text-on-surface bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none">
-                        <p class="text-[10px] text-on-surface-variant mt-1">Stok masuk / PO.</p>
+                        <input type="number" name="incoming" id="inputIncoming" min="0" value="{{ old('incoming', $inventory->incoming ?? 0) }}" class="w-full h-10 px-3 border border-blue-300 rounded-lg text-base font-bold text-on-surface bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none" oninput="handleIncomingInput()">
+                        <p class="text-[10px] text-on-surface-variant mt-1">Stok masuk / PO (akan menambah On Stock).</p>
                     </div>
 
                     <!-- 3. On Order -->
@@ -175,6 +175,16 @@
 
     @push('scripts')
     <script>
+        const baseOnStock = {{ max(0, (int)($inventory->on_stock ?? 0) - (int)($inventory->incoming ?? 0)) }};
+
+        function handleIncomingInput() {
+            const incoming = parseInt(document.getElementById('inputIncoming').value) || 0;
+            const onStockInput = document.getElementById('inputOnStock');
+            // On Stock nambah data dari incoming (misal On Stock 10, incoming 5 -> On Stock 15)
+            onStockInput.value = baseOnStock + incoming;
+            calculateAvailable();
+        }
+
         function calculateAvailable() {
             const onStock = parseInt(document.getElementById('inputOnStock').value) || 0;
             const onOrder = parseInt(document.getElementById('inputOnOrder').value) || 0;

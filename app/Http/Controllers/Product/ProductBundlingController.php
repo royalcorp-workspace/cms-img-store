@@ -164,8 +164,6 @@ class ProductBundlingController extends Controller
             'status' => $request->has('is_active') ? 1 : 0,
             'show_on_web' => true,
             'courier_type' => 'keduanya',
-            'shipping_scheme' => 'dimension',
-            'shipping_cost' => 0,
         ]);
 
         // Default variant for standard pos/cart integration

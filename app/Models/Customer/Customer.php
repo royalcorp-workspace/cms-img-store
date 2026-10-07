@@ -65,4 +65,14 @@ class Customer extends Model
         return $this->belongsToMany(\App\Models\Promo\Voucher::class, 'voucher_customers', 'customer_id', 'voucher_id')
             ->withPivot('creator', 'editor', 'deleted');
     }
+
+    public function setPhoneAttribute($value): void
+    {
+        if ($value !== null) {
+            $cleaned = preg_replace('/[\s\-\.]/', '', (string) $value);
+            $this->attributes['phone'] = ltrim($cleaned, '+');
+        } else {
+            $this->attributes['phone'] = null;
+        }
+    }
 }

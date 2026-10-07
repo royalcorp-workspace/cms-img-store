@@ -98,26 +98,43 @@
                         <td class="px-gutter py-4 font-body-md text-body-md text-on-surface">{{ $chargeText }}</td>
                         <td class="px-gutter py-4">
                             @if($method->deleted)
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm bg-danger/10 text-danger">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm bg-neutral-100 text-neutral-500">
                                     <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Deleted
                                 </span>
-                            @elseif($method->status)
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm bg-success/10 text-success">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Active
-                                </span>
                             @else
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm bg-danger/10 text-danger">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Inactive
-                                </span>
+                                <form action="{{ route('payment-methods.toggle-status', $method->id) }}" method="POST" class="inline" onsubmit="return confirm('Ubah status metode pembayaran {{ $method->name }} menjadi {{ $method->status ? 'Nonaktif' : 'Aktif' }}?')">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="border-0 bg-transparent p-0 cursor-pointer inline-flex" title="Klik untuk {{ $method->status ? 'Nonaktifkan' : 'Aktifkan' }}">
+                                        @if($method->status)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm bg-success/10 text-success hover:bg-success/20 transition-all">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Active
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm bg-danger/10 text-danger hover:bg-danger/20 transition-all">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Inactive
+                                            </span>
+                                        @endif
+                                    </button>
+                                </form>
                             @endif
                         </td>
                         <td class="px-gutter py-4">
-                            <div class="flex gap-2 justify-center">
-                                <a href="{{ route('payment-methods.edit', $method->id) }}" class="text-on-surface-variant hover:text-primary" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
+                            <div class="flex gap-2 justify-center items-center">
+                                @if(!$method->deleted)
+                                    <form action="{{ route('payment-methods.toggle-status', $method->id) }}" method="POST" class="inline" onsubmit="return confirm('Ubah status metode pembayaran {{ $method->name }} menjadi {{ $method->status ? 'Nonaktif' : 'Aktif' }}?')">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="text-on-surface-variant hover:text-{{ $method->status ? 'amber-600' : 'success' }} border-0 bg-transparent p-0 cursor-pointer flex items-center" title="{{ $method->status ? 'Klik untuk Nonaktifkan' : 'Klik untuk Aktifkan' }}">
+                                            <span class="material-symbols-outlined text-[20px]">{{ $method->status ? 'toggle_on' : 'toggle_off' }}</span>
+                                        </button>
+                                    </form>
+                                @endif
+                                <a href="{{ route('payment-methods.edit', $method->id) }}" class="text-on-surface-variant hover:text-primary flex items-center" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
                                 <form action="{{ route('payment-methods.destroy', $method->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete payment method {{ $method->name }}?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-on-surface-variant hover:text-danger" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                                    <button type="submit" class="text-on-surface-variant hover:text-danger border-0 bg-transparent p-0 cursor-pointer flex items-center" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
                                 </form>
                             </div>
                         </td>

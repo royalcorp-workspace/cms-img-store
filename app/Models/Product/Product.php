@@ -94,8 +94,6 @@ class Product extends Model
         'description',
         'warranty_duration',
         'courier_type',
-        'shipping_scheme',
-        'shipping_cost',
         'length',
         'width',
         'height',
@@ -125,7 +123,6 @@ class Product extends Model
             'show_on_web' => 'boolean',
             'is_bundle' => 'boolean',
             'deleted' => 'boolean',
-            'shipping_cost' => 'decimal:2',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -141,10 +138,7 @@ class Product extends Model
         'discounts',
         'final_price',
         'courier_type_label',
-        'shipping_scheme_label',
         'effective_courier_type',
-        'effective_shipping_scheme',
-        'effective_shipping_cost',
     ];
 
     public function getThumbnailUrlAttribute(): ?string
@@ -227,30 +221,12 @@ class Product extends Model
         return $this->courier_type ?: 'keduanya';
     }
 
-    public function getEffectiveShippingSchemeAttribute(): string
-    {
-        return $this->shipping_scheme ?: 'dimension';
-    }
-
-    public function getEffectiveShippingCostAttribute(): float
-    {
-        return (float) ($this->shipping_cost ?? 0);
-    }
-
     public function getCourierTypeLabelAttribute(): string
     {
         return match($this->effective_courier_type) {
             'toko' => 'Pengiriman by Toko',
             'expedisi' => 'Pengiriman by Expedisi',
             default => 'Keduanya (Toko & Expedisi)',
-        };
-    }
-
-    public function getShippingSchemeLabelAttribute(): string
-    {
-        return match($this->effective_shipping_scheme) {
-            'fixed' => 'Ongkir Tetap (Fixed Rate)',
-            default => 'Hitung Dari Dimensi & Berat',
         };
     }
 

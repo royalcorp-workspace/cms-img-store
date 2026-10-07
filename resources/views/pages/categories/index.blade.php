@@ -75,11 +75,6 @@
                                     <span class="w-1.5 h-1.5 rounded-full {{ ($category->courier_setting_type ?? 'detail') === 'global' ? 'bg-primary' : 'bg-outline-variant' }}"></span>
                                     {{ ($category->courier_setting_type ?? 'detail') === 'global' ? 'Global: ' . $category->courier_type_label : 'Detail (Per Produk)' }}
                                 </span>
-                                @if(($category->courier_setting_type ?? 'detail') === 'global')
-                                    <span class="text-[10px] text-on-surface-variant">
-                                        {{ $category->shipping_scheme === 'fixed' ? 'Ongkir Tetap (Rp ' . number_format($category->shipping_cost, 0, ',', '.') . ')' : 'Hitung dari Dimensi' }}
-                                    </span>
-                                @endif
                             </div>
                         </td>
                         <td class="px-4 py-3">{{ $category->sort_order }}</td>

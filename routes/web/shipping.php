@@ -13,6 +13,9 @@ Route::put('/couriers/{id}', [CourierController::class, 'update'])->name('courie
 Route::delete('/couriers/{id}', [CourierController::class, 'destroy'])->name('couriers.destroy');
 
 Route::get('/shipping-addresses', [ShippingAddressController::class, 'index'])->name('shipping-addresses.index');
+Route::get('/shipping-addresses/cities-by-province', [ShippingAddressController::class, 'getCitiesByProvince'])->name('shipping-addresses.cities-by-province');
+Route::get('/shipping-addresses/subdistricts-by-city', [ShippingAddressController::class, 'getSubDistrictsByCity'])->name('shipping-addresses.subdistricts-by-city');
+Route::get('/shipping-addresses/search-sub-districts', [ShippingAddressController::class, 'searchSubDistricts'])->name('shipping-addresses.search-sub-districts');
 Route::get('/shipping-addresses/create', [ShippingAddressController::class, 'create'])->name('shipping-addresses.create');
 Route::post('/shipping-addresses', [ShippingAddressController::class, 'store'])->name('shipping-addresses.store');
 Route::post('/shipping-addresses/save-inline', [ShippingAddressController::class, 'saveInline'])->name('shipping-addresses.save-inline');
@@ -25,4 +28,5 @@ Route::get('/payment-methods/create', [PaymentMethodController::class, 'create']
 Route::post('/payment-methods', [PaymentMethodController::class, 'store'])->name('payment-methods.store');
 Route::get('/payment-methods/{id}/edit', [PaymentMethodController::class, 'edit'])->name('payment-methods.edit');
 Route::put('/payment-methods/{id}', [PaymentMethodController::class, 'update'])->name('payment-methods.update');
+Route::patch('/payment-methods/{id}/toggle-status', [PaymentMethodController::class, 'toggleStatus'])->name('payment-methods.toggle-status');
 Route::delete('/payment-methods/{id}', [PaymentMethodController::class, 'destroy'])->name('payment-methods.destroy');

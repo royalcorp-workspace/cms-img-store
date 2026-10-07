@@ -289,23 +289,17 @@
     <!-- 2. PENGATURAN KURIR & SKEMA ONGKOS KIRIM -->
     @php
         $volumetricWeight = ($dimP > 0 && $dimL > 0 && $dimT > 0) ? round(($dimP * $dimL * $dimT) / 6000, 2) : 0;
-        $shippingScheme = $product->shipping_scheme ?? 'dimension';
         $courierType = $product->courier_type ?? 'keduanya';
-        $shippingCost = (float)($product->shipping_cost ?? 0);
         $categorySetting = $product->category?->courier_setting_type ?? 'detail';
-
-        $variantShippingCosts = $product->variants->pluck('shipping_cost')->filter(fn($c) => $c !== null)->map(fn($c) => (float)$c);
-        $minVariantShipping = $variantShippingCosts->isNotEmpty() ? $variantShippingCosts->min() : $shippingCost;
-        $maxVariantShipping = $variantShippingCosts->isNotEmpty() ? $variantShippingCosts->max() : $shippingCost;
     @endphp
     <div class="w-full bg-white rounded-2xl shadow-sm border border-outline-variant/30 p-6 space-y-5">
         <div class="border-b border-outline-variant/20 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div class="space-y-0.5">
                 <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary text-[22px]">local_shipping</span>
-                    Pengaturan Kurir & Skema Ongkos Kirim
+                    Pengaturan Kurir
                 </h2>
-                <p class="text-xs text-on-surface-variant">Metode kurir yang didukung dan perhitungan ongkos kirim pengiriman barang.</p>
+                <p class="text-xs text-on-surface-variant">Metode kurir yang didukung untuk pengiriman produk.</p>
             </div>
             @if($categorySetting === 'global')
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold rounded-xl shrink-0">
@@ -315,7 +309,7 @@
             @endif
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
             <!-- Tipe Kurir Card -->
             <div class="p-4 bg-surface-container-lowest border border-outline-variant/40 rounded-xl space-y-2">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block">Tipe Kurir Pengiriman</span>
@@ -346,49 +340,6 @@
                         </div>
                     @endif
                 </div>
-            </div>
-
-            <!-- Skema Ongkir Card -->
-            <div class="p-4 bg-surface-container-lowest border border-outline-variant/40 rounded-xl space-y-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block">Skema Ongkos Kirim</span>
-                @if($shippingScheme === 'fixed')
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-[22px]">payments</span>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <p class="text-sm font-bold text-on-surface">Ongkos Kirim Tetap (Per Varian)</p>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">Flat Rate</span>
-                            </div>
-                            <div class="flex items-baseline gap-1.5 mt-0.5">
-                                <p class="text-sm font-bold text-amber-900 font-mono">
-                                    @if($minVariantShipping == $maxVariantShipping)
-                                        Rp{{ number_format($minVariantShipping, 0, ',', '.') }}
-                                    @else
-                                        Rp{{ number_format($minVariantShipping, 0, ',', '.') }} - Rp{{ number_format($maxVariantShipping, 0, ',', '.') }}
-                                    @endif
-                                </p>
-                                <span class="text-[11px] text-on-surface-variant font-medium">(Sesuai ukuran / variasi)</span>
-                            </div>
-                        </div>
-                    </div>
-                @else
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-[22px]">straighten</span>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <p class="text-sm font-bold text-on-surface">Hitung Berdasarkan Dimensi & Berat</p>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">Kalkulasi Otomatis</span>
-                            </div>
-                            <p class="text-[11px] text-on-surface-variant mt-0.5">
-                                Dihitung real-time dari volume (P × L × T) dan berat aktual produk sesuai tarif ekspedisi.
-                            </p>
-                        </div>
-                    </div>
-                @endif
             </div>
         </div>
 
@@ -563,9 +514,6 @@
                                         <th class="py-2.5 px-3">Dimensi & Berat</th>
                                         <th class="py-2.5 px-3 text-right">Harga Modal</th>
                                         <th class="py-2.5 px-3 text-right">Harga Jual</th>
-                                        @if($shippingScheme === 'fixed')
-                                            <th class="py-2.5 px-3 text-right bg-amber-50/50 text-amber-900 border-l border-r border-amber-200/50">Ongkir Tetap</th>
-                                        @endif
                                         <th class="py-2.5 px-3 text-center">Stok</th>
                                         <th class="py-2.5 px-3 text-center">Status</th>
                                     </tr>
@@ -635,15 +583,6 @@
                                                     Rp{{ number_format($v->sell_price ?? $v->base_price ?? 0, 0, ',', '.') }}
                                                 </span>
                                             </td>
-
-                                            @if($shippingScheme === 'fixed')
-                                                <!-- Ongkir Tetap -->
-                                                <td class="py-2.5 px-3 text-right bg-amber-50/20 border-l border-r border-amber-200/40">
-                                                    <span class="font-bold text-amber-900 font-mono text-xs">
-                                                        Rp{{ number_format($v->shipping_cost ?? $shippingCost ?? 0, 0, ',', '.') }}
-                                                    </span>
-                                                </td>
-                                            @endif
 
                                             <!-- Stok -->
                                             <td class="py-2.5 px-3 text-center">

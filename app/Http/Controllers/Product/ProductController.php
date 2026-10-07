@@ -97,7 +97,7 @@ class ProductController extends Controller
             $variantsData = json_decode($request->variants, true);
             if (is_array($variantsData)) {
                 foreach ($variantsData as &$vData) {
-                    foreach (['base_price', 'sell_price', 'shipping_cost', 'stock_qty', 'min_order_qty', 'sort_order', 'length', 'width', 'height', 'weight', 'package_length', 'package_width', 'package_height', 'package_weight'] as $field) {
+                    foreach (['base_price', 'sell_price', 'stock_qty', 'min_order_qty', 'sort_order', 'length', 'width', 'height', 'weight', 'package_length', 'package_width', 'package_height', 'package_weight'] as $field) {
                         if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
                             $vData[$field] = null;
                         }
@@ -135,9 +135,7 @@ class ProductController extends Controller
             'category_id' => 'required|string|exists:product_category,id',
             'brand_id' => 'required|string|exists:brands,id',
             'warranty_duration' => 'nullable|string|max:255',
-            'courier_type' => 'nullable|string|in:toko,ekspedisi,keduanya',
-            'shipping_scheme' => 'nullable|string|in:fixed,dimension',
-            'shipping_cost' => 'nullable|numeric|min:0',
+            'courier_type' => 'nullable|string|in:toko,ekspedisi,expedisi,keduanya',
             'length' => 'nullable|numeric|min:0',
             'width' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
@@ -162,7 +160,6 @@ class ProductController extends Controller
             'variants.*.image' => 'nullable|string|max:500',
             'variants.*.base_price' => 'nullable|numeric|min:0',
             'variants.*.sell_price' => 'nullable|numeric|min:0',
-            'variants.*.shipping_cost' => 'nullable|numeric|min:0',
             'variants.*.length' => 'nullable|numeric|min:0',
             'variants.*.width' => 'nullable|numeric|min:0',
             'variants.*.height' => 'nullable|numeric|min:0',
@@ -194,8 +191,6 @@ class ProductController extends Controller
             }
 
             $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
-            $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
-            $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
             $validated['show_on_web'] = $request->has('show_on_web') ? (bool)$request->input('show_on_web') : true;
             $product = Product::create($validated);
 
@@ -272,14 +267,11 @@ class ProductController extends Controller
                         unset($variantData['attributes']['image'], $variantData['attributes']['image_url']);
                     }
 
-                    // Fallback to product dimensions and shipping cost if variant not specified
+                    // Fallback to product dimensions if variant not specified
                     foreach (['length', 'width', 'height', 'weight'] as $dim) {
                         if (!isset($variantData[$dim]) || $variantData[$dim] === '' || $variantData[$dim] === null) {
                             $variantData[$dim] = $validated[$dim] ?? null;
                         }
-                    }
-                    if (!isset($variantData['shipping_cost']) || $variantData['shipping_cost'] === '' || $variantData['shipping_cost'] === null) {
-                        $variantData['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
                     }
 
                     $variant = \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
@@ -357,7 +349,7 @@ class ProductController extends Controller
             $variantsData = json_decode($request->variants, true);
             if (is_array($variantsData)) {
                 foreach ($variantsData as &$vData) {
-                    foreach (['base_price', 'sell_price', 'shipping_cost', 'stock_qty', 'min_order_qty', 'sort_order', 'length', 'width', 'height', 'weight', 'package_length', 'package_width', 'package_height', 'package_weight'] as $field) {
+                    foreach (['base_price', 'sell_price', 'stock_qty', 'min_order_qty', 'sort_order', 'length', 'width', 'height', 'weight', 'package_length', 'package_width', 'package_height', 'package_weight'] as $field) {
                         if (isset($vData[$field]) && trim((string)$vData[$field]) === '') {
                             $vData[$field] = null;
                         }
@@ -396,8 +388,6 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'warranty_duration' => 'nullable|string|max:255',
             'courier_type' => 'nullable|string|in:toko,ekspedisi,expedisi,keduanya',
-            'shipping_scheme' => 'nullable|string|in:dimension,fixed',
-            'shipping_cost' => 'nullable|numeric|min:0',
             'length' => 'nullable|numeric|min:0',
             'width' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
@@ -423,7 +413,6 @@ class ProductController extends Controller
             'variants.*.image' => 'nullable|string|max:500',
             'variants.*.base_price' => 'nullable|numeric|min:0',
             'variants.*.sell_price' => 'nullable|numeric|min:0',
-            'variants.*.shipping_cost' => 'nullable|numeric|min:0',
             'variants.*.length' => 'nullable|numeric|min:0',
             'variants.*.width' => 'nullable|numeric|min:0',
             'variants.*.height' => 'nullable|numeric|min:0',
@@ -459,8 +448,6 @@ class ProductController extends Controller
             }
 
             $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
-            $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
-            $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
             $validated['show_on_web'] = $request->has('show_on_web') ? (bool)$request->input('show_on_web') : ($product->show_on_web ?? true);
 
             $targetSlug = !empty($validated['slug']) ? $validated['slug'] : \Illuminate\Support\Str::slug($validated['name'] ?? $product->name);
@@ -588,14 +575,11 @@ class ProductController extends Controller
                         unset($variantData['attributes']['image'], $variantData['attributes']['image_url']);
                     }
 
-                    // Fallback to product dimensions and shipping cost if variant not specified
+                    // Fallback to product dimensions if variant not specified
                     foreach (['length', 'width', 'height', 'weight'] as $dim) {
                         if (!isset($variantData[$dim]) || $variantData[$dim] === '' || $variantData[$dim] === null) {
                             $variantData[$dim] = $validated[$dim] ?? null;
                         }
-                    }
-                    if (!isset($variantData['shipping_cost']) || $variantData['shipping_cost'] === '' || $variantData['shipping_cost'] === null) {
-                        $variantData['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
                     }
                     
                     $vId = !empty($variantData['id']) ? $variantData['id'] : null;

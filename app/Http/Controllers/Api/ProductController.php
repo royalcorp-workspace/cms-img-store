@@ -62,8 +62,6 @@ class ProductController extends ApiController
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
             'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
-            'shipping_scheme' => 'nullable|string|in:dimension,fixed',
-            'shipping_cost' => 'nullable|numeric|min:0',
             'length' => 'nullable|numeric|min:0',
             'width' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
@@ -89,7 +87,6 @@ class ProductController extends ApiController
             'variants.*.height' => 'nullable|numeric|min:0',
             'variants.*.weight' => 'nullable|numeric|min:0',
             'variants.*.price' => 'nullable|numeric|min:0',
-            'variants.*.shipping_cost' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
             'variants.*.sort_order' => 'nullable|integer|min:0',
@@ -112,9 +109,6 @@ class ProductController extends ApiController
 
         if (isset($validated['variants']) && is_array($validated['variants'])) {
             foreach ($validated['variants'] as $variantData) {
-                if (!isset($variantData['shipping_cost']) || $variantData['shipping_cost'] === null) {
-                    $variantData['shipping_cost'] = $product->shipping_cost ?? 0;
-                }
                 Variant::create(array_merge(['product_id' => $product->id], $variantData));
             }
         }
@@ -154,8 +148,6 @@ class ProductController extends ApiController
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
             'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
-            'shipping_scheme' => 'nullable|string|in:dimension,fixed',
-            'shipping_cost' => 'nullable|numeric|min:0',
             'length' => 'nullable|numeric|min:0',
             'width' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
@@ -180,7 +172,6 @@ class ProductController extends ApiController
             'variants.*.variant_name' => 'nullable|string|max:255',
             'variants.*.attributes' => 'nullable|array',
             'variants.*.price' => 'nullable|numeric|min:0',
-            'variants.*.shipping_cost' => 'nullable|numeric|min:0',
             'variants.*.stock_qty' => 'nullable|integer|min:0',
             'variants.*.min_order_qty' => 'nullable|integer|min:0',
             'variants.*.sort_order' => 'nullable|integer|min:0',
@@ -220,9 +211,6 @@ class ProductController extends ApiController
         if (isset($validated['variants']) && is_array($validated['variants'])) {
             $submittedIds = [];
             foreach ($validated['variants'] as $variantData) {
-                if (!isset($variantData['shipping_cost']) || $variantData['shipping_cost'] === null) {
-                    $variantData['shipping_cost'] = $product->shipping_cost ?? 0;
-                }
                 if (isset($variantData['id'])) {
                     $submittedIds[] = $variantData['id'];
                     $variant = Variant::find($variantData['id']);

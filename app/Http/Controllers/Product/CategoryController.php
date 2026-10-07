@@ -91,8 +91,6 @@ class CategoryController extends Controller
             'has_warranty' => 'nullable',
             'courier_setting_type' => 'nullable|string|in:global,detail',
             'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
-            'shipping_scheme' => 'nullable|string|in:dimension,fixed',
-            'shipping_cost' => 'nullable|numeric|min:0',
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
 
@@ -102,8 +100,6 @@ class CategoryController extends Controller
         $validated['sort_order'] = (int)($validated['sort_order'] ?? 0);
         $validated['courier_setting_type'] = $validated['courier_setting_type'] ?? 'detail';
         $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
-        $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
-        $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
         
         $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
 
@@ -169,8 +165,6 @@ class CategoryController extends Controller
             'has_warranty' => 'nullable',
             'courier_setting_type' => 'nullable|string|in:global,detail',
             'courier_type' => 'nullable|string|in:toko,expedisi,keduanya',
-            'shipping_scheme' => 'nullable|string|in:dimension,fixed',
-            'shipping_cost' => 'nullable|numeric|min:0',
             'parent_id' => 'nullable|exists:product_category,id',
         ]);
 
@@ -180,8 +174,6 @@ class CategoryController extends Controller
         $validated['sort_order'] = (int)($validated['sort_order'] ?? 0);
         $validated['courier_setting_type'] = $validated['courier_setting_type'] ?? 'detail';
         $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
-        $validated['shipping_scheme'] = $validated['shipping_scheme'] ?? 'dimension';
-        $validated['shipping_cost'] = (float)($validated['shipping_cost'] ?? 0);
 
         $uploadDisk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
 

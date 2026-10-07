@@ -443,7 +443,7 @@
                             </div>
                         </td>
                         <td class="py-3 px-4">
-                            <input type="number" name="variants[${index}][on_stock]" value="${initialOnStock}" min="0" required class="input-on-stock w-full h-9 px-2.5 border border-outline-variant rounded-lg text-xs font-bold text-on-surface bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none">
+                            <input type="number" name="variants[${index}][on_stock]" value="${initialOnStock}" data-base-stock="${initialOnStock}" min="0" required class="input-on-stock w-full h-9 px-2.5 border border-outline-variant rounded-lg text-xs font-bold text-on-surface bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none">
                         </td>
                         <td class="py-3 px-4">
                             <input type="number" name="variants[${index}][incoming]" value="${initialIncoming}" min="0" class="input-incoming w-full h-9 px-2.5 border border-blue-200 rounded-lg text-xs font-bold text-on-surface bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none">
@@ -467,7 +467,27 @@
 
             // Attach input event listeners for real-time calculations
             tableBody.querySelectorAll('tr').forEach(row => {
-                row.querySelectorAll('input[type="number"]').forEach(input => {
+                const onStockInput = row.querySelector('.input-on-stock');
+                const incomingInput = row.querySelector('.input-incoming');
+
+                if (incomingInput && onStockInput) {
+                    incomingInput.addEventListener('input', () => {
+                        const base = parseInt(onStockInput.dataset.baseStock || '0');
+                        const inc = parseInt(incomingInput.value) || 0;
+                        // On Stock nambah data dari incoming (misal: On Stock 10, incoming 5 -> 15)
+                        onStockInput.value = base + inc;
+                        calculateRowAvailable(row);
+                    });
+
+                    onStockInput.addEventListener('input', () => {
+                        const inc = parseInt(incomingInput.value) || 0;
+                        const currentVal = parseInt(onStockInput.value) || 0;
+                        onStockInput.dataset.baseStock = Math.max(0, currentVal - inc);
+                        calculateRowAvailable(row);
+                    });
+                }
+
+                row.querySelectorAll('.input-on-order, .input-outgoing').forEach(input => {
                     input.addEventListener('input', () => calculateRowAvailable(row));
                 });
 
@@ -501,11 +521,19 @@
             rows.forEach(row => {
                 const cb = row.querySelector('.variant-cb');
                 if (cb && cb.checked) {
-                    if (bulkOnStock !== '') {
-                        row.querySelector('.input-on-stock').value = parseInt(bulkOnStock) || 0;
-                    }
                     if (bulkIncoming !== '') {
-                        row.querySelector('.input-incoming').value = parseInt(bulkIncoming) || 0;
+                        const incVal = parseInt(bulkIncoming) || 0;
+                        row.querySelector('.input-incoming').value = incVal;
+                        const onStockInput = row.querySelector('.input-on-stock');
+                        const base = parseInt(onStockInput.dataset.baseStock || '0');
+                        onStockInput.value = base + incVal;
+                    }
+                    if (bulkOnStock !== '') {
+                        const onStockInput = row.querySelector('.input-on-stock');
+                        const setVal = parseInt(bulkOnStock) || 0;
+                        onStockInput.value = setVal;
+                        const inc = parseInt(row.querySelector('.input-incoming').value) || 0;
+                        onStockInput.dataset.baseStock = Math.max(0, setVal - inc);
                     }
                     if (bulkOnOrder !== '') {
                         row.querySelector('.input-on-order').value = parseInt(bulkOnOrder) || 0;
@@ -552,13 +580,16 @@
                         : `Belum ada stok di gudang ini`;
                 }
 
+                const onStockInput = row.querySelector('.input-on-stock');
                 if (inv) {
-                    row.querySelector('.input-on-stock').value = inv.on_stock;
-                    row.querySelector('.input-incoming').value = inv.incoming;
+                    onStockInput.dataset.baseStock = inv.on_stock;
+                    onStockInput.value = inv.on_stock;
+                    row.querySelector('.input-incoming').value = 0;
                     row.querySelector('.input-on-order').value = inv.on_order;
                     row.querySelector('.input-outgoing').value = inv.outgoing;
                 } else {
-                    row.querySelector('.input-on-stock').value = 0;
+                    onStockInput.dataset.baseStock = 0;
+                    onStockInput.value = 0;
                     row.querySelector('.input-incoming').value = 0;
                     row.querySelector('.input-on-order').value = 0;
                     row.querySelector('.input-outgoing').value = 0;
