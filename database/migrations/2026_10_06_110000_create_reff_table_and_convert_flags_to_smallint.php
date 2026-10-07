@@ -45,7 +45,7 @@ return new class extends Migration
             DB::statement("ALTER TABLE orders ALTER COLUMN payment_status TYPE smallint USING (payment_status::smallint)");
         }
         if (Schema::hasColumn('orders', 'jde_push_status')) {
-            DB::statement("UPDATE orders SET jde_push_status = '0' WHERE jde_push_status IS NULL OR jde_push_status = '' OR jde_push_status = ''");
+            DB::statement("UPDATE orders SET jde_push_status = '0' WHERE jde_push_status IS NULL OR jde_push_status = '0' OR jde_push_status = '0'");
             DB::statement("UPDATE orders SET jde_push_status = '1' WHERE jde_push_status = 'processing'");
             DB::statement("UPDATE orders SET jde_push_status = '2' WHERE jde_push_status IN ('success', 'synced', 'pushed')");
             DB::statement("UPDATE orders SET jde_push_status = '3' WHERE jde_push_status IN ('failed', 'error')");
