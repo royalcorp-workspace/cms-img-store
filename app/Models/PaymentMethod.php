@@ -160,7 +160,11 @@ class PaymentMethod extends Model
         }
 
         if (!empty($codeOrBank) && !ctype_digit($codeOrBank)) {
-            return strtoupper($codeOrBank);
+            $upper = strtoupper($codeOrBank);
+            if (in_array($upper, ['GOPAYINAPP', 'GOPAY', 'GOPAYJUMPAPP'])) {
+                return 'GOPAYJUMPAPP';
+            }
+            return $upper;
         }
 
         $bankCode = $codeOrBank ?: ($paymentMethod?->bank_info['bank_code'] ?? '');
@@ -169,10 +173,10 @@ class PaymentMethod extends Model
 
         // Escalation map for shared clearing bank codes (e.g., 014 for BCA ATM vs Credit Card)
         $map = [
-            '014' => [ // BCA
+            '014' => [ // BCA / GoPay
                 5 => 'CREDITCARD',
                 2 => 'BCAATM',
-                3 => 'GOPAYINAPP',
+                3 => 'GOPAYJUMPAPP',
                 'default' => 'BCAATM',
             ],
             '008' => [ // Mandiri
