@@ -16,86 +16,204 @@ class ShippingAddressController extends Controller
     public function index(Request $request)
     {
         $activeTab = $request->query('tab', 'toko'); // 'toko' or 'sub_district'
-        $subDistrictId = $request->query('sub_district_id'); // nullable, default to null (Global)
-        $cityId = $request->query('city_id'); // nullable filter for toko
+        $provinceId = $request->query('province_id');
+        $cityId = $request->query('city_id');
+        $subDistrictId = $request->query('sub_district_id');
+        $courierId = $request->query('courier_id');
+        $search = $request->query('search');
+        $status = $request->query('status');
 
-        $couriers = Courier::withoutGlobalScope('active')->where('deleted', false)->get();
-        $tokoCouriers = Courier::withoutGlobalScope('active')->where('deleted', false)->where('courier_type', 'toko')->get();
-        if ($tokoCouriers->isEmpty()) {
-            $tokoCouriers = $couriers;
+        $couriers = Courier::withoutGlobalScope('active')->where('deleted', false)->orderBy('name')->get();
+        $tokoCouriers = Courier::withoutGlobalScope('active')->where('deleted', false)->where('courier_type', 'toko')->orderBy('name')->get();
+        $expedisiCouriers = Courier::withoutGlobalScope('active')->where('deleted', false)->where('courier_type', 'expedisi')->orderBy('name')->get();
+
+        $provinces = Province::where('deleted', false)->orderBy('name')->get(['id', 'name']);
+
+        $citiesQuery = City::with('province')->orderBy('name');
+        if ($provinceId) {
+            $citiesQuery->where('province_id', $provinceId);
+        }
+        $cities = $citiesQuery->get();
+
+        $subDistricts = collect();
+        if ($cityId) {
+            $subDistricts = SubDistrict::where('city_id', $cityId)->orderBy('sub_district')->get(['id', 'sub_district', 'district', 'postal_code']);
         }
 
-        $subDistricts = SubDistrict::orderBy('sub_district')->take(200)->get();
-        $cities = City::with('province')->orderBy('name')->get();
-
-        // City rates (Scope Kota - Kurir Toko)
+        // 1. Tab Kurir Toko (Scope Kota)
         $cityRatesQuery = ShippingAddress::withoutGlobalScope('active')
             ->with(['courier', 'city.province'])
             ->whereNotNull('city_id')
+            ->whereHas('courier', function ($q) {
+                $q->where('courier_type', 'toko');
+            })
             ->where('deleted', false);
 
-        if ($cityId) {
-            $cityRatesQuery->where('city_id', $cityId);
-        }
-        if ($request->filled('courier_id')) {
-            $cityRatesQuery->where('courier_id', $request->query('courier_id'));
-        }
-
-        $cityRates = $cityRatesQuery->orderBy('created_at', 'desc')->paginate(20)->appends($request->query());
-
-        // Get all existing non-deleted rates for the selected sub_district_id
-        $existingRates = ShippingAddress::withoutGlobalScope('active')
-            ->where('sub_district_id', $subDistrictId)
-            ->whereNull('city_id')
-            ->where('deleted', false)
-            ->get()
-            ->groupBy('courier_id');
-
-        // Prepare the rates list for the sub-district view
-        $courierRates = [];
-        foreach ($couriers as $courier) {
-            $rates = $existingRates->get($courier->id);
-
-            if ($rates && $rates->count() > 0) {
-                foreach ($rates as $rate) {
-                    $courierRates[] = [
-                        'id' => $rate->id,
-                        'courier_id' => $courier->id,
-                        'courier_name' => $courier->name,
-                        'type' => $rate->type,
-                        'price' => $rate->price,
-                        'additional_price_per_kg' => $rate->additional_price_per_kg,
-                        'sort_order' => $rate->sort_order,
-                        'is_active' => $rate->is_active,
-                        'is_new' => false
-                    ];
-                }
-            } else {
-                $courierRates[] = [
-                    'id' => null,
-                    'courier_id' => $courier->id,
-                    'courier_name' => $courier->name,
-                    'type' => 1,
-                    'price' => '',
-                    'additional_price_per_kg' => 0,
-                    'sort_order' => 0,
-                    'is_active' => true,
-                    'is_new' => true
-                ];
+        if ($activeTab === 'toko') {
+            if ($provinceId) {
+                $cityRatesQuery->whereHas('city', function ($q) use ($provinceId) {
+                    $q->where('province_id', $provinceId);
+                });
+            }
+            if ($cityId) {
+                $cityRatesQuery->where('city_id', $cityId);
+            }
+            if ($courierId) {
+                $cityRatesQuery->where('courier_id', $courierId);
+            }
+            if ($status !== null && $status !== '') {
+                $cityRatesQuery->where('is_active', $status === '1');
+            }
+            if ($search) {
+                $cityRatesQuery->where(function ($q) use ($search) {
+                    $q->whereHas('city', function ($cq) use ($search) {
+                        $cq->where('name', 'ilike', "%{$search}%")
+                           ->orWhereHas('province', function ($pq) use ($search) {
+                               $pq->where('name', 'ilike', "%{$search}%");
+                           });
+                    })->orWhereHas('courier', function ($cq) use ($search) {
+                        $cq->where('name', 'ilike', "%{$search}%");
+                    });
+                });
             }
         }
+
+        $cityRates = $cityRatesQuery->orderBy('created_at', 'desc')->paginate(20, ['*'], 'toko_page')->appends($request->query());
+
+        // 2. Tab Tarif Ekspedisi (Scope Kota & Kelurahan) - Meliputi 1 Indonesia
+        $subDistrictRatesQuery = ShippingAddress::withoutGlobalScope('active')
+            ->with(['courier', 'subDistrict.city.province', 'city.province'])
+            ->where(function ($q) {
+                $q->whereNotNull('sub_district_id')->orWhereNotNull('city_id');
+            })
+            ->whereHas('courier', function ($q) {
+                $q->where('courier_type', 'expedisi');
+            })
+            ->where('deleted', false);
+
+        if ($activeTab === 'sub_district') {
+            if ($provinceId) {
+                $subDistrictRatesQuery->where(function ($q) use ($provinceId) {
+                    $q->whereHas('subDistrict.city', function ($cq) use ($provinceId) {
+                        $cq->where('province_id', $provinceId);
+                    })->orWhereHas('city', function ($cq) use ($provinceId) {
+                        $cq->where('province_id', $provinceId);
+                    });
+                });
+            }
+            if ($cityId) {
+                $subDistrictRatesQuery->where(function ($q) use ($cityId) {
+                    $q->whereHas('subDistrict', function ($sq) use ($cityId) {
+                        $sq->where('city_id', $cityId);
+                    })->orWhere('city_id', $cityId);
+                });
+            }
+            if ($subDistrictId) {
+                $subDistrictRatesQuery->where('sub_district_id', $subDistrictId);
+            }
+            if ($courierId) {
+                $subDistrictRatesQuery->where('courier_id', $courierId);
+            }
+            if ($status !== null && $status !== '') {
+                $subDistrictRatesQuery->where('is_active', $status === '1');
+            }
+            if ($search) {
+                $subDistrictRatesQuery->where(function ($q) use ($search) {
+                    $q->whereHas('subDistrict', function ($sq) use ($search) {
+                        $sq->where('sub_district', 'ilike', "%{$search}%")
+                           ->orWhere('district', 'ilike', "%{$search}%")
+                           ->orWhere('postal_code', 'ilike', "%{$search}%");
+                    })->orWhereHas('city', function ($cq) use ($search) {
+                        $cq->where('name', 'ilike', "%{$search}%")
+                           ->orWhereHas('province', function ($pq) use ($search) {
+                               $pq->where('name', 'ilike', "%{$search}%");
+                           });
+                    })->orWhereHas('courier', function ($cq) use ($search) {
+                        $cq->where('name', 'ilike', "%{$search}%");
+                    });
+                });
+            }
+        }
+
+        $subDistrictRates = $subDistrictRatesQuery->orderBy('created_at', 'desc')->paginate(20, ['*'], 'expedisi_page')->appends($request->query());
 
         return view('pages.shipping.shipping-address.index', compact(
             'activeTab',
             'cityRates',
+            'subDistrictRates',
+            'provinces',
             'cities',
-            'tokoCouriers',
-            'courierRates',
             'subDistricts',
+            'tokoCouriers',
+            'expedisiCouriers',
             'couriers',
+            'provinceId',
+            'cityId',
             'subDistrictId',
-            'cityId'
+            'courierId',
+            'search',
+            'status'
         ));
+    }
+
+    public function getCitiesByProvince(Request $request)
+    {
+        $provinceId = $request->query('province_id');
+        $query = City::query();
+        if ($provinceId) {
+            $query->where('province_id', $provinceId);
+        }
+        $cities = $query->orderBy('name')->get(['id', 'name']);
+        return response()->json($cities);
+    }
+
+    public function getSubDistrictsByCity(Request $request)
+    {
+        $cityId = $request->query('city_id');
+        $query = SubDistrict::query();
+        if ($cityId) {
+            $query->where('city_id', $cityId);
+        }
+        $subDistricts = $query->orderBy('sub_district')->get(['id', 'sub_district', 'district', 'postal_code']);
+        return response()->json($subDistricts->map(fn($sd) => [
+            'id' => $sd->id,
+            'name' => $sd->sub_district . ($sd->district ? ', Kec. ' . $sd->district : '') . ($sd->postal_code ? ' (' . $sd->postal_code . ')' : ''),
+        ]));
+    }
+
+    public function searchSubDistricts(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        if (strlen($q) < 2) {
+            return response()->json(['results' => []]);
+        }
+
+        $results = SubDistrict::withoutGlobalScope('active')
+            ->with('city.province')
+            ->where('deleted', false)
+            ->where(function ($query) use ($q) {
+                $query->where('sub_district', 'ilike', "%{$q}%")
+                      ->orWhere('district', 'ilike', "%{$q}%")
+                      ->orWhere('postal_code', 'ilike', "%{$q}%")
+                      ->orWhereHas('city', function ($cq) use ($q) {
+                          $cq->where('name', 'ilike', "%{$q}%");
+                      });
+            })
+            ->orderBy('sub_district')
+            ->take(30)
+            ->get();
+
+        return response()->json([
+            'results' => $results->map(function ($sd) {
+                $cityName = $sd->city->name ?? $sd->district;
+                $provinceName = $sd->city->province->name ?? $sd->province;
+                $label = "{$sd->sub_district}, Kec. {$sd->district}, {$cityName}, {$provinceName}" . ($sd->postal_code ? " ({$sd->postal_code})" : "");
+                return [
+                    'id' => $sd->id,
+                    'text' => $label,
+                ];
+            })
+        ]);
     }
 
     public function create()
@@ -143,7 +261,11 @@ class ShippingAddressController extends Controller
             ]
         );
 
-        $tab = !empty($validated['city_id']) ? 'toko' : 'sub_district';
+        $tab = $request->input('tab');
+        if (!$tab) {
+            $courier = Courier::find($validated['courier_id']);
+            $tab = ($courier && $courier->courier_type === 'expedisi') ? 'sub_district' : 'toko';
+        }
         return redirect()->route('shipping-addresses.index', ['tab' => $tab])->with('success', 'Shipping address rate created successfully');
     }
 
@@ -305,7 +427,11 @@ class ShippingAddressController extends Controller
             'editor' => auth()->user()->name ?? 'admin',
         ]);
 
-        $tab = !empty($validated['city_id']) ? 'toko' : 'sub_district';
+        $tab = $request->input('tab');
+        if (!$tab) {
+            $courier = Courier::find($validated['courier_id']);
+            $tab = ($courier && $courier->courier_type === 'expedisi') ? 'sub_district' : 'toko';
+        }
         return redirect()->route('shipping-addresses.index', ['tab' => $tab])->with('success', 'Shipping rate updated successfully');
     }
 

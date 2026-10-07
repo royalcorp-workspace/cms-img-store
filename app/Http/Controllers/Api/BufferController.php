@@ -195,7 +195,7 @@ class BufferController extends ApiController
             'meta' => 'nullable|array',
         ]);
 
-        $orderNumber = 'ORD-' . date('Ymd') . '-' . rand(1000, 9999);
+        $orderNumber = Order::generateOrderNumber();
 
         $order = Order::create([
             'order_number' => $orderNumber,

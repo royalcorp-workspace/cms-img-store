@@ -107,32 +107,13 @@
                 </div>
 
                 <div id="globalCourierContainer" class="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant/40 space-y-5 transition-all">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Pilihan Tipe Kurir</label>
-                            <select id="courier_type" name="courier_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white text-sm">
-                                <option value="keduanya" {{ old('courier_type', $category->courier_type ?? 'keduanya') === 'keduanya' ? 'selected' : '' }}>Keduanya (Kurir Toko & Kurir Ekspedisi)</option>
-                                <option value="toko" {{ old('courier_type', $category->courier_type) === 'toko' ? 'selected' : '' }}>Hanya Pengiriman Kurir Toko</option>
-                                <option value="expedisi" {{ old('courier_type', $category->courier_type) === 'expedisi' ? 'selected' : '' }}>Hanya Pengiriman Ekspedisi (Biteship)</option>
-                            </select>
-                        </div>
-
-                        <div class="space-y-1.5">
-                            <label class="block text-label-sm font-medium text-on-surface-variant">Skema Perhitungan Ongkir</label>
-                            <select id="shipping_scheme" name="shipping_scheme" onchange="toggleShippingCostField()" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white text-sm">
-                                <option value="dimension" {{ old('shipping_scheme', $category->shipping_scheme ?? 'dimension') === 'dimension' ? 'selected' : '' }}>Hitung dari Dimensi & Berat (Standar Ekspedisi / Kurir Toko)</option>
-                                <option value="fixed" {{ old('shipping_scheme', $category->shipping_scheme) === 'fixed' ? 'selected' : '' }}>Ongkos Kirim Tetap (Fixed Flat Rate)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div id="fixedCostContainer" class="space-y-1.5 md:w-1/2">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Nominal Ongkir Tetap (Rp)</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-on-surface-variant text-sm font-semibold">Rp</span>
-                            <input type="number" step="1000" min="0" id="shipping_cost" name="shipping_cost" value="{{ old('shipping_cost', $category->shipping_cost ?? 0) }}" class="w-full pl-10 pr-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0">
-                        </div>
-                        <p class="text-[11px] text-on-surface-variant">Nominal tarif ongkir tetap yang dibebankan per pesanan jika skema dipilih 'Fixed'.</p>
+                    <div class="space-y-1.5 md:w-1/2">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Pilihan Tipe Kurir</label>
+                        <select id="courier_type" name="courier_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white text-sm">
+                            <option value="keduanya" {{ old('courier_type', $category->courier_type ?? 'keduanya') === 'keduanya' ? 'selected' : '' }}>Keduanya (Kurir Toko & Kurir Ekspedisi)</option>
+                            <option value="toko" {{ old('courier_type', $category->courier_type) === 'toko' ? 'selected' : '' }}>Hanya Pengiriman Kurir Toko</option>
+                            <option value="expedisi" {{ old('courier_type', $category->courier_type) === 'expedisi' ? 'selected' : '' }}>Hanya Pengiriman Ekspedisi (Biteship)</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -237,28 +218,8 @@
         }
     }
 
-    function toggleShippingCostField() {
-        const scheme = document.getElementById('shipping_scheme').value;
-        const costContainer = document.getElementById('fixedCostContainer');
-        if (scheme === 'fixed') {
-            costContainer.style.display = 'block';
-        } else {
-            costContainer.style.display = 'none';
-        }
-    }
-
-    document.getElementById('categoryName').addEventListener('input', function() {
-        const slugInput = document.getElementById('categorySlug');
-        slugInput.value = this.value
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .trim()
-            .replace(/[\s-]+/g, '-');
-    });
-
     document.addEventListener('DOMContentLoaded', function() {
         toggleCourierOptions();
-        toggleShippingCostField();
     });
 </script>
 @endpush

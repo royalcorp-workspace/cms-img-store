@@ -38,7 +38,8 @@
         </div>
         <div class="space-y-1.5 mt-4">
             <label class="block text-label-sm font-medium text-on-surface-variant">Description</label>
-            <textarea name="description" rows="4" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Company description...">{{ old('description') }}</textarea>
+            <div id="quill-editor" style="min-height: 250px; font-size: 14px;" class="bg-white">{!! old('description') !!}</div>
+            <textarea name="description" id="quill-description" class="opacity-0 absolute pointer-events-none h-0 w-0 -z-10">{{ old('description') }}</textarea>
             @error('description')<p class="text-danger text-sm">{{ $message }}</p>@enderror
         </div>
         <div class="space-y-1.5 mt-4">
@@ -104,4 +105,28 @@
         <button type="submit" class="px-10 py-3 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Save About Us</button>
     </div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        placeholder: 'Write company description here...',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'color': [] }, { 'background': [] }],
+                ['link', 'clean']
+            ]
+        }
+    });
+
+    const form = document.getElementById('quill-editor').closest('form');
+    form.addEventListener('submit', function() {
+        const desc = document.getElementById('quill-description');
+        desc.value = quill.root.innerHTML === '<p><br></p>' ? '' : quill.root.innerHTML;
+    });
+});
+</script>
 @endsection

@@ -63,6 +63,9 @@ class PaymentMethodController extends Controller
             'minimum_amount' => 'nullable|numeric|min:0',
             'maximum_amount' => 'nullable|numeric|min:0',
             'sort_order' => 'nullable|integer|min:0',
+            'status' => 'nullable|integer|in:0,1',
+            'product_code' => 'nullable|string|max:50',
+            'bank_code' => 'nullable|string|max:50',
             'banks' => 'nullable|array',
             'banks.*.bank_name' => 'nullable|string|max:100',
             'banks.*.account_number' => 'nullable|string|max:100',
@@ -74,7 +77,7 @@ class PaymentMethodController extends Controller
         $validated['editor'] = auth()->user()->name ?? 'admin';
         
 
-        $validated['status'] = 1;
+        $validated['status'] = $request->has('status') ? (int)$request->input('status') : 1;
         $validated['has_charge'] = $request->boolean('has_charge', false);
         $validated['deleted'] = false;
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
@@ -92,20 +95,28 @@ class PaymentMethodController extends Controller
             $validated['charge_bearer'] = null;
         }
 
-        if ((int)$validated['type'] === 1 && !empty($request->input('banks'))) {
+        if ((int)$validated['type'] === 1) {
             $banks = [];
-            foreach ($request->input('banks') as $bank) {
-                if (!empty($bank['bank_name']) && !empty($bank['account_number']) && !empty($bank['account_holder'])) {
-                    $banks[] = [
-                        'bank_name' => $bank['bank_name'],
-                        'account_number' => $bank['account_number'],
-                        'account_holder' => $bank['account_holder'],
-                    ];
+            if (!empty($request->input('banks'))) {
+                foreach ($request->input('banks') as $bank) {
+                    if (!empty($bank['bank_name']) && !empty($bank['account_number']) && !empty($bank['account_holder'])) {
+                        $banks[] = [
+                            'bank_name' => $bank['bank_name'],
+                            'account_number' => $bank['account_number'],
+                            'account_holder' => $bank['account_holder'],
+                        ];
+                    }
                 }
             }
-            $validated['bank_info'] = $banks;
+            $validated['bank_info'] = !empty($banks) ? $banks : null;
         } else {
-            $validated['bank_info'] = null;
+            $productCode = trim((string)$request->input('product_code', ''));
+            $bankCode = trim((string)$request->input('bank_code', ''));
+            $validated['bank_info'] = [
+                'product_code' => !empty($productCode) ? $productCode : $validated['code'],
+                'bank_code' => !empty($bankCode) ? $bankCode : PaymentMethod::resolveEspayProductCode($validated['code'], (int)$validated['type']),
+                'bank_name' => $validated['name'],
+            ];
         }
 
         PaymentMethod::create($validated);
@@ -139,6 +150,9 @@ class PaymentMethodController extends Controller
             'minimum_amount' => 'nullable|numeric|min:0',
             'maximum_amount' => 'nullable|numeric|min:0',
             'sort_order' => 'nullable|integer|min:0',
+            'status' => 'required|integer|in:0,1',
+            'product_code' => 'nullable|string|max:50',
+            'bank_code' => 'nullable|string|max:50',
             'banks' => 'nullable|array',
             'banks.*.bank_name' => 'nullable|string|max:100',
             'banks.*.account_number' => 'nullable|string|max:100',
@@ -146,7 +160,10 @@ class PaymentMethodController extends Controller
         ]);
 
         $validated['editor'] = auth()->user()->name ?? 'admin';
-        
+        $validated['status'] = (int)$validated['status'];
+        if ($validated['status'] === 1) {
+            $validated['deleted'] = false;
+        }
 
         $validated['has_charge'] = $request->boolean('has_charge', false);
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
@@ -173,25 +190,58 @@ class PaymentMethodController extends Controller
             $validated['charge_bearer'] = null;
         }
 
-        if ((int)$validated['type'] === 1 && !empty($request->input('banks'))) {
+        if ((int)$validated['type'] === 1) {
             $banks = [];
-            foreach ($request->input('banks') as $bank) {
-                if (!empty($bank['bank_name']) && !empty($bank['account_number']) && !empty($bank['account_holder'])) {
-                    $banks[] = [
-                        'bank_name' => $bank['bank_name'],
-                        'account_number' => $bank['account_number'],
-                        'account_holder' => $bank['account_holder'],
-                    ];
+            if (!empty($request->input('banks'))) {
+                foreach ($request->input('banks') as $bank) {
+                    if (!empty($bank['bank_name']) && !empty($bank['account_number']) && !empty($bank['account_holder'])) {
+                        $banks[] = [
+                            'bank_name' => $bank['bank_name'],
+                            'account_number' => $bank['account_number'],
+                            'account_holder' => $bank['account_holder'],
+                        ];
+                    }
                 }
             }
-            $validated['bank_info'] = $banks;
+            $validated['bank_info'] = !empty($banks) ? $banks : null;
         } else {
-            $validated['bank_info'] = null;
+            $productCode = trim((string)$request->input('product_code', ''));
+            $bankCode = trim((string)$request->input('bank_code', ''));
+            if (!empty($productCode) || !empty($bankCode)) {
+                $validated['bank_info'] = [
+                    'product_code' => !empty($productCode) ? $productCode : ($paymentMethod->bank_info['product_code'] ?? $validated['code']),
+                    'bank_code' => !empty($bankCode) ? $bankCode : ($paymentMethod->bank_info['bank_code'] ?? PaymentMethod::resolveEspayProductCode($validated['code'], (int)$validated['type'])),
+                    'bank_name' => $validated['name'],
+                ];
+            } elseif (is_array($paymentMethod->bank_info) && isset($paymentMethod->bank_info['product_code'])) {
+                // Preserve existing online bank_info if not explicitly altered
+                $validated['bank_info'] = $paymentMethod->bank_info;
+            } else {
+                $validated['bank_info'] = [
+                    'product_code' => $validated['code'],
+                    'bank_code' => PaymentMethod::resolveEspayProductCode($validated['code'], (int)$validated['type']),
+                    'bank_name' => $validated['name'],
+                ];
+            }
         }
 
         $paymentMethod->update($validated);
 
         return redirect()->route('payment-methods.index')->with('success', 'Payment method updated successfully');
+    }
+
+    public function toggleStatus(string $id)
+    {
+        $paymentMethod = PaymentMethod::withoutGlobalScope('active')->findOrFail($id);
+        $newStatus = $paymentMethod->status == 1 ? 0 : 1;
+        $paymentMethod->update([
+            'status' => $newStatus,
+            'deleted' => $newStatus == 1 ? false : $paymentMethod->deleted,
+            'editor' => auth()->user()->name ?? 'admin',
+        ]);
+
+        $statusLabel = $newStatus == 1 ? 'diaktifkan' : 'dinonaktifkan';
+        return redirect()->back()->with('success', "Status metode pembayaran {$paymentMethod->name} berhasil {$statusLabel}");
     }
 
     public function destroy(string $id)

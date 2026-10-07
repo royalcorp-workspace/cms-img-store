@@ -32,7 +32,8 @@
         </div>
         <div class="space-y-1.5 mt-4">
             <label class="block text-label-sm font-medium text-on-surface-variant">Answer <span class="text-danger">*</span></label>
-            <textarea name="answer" rows="6" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Enter answer..." required>{{ old('answer', $faq->answer) }}</textarea>
+            <div id="quill-editor" style="min-height: 200px; font-size: 14px;" class="bg-white">{!! old('answer', $faq->answer) !!}</div>
+            <textarea name="answer" id="quill-answer" class="opacity-0 absolute pointer-events-none h-0 w-0 -z-10">{{ old('answer', $faq->answer) }}</textarea>
             @error('answer')<p class="text-danger text-sm">{{ $message }}</p>@enderror
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -55,4 +56,28 @@
         <button type="submit" class="px-10 py-3 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">Update FAQ</button>
     </div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        placeholder: 'Write FAQ answer here...',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'color': [] }, { 'background': [] }],
+                ['link', 'clean']
+            ]
+        }
+    });
+
+    const form = document.getElementById('quill-editor').closest('form');
+    form.addEventListener('submit', function() {
+        const ans = document.getElementById('quill-answer');
+        ans.value = quill.root.innerHTML === '<p><br></p>' ? '' : quill.root.innerHTML;
+    });
+});
+</script>
 @endsection

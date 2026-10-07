@@ -32,10 +32,18 @@ class Order extends Model
     public const PAYMENT_REFUNDED = 3;
     public const PAYMENT_PARTIAL = 4;
 
+    public const JDE_STATUS_PENDING = 0;
+    public const JDE_STATUS_PROCESSING = 1;
+    public const JDE_STATUS_SUCCESS = 2;
+    public const JDE_STATUS_FAILED = 3;
+
     protected $fillable = [
         'order_number',
+        'order_date',
         'customer_id',
         'status',
+        'jde_push_status',
+        'jde_push_date',
         'payment_method',
         'payment_status',
         'subtotal',
@@ -61,6 +69,9 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'order_date' => 'date:Y-m-d',
+            'jde_push_date' => 'date:Y-m-d',
+            'jde_push_status' => 'integer',
             'status' => 'integer',
             'payment_status' => 'integer',
             'subtotal' => 'decimal:2',
@@ -75,6 +86,27 @@ class Order extends Model
         ];
     }
 
+    public static function generateOrderNumber($date = null): string
+    {
+        $dateObj = $date ? \Illuminate\Support\Carbon::parse($date) : now();
+        $prefix = 'ORD.' . $dateObj->format('Ymd') . '.';
+
+        $lastOrderNumber = static::withoutGlobalScopes()
+            ->where('order_number', 'ilike', $prefix . '%')
+            ->orderByRaw("LENGTH(SPLIT_PART(order_number, '.', 3)) DESC, SPLIT_PART(order_number, '.', 3) DESC")
+            ->value('order_number');
+
+        if ($lastOrderNumber) {
+            $parts = explode('.', $lastOrderNumber);
+            $lastSeq = (int) end($parts);
+            $nextSeq = $lastSeq + 1;
+        } else {
+            $nextSeq = 1;
+        }
+
+        return $prefix . str_pad((string) $nextSeq, 4, '0', STR_PAD_LEFT);
+    }
+
     protected static function boot(): void
     {
         parent::boot();
@@ -85,12 +117,107 @@ class Order extends Model
 
         static::creating(function ($model) {
             if (!$model->order_number) {
-                $model->order_number = 'ORD-' . date('Ymd') . '-' . rand(1000, 9999);
+                $model->order_number = static::generateOrderNumber($model->order_date ?? now());
             }
             if ($model->status === null || $model->status === self::STATUS_DRAFT || $model->status === 0) {
                 $model->status = self::STATUS_PENDING_APPROVAL;
             }
+            if (empty($model->order_date)) {
+                $model->order_date = now()->format('Y-m-d');
+            }
+            if ($model->jde_push_status === null) {
+                $model->jde_push_status = self::JDE_STATUS_PENDING;
+            }
+            $username = \App\Traits\HasAuditUser::resolveCurrentUsername();
+            if (empty($model->creator)) {
+                $model->creator = $username;
+            }
+            if (empty($model->editor)) {
+                $model->editor = $username;
+            }
+            if (empty($model->created_at)) {
+                $model->created_at = now();
+            }
+            if (empty($model->updated_at)) {
+                $model->updated_at = now();
+            }
         });
+
+        static::created(function ($model) {
+            try {
+                \App\Models\Order\OrderLog::create([
+                    'order_id' => $model->id,
+                    'action' => 'created',
+                    'status_from' => null,
+                    'status_to' => (string) $model->status,
+                    'notes' => 'Pesanan baru dibuat dengan status ' . $model->status,
+                    'creator' => $model->creator ?: \App\Traits\HasAuditUser::resolveCurrentUsername(),
+                    'editor' => $model->editor ?: \App\Traits\HasAuditUser::resolveCurrentUsername(),
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed logging order creation: ' . $e->getMessage());
+            }
+        });
+
+        static::updating(function ($model) {
+            $username = \App\Traits\HasAuditUser::resolveCurrentUsername();
+            $model->editor = $username;
+            $model->updated_at = now();
+
+            if ((int) $model->jde_push_status === self::JDE_STATUS_SUCCESS && empty($model->jde_push_date)) {
+                $model->jde_push_date = now()->format('Y-m-d');
+            }
+        });
+
+        static::updated(function ($model) {
+            try {
+                $username = \App\Traits\HasAuditUser::resolveCurrentUsername();
+
+                if ($model->wasChanged('status')) {
+                    \App\Models\Order\OrderLog::create([
+                        'order_id' => $model->id,
+                        'action' => 'status_changed',
+                        'status_from' => (string) $model->getOriginal('status'),
+                        'status_to' => (string) $model->status,
+                        'notes' => 'Status pesanan diubah dari ' . $model->getOriginal('status') . ' ke ' . $model->status,
+                        'creator' => $username,
+                        'editor' => $username,
+                    ]);
+                }
+
+                if ($model->wasChanged('payment_status')) {
+                    \App\Models\Order\OrderLog::create([
+                        'order_id' => $model->id,
+                        'action' => 'payment_status_changed',
+                        'status_from' => (string) $model->getOriginal('payment_status'),
+                        'status_to' => (string) $model->payment_status,
+                        'notes' => 'Status pembayaran diubah dari ' . $model->getOriginal('payment_status') . ' ke ' . $model->payment_status,
+                        'creator' => $username,
+                        'editor' => $username,
+                    ]);
+                }
+
+                if ($model->wasChanged('jde_push_status')) {
+                    $statusLabel = \App\Models\Reff::getShow('JdePushStatus', $model->jde_push_status, (string) $model->jde_push_status);
+                    \App\Models\Order\OrderLog::create([
+                        'order_id' => $model->id,
+                        'action' => 'jde_push_status_changed',
+                        'status_from' => (string) $model->getOriginal('jde_push_status'),
+                        'status_to' => (string) $model->jde_push_status,
+                        'notes' => 'Status push JDE diubah ke ' . $statusLabel . ($model->jde_push_date ? ' (Tanggal: ' . $model->jde_push_date . ')' : ''),
+                        'creator' => $username,
+                        'editor' => $username,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed logging order update: ' . $e->getMessage());
+            }
+        });
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(OrderLog::class, 'order_id', 'id')->orderBy('created_at', 'desc');
     }
 
     public function customer(): BelongsTo
@@ -404,6 +531,11 @@ class Order extends Model
 
     public static function statusLabels(): array
     {
+        $dbLabels = \App\Models\Reff::getOptions('StatusOrder');
+        if (!empty($dbLabels)) {
+            return $dbLabels;
+        }
+
         return [
             self::STATUS_DRAFT => 'Draft',
             self::STATUS_PENDING_APPROVAL => 'Ordered',
@@ -418,7 +550,7 @@ class Order extends Model
 
     public function statusLabel(): string
     {
-        return self::statusLabels()[$this->status] ?? 'Unknown';
+        return \App\Models\Reff::getShow('StatusOrder', $this->status, self::statusLabels()[$this->status] ?? 'Unknown');
     }
 
     public function getStatusBadgeClassAttribute(): string
@@ -438,6 +570,11 @@ class Order extends Model
 
     public static function paymentStatusLabels(): array
     {
+        $dbLabels = \App\Models\Reff::getOptions('PaymentStatus');
+        if (!empty($dbLabels)) {
+            return $dbLabels;
+        }
+
         return [
             self::PAYMENT_UNPAID => 'Unpaid',
             self::PAYMENT_PAID => 'Paid',
@@ -449,7 +586,7 @@ class Order extends Model
 
     public function paymentStatusLabel(): string
     {
-        return self::paymentStatusLabels()[$this->payment_status] ?? 'Unknown';
+        return \App\Models\Reff::getShow('PaymentStatus', $this->payment_status, self::paymentStatusLabels()[$this->payment_status] ?? 'Unknown');
     }
 
     public function getPaymentStatusBadgeClassAttribute(): string
@@ -462,6 +599,26 @@ class Order extends Model
             self::PAYMENT_PARTIAL => 'bg-warning/10 text-warning',
             default => 'bg-gray-100 text-gray-600',
         };
+    }
+
+    public static function jdePushStatusLabels(): array
+    {
+        $dbLabels = \App\Models\Reff::getOptions('JdePushStatus');
+        if (!empty($dbLabels)) {
+            return $dbLabels;
+        }
+
+        return [
+            self::JDE_STATUS_PENDING => 'Pending',
+            self::JDE_STATUS_PROCESSING => 'Processing',
+            self::JDE_STATUS_SUCCESS => 'Success',
+            self::JDE_STATUS_FAILED => 'Failed',
+        ];
+    }
+
+    public function jdePushStatusLabel(): string
+    {
+        return \App\Models\Reff::getShow('JdePushStatus', $this->jde_push_status, self::jdePushStatusLabels()[$this->jde_push_status] ?? 'Pending');
     }
 
     public function deliveryLogs(): \Illuminate\Database\Eloquent\Relations\HasMany

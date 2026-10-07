@@ -275,10 +275,12 @@
                                 <tr class="bg-surface-container-low/60 border-b border-outline-variant/20 text-on-surface-variant text-[11px] font-bold uppercase tracking-wider">
                                     <th class="py-2.5 px-4 min-w-[220px]">Varian & SKU</th>
                                     <th class="py-2.5 px-3 min-w-[150px]">Lokasi Gudang</th>
-                                    <th class="py-2.5 px-3 text-center min-w-[140px] bg-amber-50/50 text-amber-900 border-x border-amber-200/50">
-                                        On Stock (Edit)
+                                    <th class="py-2.5 px-3 text-center min-w-[110px] bg-slate-100/70 text-slate-800">
+                                        On Stock
                                     </th>
-                                    <th class="py-2.5 px-2.5 text-center min-w-[75px]">Incoming</th>
+                                    <th class="py-2.5 px-3 text-center min-w-[130px] bg-blue-50/70 text-blue-900 border-x border-blue-200/60">
+                                        Incoming (Isi Stok)
+                                    </th>
                                     <th class="py-2.5 px-2.5 text-center min-w-[75px]">On Order</th>
                                     <th class="py-2.5 px-2.5 text-center min-w-[75px]">Outgoing</th>
                                     <th class="py-2.5 px-3 text-center min-w-[100px] bg-success/5 text-success">Available</th>
@@ -333,32 +335,38 @@
                                             </div>
                                         </td>
 
-                                        <!-- DIRECT EDITABLE ON STOCK -->
-                                        <td class="py-2.5 px-3 text-center bg-amber-50/30 border-x border-amber-200/40">
+                                        <!-- On Stock (Bertambah dari Incoming) -->
+                                        <td class="py-2.5 px-3 text-center bg-slate-50/50">
+                                            <div class="inline-flex flex-col items-center">
+                                                <span id="onstock-display-{{ $variant->id }}" class="font-mono font-bold text-xs text-on-surface">
+                                                    {{ number_format($onStockVal) }}
+                                                </span>
+                                                <span id="onstock-calc-{{ $variant->id }}" class="text-[10px] font-bold text-blue-600 hidden"></span>
+                                            </div>
+                                        </td>
+
+                                        <!-- DIRECT EDITABLE INCOMING (SKU diisi Incoming, On Stock nambah dari Incoming) -->
+                                        <td class="py-2.5 px-3 text-center bg-blue-50/30 border-x border-blue-200/50">
                                             <div class="inline-flex items-center gap-1.5">
                                                 <input 
                                                     type="number" 
                                                     min="0" 
                                                     step="1"
-                                                    value="{{ $onStockVal }}" 
-                                                    id="stock-input-{{ $variant->id }}"
+                                                    placeholder="0"
+                                                    value="" 
+                                                    id="incoming-input-{{ $variant->id }}"
                                                     data-variant-id="{{ $variant->id }}"
                                                     data-product-id="{{ $product->id }}"
-                                                    data-initial="{{ $onStockVal }}"
+                                                    data-initial-onstock="{{ $onStockVal }}"
+                                                    data-initial-incoming="{{ $incomingVal }}"
                                                     data-on-order="{{ $onOrderVal }}"
                                                     data-outgoing="{{ $outgoingVal }}"
-                                                    onkeydown="if(event.key==='Enter') { event.preventDefault(); quickSaveStock('{{ $variant->id }}'); }"
-                                                    class="stock-edit-input w-20 px-2.5 py-1 text-center font-mono font-bold text-xs bg-white border border-amber-300 rounded-lg text-amber-950 focus:ring-2 focus:ring-amber-400/30 focus:border-amber-500 focus:outline-none shadow-2xs transition-all"
-                                                    title="Ketik jumlah stok lalu tekan Enter atau klik Simpan"
+                                                    oninput="handleIncomingInput('{{ $variant->id }}')"
+                                                    onkeydown="if(event.key==='Enter') { event.preventDefault(); quickSaveIncoming('{{ $variant->id }}'); }"
+                                                    class="incoming-edit-input w-20 px-2.5 py-1 text-center font-mono font-bold text-xs bg-white border border-blue-300 rounded-lg text-blue-950 focus:ring-2 focus:ring-blue-400/30 focus:border-blue-500 focus:outline-none shadow-2xs transition-all"
+                                                    title="Ketik jumlah incoming (misal: 5). On Stock (10) akan otomatis bertambah menjadi 15."
                                                 >
                                             </div>
-                                        </td>
-
-                                        <!-- Incoming -->
-                                        <td class="py-3 px-2.5 text-center">
-                                            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold {{ $incomingVal > 0 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-400' }}">
-                                                {{ number_format($incomingVal) }}
-                                            </span>
                                         </td>
 
                                         <!-- On Order -->
@@ -387,9 +395,9 @@
                                             <button 
                                                 type="button" 
                                                 id="btn-save-{{ $variant->id }}"
-                                                onclick="quickSaveStock('{{ $variant->id }}')" 
+                                                onclick="quickSaveIncoming('{{ $variant->id }}')" 
                                                 class="inline-flex items-center justify-center gap-1 px-2.5 py-1 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-all shadow-2xs"
-                                                title="Simpan perubahan stok"
+                                                title="Simpan penambahan stok dari incoming"
                                             >
                                                 <span class="material-symbols-outlined text-[15px]">save</span>
                                                 <span>Simpan</span>
@@ -471,29 +479,88 @@
         }, 3000);
     }
 
-    function quickSaveStock(variantId) {
-        const input = document.getElementById(`stock-input-${variantId}`);
-        const btn = document.getElementById(`btn-save-${variantId}`);
+    function handleIncomingInput(variantId) {
+        const input = document.getElementById(`incoming-input-${variantId}`);
+        const onstockDisplay = document.getElementById(`onstock-display-${variantId}`);
+        const onstockCalc = document.getElementById(`onstock-calc-${variantId}`);
         const availBadge = document.getElementById(`available-badge-${variantId}`);
         if (!input) return;
 
-        const val = parseInt(input.value);
-        if (isNaN(val) || val < 0) {
-            if (typeof showToastQuick === 'function') {
-                showToastQuick('Jumlah stok harus berupa angka minimal 0', false);
-            } else if (typeof showToast === 'function') {
-                showToast('warning', 'Jumlah stok harus berupa angka minimal 0');
-            } else if (typeof showWarningPopup === 'function') {
-                showWarningPopup('Jumlah stok harus berupa angka minimal 0');
+        const baseOnStock = parseInt(input.dataset.initialOnstock || '0');
+        const incomingVal = parseInt(input.value) || 0;
+        const onOrder = parseInt(input.dataset.onOrder || '0');
+        const outgoing = parseInt(input.dataset.outgoing || '0');
+
+        // On Stock nambah data dari incoming (misal: On Stock 10, incoming 5 -> On Stock jadi 15)
+        const newOnStock = baseOnStock + incomingVal;
+        const newAvailable = Math.max(0, newOnStock - onOrder - outgoing);
+
+        if (onstockDisplay) {
+            onstockDisplay.textContent = newOnStock.toLocaleString('id-ID');
+        }
+
+        if (onstockCalc) {
+            if (incomingVal > 0) {
+                onstockCalc.textContent = `(+${incomingVal})`;
+                onstockCalc.classList.remove('hidden');
+            } else {
+                onstockCalc.classList.add('hidden');
             }
+        }
+
+        if (availBadge) {
+            availBadge.textContent = newAvailable.toLocaleString('id-ID');
+            if (newAvailable > 0) {
+                availBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-success/15 text-success border border-success/30';
+            } else {
+                availBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-danger/10 text-danger border border-danger/20';
+            }
+        }
+
+        const productId = input.dataset.productId;
+        updateProductTotals(productId);
+    }
+
+    function updateProductTotals(productId) {
+        const prodGroup = document.getElementById(`product-group-${productId}`);
+        if (!prodGroup) return;
+
+        let sumOnStock = 0;
+        let sumAvail = 0;
+        prodGroup.querySelectorAll('.incoming-edit-input').forEach(inp => {
+            const base = parseInt(inp.dataset.initialOnstock || '0');
+            const inc = parseInt(inp.value) || 0;
+            const ord = parseInt(inp.dataset.onOrder || '0');
+            const out = parseInt(inp.dataset.outgoing || '0');
+            const totalStock = base + inc;
+            sumOnStock += totalStock;
+            sumAvail += Math.max(0, totalStock - ord - out);
+        });
+
+        const totOnStockEl = prodGroup.querySelector('.prod-total-onstock');
+        const totAvailEl = prodGroup.querySelector('.prod-total-available');
+        if (totOnStockEl) totOnStockEl.textContent = sumOnStock.toLocaleString('id-ID');
+        if (totAvailEl) totAvailEl.textContent = sumAvail.toLocaleString('id-ID');
+    }
+
+    function quickSaveIncoming(variantId) {
+        const input = document.getElementById(`incoming-input-${variantId}`);
+        const btn = document.getElementById(`btn-save-${variantId}`);
+        const onstockDisplay = document.getElementById(`onstock-display-${variantId}`);
+        const onstockCalc = document.getElementById(`onstock-calc-${variantId}`);
+        const availBadge = document.getElementById(`available-badge-${variantId}`);
+        if (!input) return;
+
+        const incomingVal = parseInt(input.value);
+        if (isNaN(incomingVal) || incomingVal < 0) {
+            showInventoryToast('Jumlah incoming harus berupa angka minimal 0', false);
             input.focus();
             return;
         }
 
         const productId = input.dataset.productId;
-        const initialVal = parseInt(input.dataset.initial || '0');
-        const onOrder = parseInt(input.dataset.onOrder || '0');
-        const outgoing = parseInt(input.dataset.outgoing || '0');
+        const baseOnStock = parseInt(input.dataset.initialOnstock || '0');
+        const newOnStock = baseOnStock + incomingVal;
 
         // Loading state on button
         if (btn) {
@@ -512,7 +579,8 @@
             body: JSON.stringify({
                 variant_id: variantId,
                 product_id: productId,
-                on_stock: val,
+                incoming: incomingVal,
+                on_stock: newOnStock,
                 warehouse_id: '{{ request('warehouse_id') }}' || null,
                 store_channel_id: '{{ request('store_channel_id') }}' || null
             })
@@ -533,38 +601,16 @@
             }
 
             if (data.success) {
-                input.dataset.initial = val;
-                const newAvailable = data.data.available !== undefined ? data.data.available : Math.max(0, val - onOrder - outgoing);
-                
-                if (availBadge) {
-                    availBadge.textContent = newAvailable.toLocaleString('id-ID');
-                    if (newAvailable > 0) {
-                        availBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-success/15 text-success border border-success/30';
-                    } else {
-                        availBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-danger/10 text-danger border border-danger/20';
-                    }
-                }
+                // Update base dataset to the new on_stock and clear incoming input so next incoming addition is additive
+                input.dataset.initialOnstock = data.data.on_stock;
+                input.dataset.initialIncoming = data.data.incoming;
+                input.value = '';
+                if (onstockDisplay) onstockDisplay.textContent = Number(data.data.on_stock).toLocaleString('id-ID');
+                if (onstockCalc) onstockCalc.classList.add('hidden');
+                if (availBadge) availBadge.textContent = Number(data.data.available).toLocaleString('id-ID');
+                updateProductTotals(productId);
 
-                // Recalculate product totals live
-                const prodGroup = document.getElementById(`product-group-${productId}`);
-                if (prodGroup) {
-                    let sumOnStock = 0;
-                    let sumAvail = 0;
-                    prodGroup.querySelectorAll('.stock-edit-input').forEach(inp => {
-                        const sVal = parseInt(inp.value) || 0;
-                        const sOrd = parseInt(inp.dataset.onOrder) || 0;
-                        const sOut = parseInt(inp.dataset.outgoing) || 0;
-                        sumOnStock += sVal;
-                        sumAvail += Math.max(0, sVal - sOrd - sOut);
-                    });
-
-                    const totOnStockEl = prodGroup.querySelector('.prod-total-onstock');
-                    const totAvailEl = prodGroup.querySelector('.prod-total-available');
-                    if (totOnStockEl) totOnStockEl.textContent = sumOnStock.toLocaleString('id-ID');
-                    if (totAvailEl) totAvailEl.textContent = sumAvail.toLocaleString('id-ID');
-                }
-
-                showInventoryToast(data.message || 'Stok berhasil diperbarui', true);
+                showInventoryToast(data.message || `Stok berhasil disimpan. On Stock sekarang: ${data.data.on_stock}`, true);
             } else {
                 showInventoryToast(data.message || 'Gagal memperbarui stok', false);
             }

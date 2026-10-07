@@ -37,7 +37,8 @@
         </div>
         <div class="space-y-1.5 mt-4">
             <label class="block text-label-sm font-medium text-on-surface-variant">Content <span class="text-danger">*</span></label>
-            <textarea name="content" rows="6" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="Full warranty guide content..." required>{{ old('content', $item->content) }}</textarea>
+            <div id="quill-editor" style="min-height: 250px; font-size: 14px;" class="bg-white">{!! old('content', $item->content) !!}</div>
+            <textarea name="content" id="quill-content" class="opacity-0 absolute pointer-events-none h-0 w-0 -z-10">{{ old('content', $item->content) }}</textarea>
             @error('content')<p class="text-danger text-sm">{{ $message }}</p>@enderror
         </div>
         <div class="space-y-1.5 mt-4">
@@ -253,6 +254,25 @@ document.addEventListener('DOMContentLoaded', function() {
             form.appendChild(docHidden);
         }
         docHidden.value = JSON.stringify(documents);
+
+        const content = document.getElementById('quill-content');
+        if (content && window.quillWarranty) {
+            content.value = window.quillWarranty.root.innerHTML === '<p><br></p>' ? '' : window.quillWarranty.root.innerHTML;
+        }
+    });
+
+    window.quillWarranty = new Quill('#quill-editor', {
+        theme: 'snow',
+        placeholder: 'Write warranty guide content here...',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'color': [] }, { 'background': [] }],
+                ['link', 'clean']
+            ]
+        }
     });
 });
 </script>

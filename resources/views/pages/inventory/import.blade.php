@@ -154,7 +154,7 @@
                                 <option value="set" selected>Ganti Nilai (Set Nilai Baru)</option>
                                 <option value="add">Tambah ke Stok Saat Ini (+)</option>
                             </select>
-                            <p class="text-[10px] text-on-surface-variant mt-1">"Ganti Nilai" mengganti incoming langsung. "Tambah" menambahkan jumlah baru ke stok incoming lama.</p>
+                            <p class="text-[10px] text-on-surface-variant mt-1">Data incoming akan langsung menambahkan On Stock produk (contoh: On Stock 10 + incoming 5 = On Stock 15).</p>
                         </div>
 
                         <!-- Default Warehouse -->
@@ -215,7 +215,7 @@
                     
                     <div class="flex gap-3">
                         <div class="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">2</div>
-                        <p><strong class="text-on-surface">Kolom `incoming` (Wajib):</strong> Jumlah unit produk yang sedang dalam pengiriman/akan masuk (angka bulat >= 0).</p>
+                        <p><strong class="text-on-surface">Kolom `incoming` (Wajib):</strong> Jumlah unit produk yang masuk untuk SKU ini. On Stock otomatis bertambah dari nilai incoming ini (contoh: On Stock 10 + incoming 5 = On Stock 15).</p>
                     </div>
 
                     <div class="flex gap-3">

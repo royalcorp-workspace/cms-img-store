@@ -37,7 +37,7 @@
                     @error('name')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Type <span class="text-danger">*</span></label>
                     <select name="type" id="typeSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
@@ -56,6 +56,14 @@
                     <label class="block text-label-sm font-medium text-on-surface-variant">Provider</label>
                     <input type="text" name="provider" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g., BCA, Xendit" value="{{ old('provider', $paymentMethod->provider) }}">
                     @error('provider')<p class="text-danger text-sm">{{ $message }}</p>@enderror
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Status <span class="text-danger">*</span></label>
+                    <select name="status" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
+                        <option value="1" {{ old('status', $paymentMethod->status ?? 1) == 1 ? 'selected' : '' }}>Active</option>
+                        <option value="0" {{ old('status', $paymentMethod->status ?? 1) == 0 ? 'selected' : '' }}>Inactive</option>
+                    </select>
+                    @error('status')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -126,7 +134,8 @@
                 
                 <div id="banks-container" class="space-y-4">
                     @php
-                        $banks = old('banks', is_array($paymentMethod->bank_info) ? $paymentMethod->bank_info : []);
+                        $isBankList = is_array($paymentMethod->bank_info) && isset($paymentMethod->bank_info[0]) && is_array($paymentMethod->bank_info[0]);
+                        $banks = old('banks', $isBankList ? $paymentMethod->bank_info : []);
                         if (empty($banks)) {
                             $banks = [['bank_name' => '', 'account_number' => '', 'account_holder' => '']];
                         }
@@ -155,6 +164,42 @@
                     @endforeach
                 </div>
             </div>
+
+            {{-- Online Gateway / Espay Fields --}}
+            @php
+                $onlineProductCode = is_array($paymentMethod->bank_info) && isset($paymentMethod->bank_info['product_code']) 
+                    ? $paymentMethod->bank_info['product_code'] 
+                    : (!ctype_digit((string)$paymentMethod->code) ? $paymentMethod->code : '');
+                $onlineBankCode = is_array($paymentMethod->bank_info) && isset($paymentMethod->bank_info['bank_code']) 
+                    ? $paymentMethod->bank_info['bank_code'] 
+                    : (ctype_digit((string)$paymentMethod->code) ? $paymentMethod->code : '');
+            @endphp
+            <div id="onlineGatewayFields" class="bg-surface-container-low border border-outline-variant/30 rounded-xl p-5 mt-4 hidden">
+                <div class="border-b pb-3 mb-4">
+                    <h3 class="text-label-md font-bold text-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">credit_card</span> Online Gateway / Espay Configuration
+                    </h3>
+                    <p class="text-xs text-on-surface-variant mt-1">
+                        Konfigurasi Product Code dan Bank Clearing Code untuk gateway pembayaran Espay.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">
+                            Product Code <span class="text-xs text-on-surface-variant/70 font-normal">(Espay Channel ID)</span>
+                        </label>
+                        <input type="text" name="product_code" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white font-mono" placeholder="e.g., BCAATM, CREDITCARD, GOPAYINAPP" value="{{ old('product_code', $onlineProductCode) }}">
+                        <p class="text-[11px] text-on-surface-variant">Kode unik produk pembayaran. Contoh: <code class="font-bold text-primary">BCAATM</code> untuk BCA VA, <code class="font-bold text-primary">CREDITCARD</code> untuk Kartu Kredit.</p>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">
+                            Bank / Clearing Code <span class="text-xs text-on-surface-variant/70 font-normal">(3 Digit BI)</span>
+                        </label>
+                        <input type="text" name="bank_code" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white font-mono" placeholder="e.g., 014, 008, 002" value="{{ old('bank_code', $onlineBankCode) }}">
+                        <p class="text-[11px] text-on-surface-variant">Kode kliring bank (misal: <code class="font-bold">014</code> untuk BCA, <code class="font-bold">008</code> untuk Mandiri).</p>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="flex justify-end gap-4">
             <a href="{{ route('payment-methods.index') }}" class="px-8 py-3 border border-outline-variant text-primary font-bold rounded-lg hover:bg-surface-container transition-colors">Cancel</a>
@@ -176,9 +221,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const typeSelect = document.getElementById('typeSelect');
     const bankInfoFields = document.getElementById('bankInfoFields');
-    if (typeSelect && bankInfoFields) {
+    const onlineGatewayFields = document.getElementById('onlineGatewayFields');
+    if (typeSelect) {
         const toggleBankFields = () => {
-            bankInfoFields.classList.toggle('hidden', typeSelect.value !== '1');
+            const isManual = typeSelect.value === '1';
+            if (bankInfoFields) bankInfoFields.classList.toggle('hidden', !isManual);
+            if (onlineGatewayFields) onlineGatewayFields.classList.toggle('hidden', isManual);
         };
         typeSelect.addEventListener('change', toggleBankFields);
         toggleBankFields(); // Run on load

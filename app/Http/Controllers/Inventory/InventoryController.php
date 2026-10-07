@@ -243,8 +243,8 @@ class InventoryController extends Controller
                 continue;
             }
 
-            // Find variant by SKU
-            $variant = Variant::where('sku', $sku)->first();
+            // Find variant by SKU (case-insensitive & trimmed)
+            $variant = Variant::where('sku', $sku)->orWhereRaw('LOWER(TRIM(sku)) = ?', [strtolower($sku)])->first();
             if (!$variant) {
                 $failed++;
                 $errors[] = [
@@ -313,6 +313,9 @@ class InventoryController extends Controller
                 ]);
             }
 
+            // On Stock nambah data dari incoming (misal On Stock 10, incoming 5 -> On Stock 15)
+            $inventory->on_stock = (int)$inventory->on_stock + $incomingQty;
+
             if ($mode === 'add') {
                 $inventory->incoming = (int)$inventory->incoming + $incomingQty;
             } else {
@@ -321,6 +324,13 @@ class InventoryController extends Controller
 
             $inventory->editor = Auth::user()?->name ?? 'Import SKU';
             $inventory->save();
+
+            // Sync variant stock_quantity cache
+            Variant::where('id', $variant->id)->update([
+                'stock_quantity' => Inventory::where('product_variant_id', $variant->id)
+                    ->where('deleted', false)
+                    ->sum('available')
+            ]);
 
             $success++;
         }
@@ -615,7 +625,8 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'variant_id' => 'required|uuid|exists:product_variants,id',
             'product_id' => 'nullable|uuid|exists:products,id',
-            'on_stock' => 'required|integer|min:0',
+            'incoming' => 'nullable|integer|min:0',
+            'on_stock' => 'nullable|integer|min:0',
             'warehouse_id' => 'nullable|uuid|exists:warehouses,id',
             'store_channel_id' => 'nullable|uuid|exists:store_channel,id',
         ]);
@@ -634,8 +645,20 @@ class InventoryController extends Controller
             0
         );
 
-        $onStock = (int) $validated['on_stock'];
-        $inventory->on_stock = $onStock;
+        // On Stock nambah data dari incoming (misal On Stock 10, incoming 5 -> On Stock 15)
+        if ($request->has('incoming')) {
+            $incoming = (int) ($validated['incoming'] ?? 0);
+            $inventory->incoming = $incoming;
+
+            if ($request->has('on_stock') && !is_null($validated['on_stock'])) {
+                $inventory->on_stock = (int) $validated['on_stock'];
+            } else {
+                $inventory->on_stock = (int) $inventory->on_stock + $incoming;
+            }
+        } elseif ($request->has('on_stock') && !is_null($validated['on_stock'])) {
+            $inventory->on_stock = (int) $validated['on_stock'];
+        }
+
         $inventory->editor = Auth::user()?->name ?? 'Admin';
         $inventory->save(); // saving hook recalculates available and quantity
 
@@ -645,9 +668,10 @@ class InventoryController extends Controller
             ->sum('available');
         $variant->update(['stock_quantity' => $totalAvailable]);
 
+        $skuText = $variant->sku ? "[{$variant->sku}] " : '';
         return response()->json([
             'success' => true,
-            'message' => "Stok varian {$variant->variant_name} berhasil diperbarui.",
+            'message' => "Stok SKU {$skuText}{$variant->variant_name} berhasil diperbarui. On Stock: {$inventory->on_stock}.",
             'data' => [
                 'inventory_id' => $inventory->id,
                 'variant_id' => $variant->id,

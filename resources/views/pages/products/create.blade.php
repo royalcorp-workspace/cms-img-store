@@ -68,7 +68,6 @@
             'variant_name' => $v->variant_name ?? '',
             'base_price' => $v->base_price !== null ? (float)$v->base_price : 0,
             'sell_price' => $v->sell_price !== null ? (float)$v->sell_price : ($v->base_price !== null ? (float)$v->base_price : 0),
-            'shipping_cost' => $v->shipping_cost !== null ? (float)$v->shipping_cost : 0,
             'stock_qty' => $v->stock_quantity ?? 0,
             'length' => $v->length !== null && $v->length !== '' ? (float)$v->length : (isset($v->attributes['length']) ? (float)$v->attributes['length'] : null),
             'width' => $v->width !== null && $v->width !== '' ? (float)$v->width : (isset($v->attributes['width']) ? (float)$v->attributes['width'] : null),
@@ -376,18 +375,18 @@
             </div>
         </div>
 
-        <!-- 3. PENGATURAN KURIR & SKEMA ONGKOS KIRIM -->
+        <!-- 3. PENGATURAN KURIR -->
         <div class="w-full bg-white rounded-2xl shadow-sm border border-outline-variant/30 p-6 space-y-5" id="shippingSectionContainer">
             <div class="border-b border-outline-variant/20 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="space-y-1">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-primary text-[22px]">local_shipping</span>
                         <h2 class="text-base font-bold text-on-surface">
-                            Pengaturan Kurir & Skema Ongkos Kirim
+                            Pengaturan Kurir
                         </h2>
                     </div>
                     <p class="text-xs text-on-surface-variant">
-                        Atur tipe kurir pengiriman (Toko / Expedisi / Keduanya) dan skema kalkulasi ongkos kirim (Fixed Rate atau dari Dimensi & Berat Produk).
+                        Atur tipe kurir pengiriman (Toko / Expedisi / Keduanya).
                     </p>
                 </div>
                 <div id="categoryShippingBadge" class="hidden shrink-0">
@@ -458,64 +457,6 @@
                             <p class="text-[11px] text-on-surface-variant">Pembeli bebas memilih metode kurir</p>
                         </div>
                     </label>
-                </div>
-            </div>
-
-            <!-- Skema Ongkos Kirim -->
-            <div class="space-y-2.5 pt-3 border-t border-outline-variant/20">
-                <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
-                    <span>Skema Ongkos Kirim</span>
-                    <span class="text-danger">*</span>
-                </label>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="shippingSchemeCardsContainer">
-                    <!-- Kalkulasi Dimensi & Berat -->
-                    <label class="scheme-card relative flex items-start p-3.5 border rounded-xl cursor-pointer transition-all hover:bg-surface-container-lowest {{ old('shipping_scheme', $product->shipping_scheme ?? 'dimension') === 'dimension' ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-outline-variant/60' }}">
-                        <input type="radio" name="shipping_scheme" value="dimension" {{ old('shipping_scheme', $product->shipping_scheme ?? 'dimension') === 'dimension' ? 'checked' : '' }} onchange="onShippingSchemeChanged()" class="mt-0.5 mr-3 text-primary focus:ring-primary">
-                        <div class="space-y-0.5">
-                            <div class="flex items-center gap-1.5 font-bold text-xs text-on-surface">
-                                <span class="material-symbols-outlined text-primary text-[18px]">straighten</span>
-                                <span>Hitung dari Dimensi & Berat Produk</span>
-                            </div>
-                            <p class="text-[11px] text-on-surface-variant">Dihitung otomatis dari Panjang × Lebar × Tinggi dan Berat aktual sesuai tarif ekspedisi/logistik.</p>
-                        </div>
-                    </label>
-
-                    <!-- Fixed Flat Rate -->
-                    <label class="scheme-card relative flex items-start p-3.5 border rounded-xl cursor-pointer transition-all hover:bg-surface-container-lowest {{ old('shipping_scheme', $product->shipping_scheme ?? 'dimension') === 'fixed' ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-outline-variant/60' }}">
-                        <input type="radio" name="shipping_scheme" value="fixed" {{ old('shipping_scheme', $product->shipping_scheme ?? 'dimension') === 'fixed' ? 'checked' : '' }} onchange="onShippingSchemeChanged()" class="mt-0.5 mr-3 text-primary focus:ring-primary">
-                        <div class="space-y-0.5">
-                            <div class="flex items-center gap-1.5 font-bold text-xs text-on-surface">
-                                <span class="material-symbols-outlined text-primary text-[18px]">payments</span>
-                                <span>Ongkos Kirim Tetap (Fixed Rate)</span>
-                            </div>
-                            <p class="text-[11px] text-on-surface-variant">Langsung di-set harga ongkir tetap (misal: Rp 500.000 untuk unit produk).</p>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Input Ongkir Tetap (Hanya muncul jika Fixed Rate) -->
-            <div id="fixedShippingCostContainer" class="{{ old('shipping_scheme', $product->shipping_scheme ?? 'dimension') === 'fixed' ? '' : 'hidden' }} p-4 bg-amber-50/70 border border-amber-200 rounded-xl space-y-3 transition-all">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div class="space-y-0.5">
-                        <label class="block text-xs font-bold text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-amber-700 text-[18px]">payments</span>
-                            <span>Tarif Ongkos Kirim Tetap Default (Rp)</span>
-                        </label>
-                        <p class="text-[11px] text-amber-900">
-                            Tarif dasar/default pengiriman. <strong>Ongkos kirim tetap dapat diset berbeda per varian produk</strong> (misal: Satuan Rp 150rb, Fullset Rp 500rb) pada tabel variasi di bawah.
-                        </p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3 flex-wrap">
-                    <div class="relative w-full sm:w-64">
-                        <span class="absolute left-3.5 top-2 text-xs text-on-surface-variant font-bold">Rp</span>
-                        <input type="number" step="1000" min="0" name="shipping_cost" id="productShippingCost" value="{{ old('shipping_cost', $product->shipping_cost ?? 0) }}" placeholder="Contoh: 500000" class="w-full pl-10 pr-3.5 py-2 border border-outline-variant rounded-xl text-xs font-bold text-on-surface focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                    </div>
-                    <button type="button" onclick="applyDefaultShippingToAllVariants()" class="px-3.5 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
-                        <span class="material-symbols-outlined text-[16px]">sync_alt</span>
-                        <span>Terapkan ke Semua Varian</span>
-                    </button>
                 </div>
             </div>
 
@@ -906,7 +847,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 items-end">
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 items-end">
                     <div>
                         <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Harga Modal (Rp)</label>
                         <input type="number" id="batchBasePrice" placeholder="0" class="w-full px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:outline-none">
@@ -914,10 +855,6 @@
                     <div>
                         <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Harga Jual (Rp) *</label>
                         <input type="number" id="batchSellPrice" placeholder="0" class="w-full px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none">
-                    </div>
-                    <div id="batchShippingCostWrapper" class="{{ old('shipping_scheme', $product->shipping_scheme ?? 'dimension') === 'fixed' ? '' : 'hidden' }}">
-                        <label class="block text-[10px] font-bold text-amber-900 uppercase mb-1">Ongkir Tetap (Rp)</label>
-                        <input type="number" step="1000" min="0" id="batchShippingCost" placeholder="0" class="w-full px-2.5 py-1.5 border border-amber-300 rounded-lg text-xs font-bold text-amber-950 bg-amber-50/50 focus:ring-2 focus:ring-amber-400/20 focus:outline-none">
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Prefix SKU</label>
@@ -1709,7 +1646,6 @@ function saveCurrentTableInputs() {
         const vSku = row.querySelector('.v-sku')?.value?.trim() || '';
         const bPrice = row.querySelector('.v-base-price')?.value ?? '';
         const sPrice = row.querySelector('.v-sell-price')?.value ?? '';
-        const sCost = row.querySelector('.v-shipping-cost')?.value ?? '';
         const len = row.querySelector('.v-length')?.value ?? '';
         const wid = row.querySelector('.v-width')?.value ?? '';
         const hei = row.querySelector('.v-height')?.value ?? '';
@@ -1723,7 +1659,6 @@ function saveCurrentTableInputs() {
 
         const parsedBPrice = (bPrice !== '' && !isNaN(parseFloat(bPrice))) ? parseFloat(bPrice) : 0;
         const parsedSPrice = (sPrice !== '' && !isNaN(parseFloat(sPrice))) ? parseFloat(sPrice) : 0;
-        const parsedSCost = (sCost !== '' && !isNaN(parseFloat(sCost))) ? parseFloat(sCost) : 0;
         const parsedLen = (len !== '' && !isNaN(parseFloat(len))) ? parseFloat(len) : null;
         const parsedWid = (wid !== '' && !isNaN(parseFloat(wid))) ? parseFloat(wid) : null;
         const parsedHei = (hei !== '' && !isNaN(parseFloat(hei))) ? parseFloat(hei) : null;
@@ -1738,7 +1673,6 @@ function saveCurrentTableInputs() {
             sku: vSku,
             base_price: parsedBPrice,
             sell_price: parsedSPrice,
-            shipping_cost: parsedSCost,
             length: parsedLen,
             width: parsedWid,
             height: parsedHei,
@@ -1761,7 +1695,6 @@ function saveCurrentTableInputs() {
             target.sku = vSku;
             target.base_price = parsedBPrice;
             target.sell_price = parsedSPrice;
-            target.shipping_cost = parsedSCost;
             target.length = parsedLen;
             target.width = parsedWid;
             target.height = parsedHei;
@@ -1866,7 +1799,6 @@ function rebuildCombinations() {
                     has_db_sku: resolvedHasDbSku,
                     base_price: (cached.base_price !== undefined && cached.base_price !== '') ? cached.base_price : fallbackBasePrice,
                     sell_price: (cached.sell_price !== undefined && cached.sell_price !== '') ? cached.sell_price : fallbackSellPrice,
-                    shipping_cost: cached.shipping_cost !== undefined ? cached.shipping_cost : (document.getElementById('batchShippingCost')?.value || document.getElementById('productShippingCost')?.value || 0),
                     length: cached.length !== undefined && cached.length !== '' ? cached.length : (dims.length || 200),
                     width: cached.width !== undefined && cached.width !== '' ? cached.width : (dims.width || ''),
                     height: cached.height !== undefined && cached.height !== '' ? cached.height : (hasThickness ? (thicknessMode === 'multi' ? thVal : (singleThickness || 25)) : (document.getElementById('productHeight')?.value || 25)),
@@ -1940,7 +1872,6 @@ function applyBatchSettings() {
     const target = document.getElementById('batchTargetSelector')?.value || 'all';
     const bBase = document.getElementById('batchBasePrice')?.value.trim() || '';
     const bSell = document.getElementById('batchSellPrice')?.value.trim() || '';
-    const bShipping = document.getElementById('batchShippingCost')?.value.trim() || '';
     const bPrefix = document.getElementById('batchSkuPrefix')?.value.trim() || '';
     const bLength = document.getElementById('batchLength')?.value.trim() || '';
     const bWidth = document.getElementById('batchWidth')?.value.trim() || '';
@@ -1951,7 +1882,7 @@ function applyBatchSettings() {
     const bPkgHeight = document.getElementById('batchPkgHeight')?.value.trim() || '';
     const bPkgWeight = document.getElementById('batchPkgWeight')?.value.trim() || '';
 
-    if (!bBase && !bSell && !bShipping && !bPrefix && !bLength && !bWidth && !bHeight && !bWeight && !bPkgLength && !bPkgWidth && !bPkgHeight && !bPkgWeight) {
+    if (!bBase && !bSell && !bPrefix && !bLength && !bWidth && !bHeight && !bWeight && !bPkgLength && !bPkgWidth && !bPkgHeight && !bPkgWeight) {
         showToast('warning', 'Mohon isi minimal salah satu kolom pada Ubah Sekaligus.');
         return;
     }
@@ -1974,7 +1905,6 @@ function applyBatchSettings() {
             matchedCount++;
             if (bBase !== '') v.base_price = bBase;
             if (bSell !== '') v.sell_price = bSell;
-            if (bShipping !== '') v.shipping_cost = bShipping;
             if (bLength !== '') v.length = bLength;
             if (bWidth !== '') v.width = bWidth;
             if (bHeight !== '') v.height = bHeight;
@@ -2035,9 +1965,6 @@ function renderVariantsTable() {
         return;
     }
     if (warning) warning.classList.add('hidden');
-
-    const isFixedShipping = $('input[name="shipping_scheme"]:checked').val() === 'fixed';
-    const productDefaultShipping = parseFloat(document.getElementById('shippingCostInput')?.value) || 0;
 
     let colorsSummary = 'Standar';
     if (productColorsList.length > 0) {
@@ -2122,17 +2049,6 @@ function renderVariantsTable() {
                         </button>
                     </div>
 
-                    ${isFixedShipping ? `
-                    <!-- Quick Shipping Setter for this specific size -->
-                    <div class="flex items-center gap-1.5 bg-amber-50/80 px-2.5 py-1 rounded-xl border border-amber-200/60 shadow-2xs">
-                        <span class="text-[10px] font-bold text-amber-900 uppercase">Ongkir:</span>
-                        <input type="number" step="1000" id="quickShipping_${cardSlug}" placeholder="Rp Ongkir" class="w-24 px-2 py-0.5 text-xs font-bold text-amber-900 bg-white border border-amber-300 rounded-lg focus:ring-1 focus:ring-amber-500 focus:outline-none" onkeydown="if(event.key==='Enter'){ event.preventDefault(); applyShippingToSize('${escapeHtml(sizeStr)}'); }">
-                        <button type="button" onclick="applyShippingToSize('${escapeHtml(sizeStr)}')" class="px-2.5 py-1 bg-amber-600 text-white rounded-lg text-[10px] font-bold hover:bg-amber-700 shadow-2xs transition-all" title="Terapkan ongkir ini ke semua varian ukuran ${escapeHtml(sizeStr)}">
-                            Set
-                        </button>
-                    </div>
-                    ` : ''}
-
                     <!-- Collapse Toggle -->
                     <button type="button" onclick="toggleUkuranCard('${cardSlug}')" class="p-1.5 text-on-surface-variant hover:text-on-surface rounded-xl hover:bg-surface-container border border-outline-variant/30 transition-colors" title="Buka / Tutup Rincian Ukuran Ini">
                         <span class="material-symbols-outlined text-[20px] transition-transform duration-200" id="collapseIcon_${cardSlug}">expand_less</span>
@@ -2177,7 +2093,6 @@ function renderVariantsTable() {
             const pkgWidVal = (v.package_width !== undefined && v.package_width !== null && v.package_width !== '') ? v.package_width : '';
             const pkgHeiVal = (v.package_height !== undefined && v.package_height !== null && v.package_height !== '') ? v.package_height : '';
             const pkgWeiVal = (v.package_weight !== undefined && v.package_weight !== null && v.package_weight !== '') ? v.package_weight : '';
-            const shippingCostVal = (v.shipping_cost !== undefined && v.shipping_cost !== null && v.shipping_cost !== '') ? v.shipping_cost : (productDefaultShipping || 0);
 
             rowsHtml += `
                 <tr class="variant-row hover:bg-surface-container/20 transition-colors ${v.excluded ? ' opacity-40 bg-surface-container-low' : ''}"
@@ -2214,13 +2129,6 @@ function renderVariantsTable() {
                     <td class="px-3 py-2.5">
                         <input type="number" step="0.01" class="v-sell-price w-full min-w-[120px] px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="0" value="${v.sell_price !== null && v.sell_price !== undefined && v.sell_price !== '' ? v.sell_price : 0}">
                     </td>
-                    ${isFixedShipping ? `
-                    <td class="px-3 py-2.5 bg-amber-50/30 border-l border-r border-amber-200/40">
-                        <input type="number" step="1000" min="0" class="v-shipping-cost w-full min-w-[110px] px-2.5 py-1.5 border border-amber-300 rounded-lg text-xs font-bold text-amber-900 bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none" placeholder="0" value="${shippingCostVal}">
-                    </td>
-                    ` : `
-                    <input type="hidden" class="v-shipping-cost" value="${shippingCostVal}">
-                    `}
                     <!-- Variant-Level Dimensions Inputs (P, L, T, Berat) -->
                     <td class="px-1.5 py-2.5 text-center">
                         <input type="number" step="1" min="0" class="v-length w-16 px-1.5 py-1.5 border border-outline-variant rounded-lg text-xs text-center font-medium bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" placeholder="P" value="${escapeHtml(String(lengthVal))}" title="Panjang (cm)">
@@ -2280,7 +2188,6 @@ function renderVariantsTable() {
                             <th class="px-3 py-2 min-w-[180px]">Nama Kombinasi</th>
                             <th class="px-3 py-2 min-w-[120px]">Harga Modal (Rp)</th>
                             <th class="px-3 py-2 min-w-[130px]">Harga Jual (Rp) <span class="text-danger">*</span></th>
-                            ${isFixedShipping ? '<th class="px-3 py-2 min-w-[130px] text-amber-900 bg-amber-50/50 border-l border-r border-amber-200/50">Ongkir Tetap (Rp)</th>' : ''}
                             <th class="px-1.5 py-2 min-w-[65px] text-center">P (cm)</th>
                             <th class="px-1.5 py-2 min-w-[65px] text-center">L (cm)</th>
                             <th class="px-1.5 py-2 min-w-[65px] text-center">T (cm)</th>
@@ -2327,47 +2234,6 @@ function applyPriceToSize(sizeStr) {
 
     renderVariantsTable();
     showToast('success', `Harga Rp ${Number(val).toLocaleString('id-ID')} berhasil diterapkan ke semua varian ukuran ${sizeStr}!`);
-}
-
-function applyShippingToSize(sizeStr) {
-    const cardSlug = slugify(sizeStr);
-    const input = document.getElementById(`quickShipping_${cardSlug}`);
-    const val = input ? parseFloat(input.value) : 0;
-    if (isNaN(val) || val < 0) {
-        showToast('warning', 'Mohon masukkan nominal ongkir yang valid (minimal Rp 0).');
-        if (input) input.focus();
-        return;
-    }
-
-    saveCurrentTableInputs();
-    let count = 0;
-    variantRows.forEach(v => {
-        if (v.size === sizeStr) {
-            v.shipping_cost = val;
-            count++;
-        }
-    });
-
-    renderVariantsTable();
-    showToast('success', `Ongkir Rp ${Number(val).toLocaleString('id-ID')} berhasil diterapkan ke semua varian ukuran ${sizeStr}!`);
-}
-
-function applyDefaultShippingToAllVariants() {
-    const defaultVal = parseFloat(document.getElementById('shippingCostInput')?.value) || 0;
-    if (isNaN(defaultVal) || defaultVal < 0) {
-        showToast('warning', 'Masukkan nominal ongkos kirim default yang valid.');
-        return;
-    }
-    saveCurrentTableInputs();
-    if (variantRows.length === 0) {
-        showToast('warning', 'Belum ada varian produk.');
-        return;
-    }
-    variantRows.forEach(v => {
-        v.shipping_cost = defaultVal;
-    });
-    renderVariantsTable();
-    showToast('success', `Ongkir default Rp ${Number(defaultVal).toLocaleString('id-ID')} berhasil diterapkan ke seluruh varian!`);
 }
 
 function toggleUkuranCard(cardSlug) {
@@ -2871,7 +2737,6 @@ function initVariantsFromBackend() {
 
             const basePrice = (v.base_price !== null && v.base_price !== undefined && v.base_price !== '') ? parseFloat(v.base_price) : 0;
             const sellPrice = (v.sell_price !== null && v.sell_price !== undefined && v.sell_price !== '') ? parseFloat(v.sell_price) : 0;
-            const shippingCost = (v.shipping_cost !== undefined && v.shipping_cost !== null && v.shipping_cost !== '') ? parseFloat(v.shipping_cost) : '';
 
             const rowObj = {
                 key: key,
@@ -2884,7 +2749,6 @@ function initVariantsFromBackend() {
                 has_db_sku: !!(v.sku && String(v.sku).trim()),
                 base_price: basePrice,
                 sell_price: sellPrice,
-                shipping_cost: shippingCost,
                 length: v.length ?? dims.length ?? 200,
                 width: v.width ?? dims.width ?? '',
                 height: v.height ?? thVal,
@@ -2964,7 +2828,6 @@ function saveDraft() {
             category_id: document.getElementById('categorySelect')?.value || '',
             brand_id: document.getElementById('brandSelect')?.value || '',
             warranty_duration: document.getElementById('warrantyInput')?.value || '',
-            shipping_cost: document.getElementById('shippingCostInput')?.value || '',
             length: document.getElementById('productLength')?.value || '',
             width: document.getElementById('productWidth')?.value || '',
             height: document.getElementById('productHeight')?.value || '',
@@ -3036,10 +2899,6 @@ function applyDraft() {
         if (draft.warranty_duration) {
             const wInput = document.getElementById('warrantyInput');
             if (wInput) wInput.value = draft.warranty_duration;
-        }
-        if (draft.shipping_cost) {
-            const scInput = document.getElementById('shippingCostInput');
-            if (scInput) scInput.value = draft.shipping_cost;
         }
         if (draft.length) {
             const lInput = document.getElementById('productLength');
@@ -3362,10 +3221,6 @@ async function submitProductForm() {
                 delete attrObj['Ketebalan'];
             }
 
-            const shippingVal = (v.shipping_cost !== '' && v.shipping_cost !== null && !isNaN(parseFloat(v.shipping_cost))) 
-                ? parseFloat(v.shipping_cost) 
-                : (parseFloat(document.getElementById('shippingCostInput')?.value) || 0);
-
             variantsData.push({
                 id: v.id || null,
                 sku: (v.sku || '').trim(),
@@ -3373,7 +3228,6 @@ async function submitProductForm() {
                 base_price: (v.base_price !== '' && v.base_price !== null && !isNaN(parseFloat(v.base_price))) ? parseFloat(v.base_price) : 0,
                 sell_price: (v.sell_price !== '' && v.sell_price !== null && !isNaN(parseFloat(v.sell_price))) ? parseFloat(v.sell_price) : 0,
                 price: (v.sell_price !== '' && v.sell_price !== null && !isNaN(parseFloat(v.sell_price))) ? parseFloat(v.sell_price) : 0,
-                shipping_cost: shippingVal,
                 length: finalLength,
                 width: finalWidth,
                 height: finalHeight,
@@ -3532,27 +3386,7 @@ function onCourierTypeChanged() {
     });
 }
 
-function onShippingSchemeChanged() {
-    const scheme = $('input[name="shipping_scheme"]:checked').val();
-    $('.scheme-card').each(function() {
-        const radio = $(this).find('input[type="radio"]');
-        if (radio.is(':checked')) {
-            $(this).addClass('border-primary bg-primary/5 ring-1 ring-primary/30').removeClass('border-outline-variant/60');
-        } else {
-            $(this).removeClass('border-primary bg-primary/5 ring-1 ring-primary/30').addClass('border-outline-variant/60');
-        }
-    });
 
-    if (scheme === 'fixed') {
-        $('#fixedShippingCostContainer').removeClass('hidden');
-        $('#batchShippingCostWrapper').removeClass('hidden');
-    } else {
-        $('#fixedShippingCostContainer').addClass('hidden');
-        $('#batchShippingCostWrapper').addClass('hidden');
-    }
-
-    renderVariantsTable();
-}
 
 function calculateVolumetricWeight() {
     const length = parseFloat($('#productLength').val()) || 0;
@@ -3705,9 +3539,6 @@ $(document).ready(function() {
         } else if (this.classList.contains('v-base-price')) {
             const val = parseFloat(this.value);
             target.base_price = isNaN(val) ? 0 : val;
-        } else if (this.classList.contains('v-shipping-cost')) {
-            const val = parseFloat(this.value);
-            target.shipping_cost = isNaN(val) ? 0 : val;
         } else if (this.classList.contains('v-length')) {
             const val = parseFloat(this.value);
             target.length = isNaN(val) ? null : val;
@@ -3749,7 +3580,6 @@ $(document).ready(function() {
 
     // Initialize shipping UI state
     calculateVolumetricWeight();
-    onShippingSchemeChanged();
     onCourierTypeChanged();
     checkCategoryShipping(false);
 
@@ -3767,7 +3597,6 @@ $(document).ready(function() {
     window.handleGalleryDragLeave = handleGalleryDragLeave;
     window.handleGalleryDrop = handleGalleryDrop;
     window.calculateVolumetricWeight = calculateVolumetricWeight;
-    window.onShippingSchemeChanged = onShippingSchemeChanged;
     window.onCourierTypeChanged = onCourierTypeChanged;
     window.checkCategoryShipping = checkCategoryShipping;
     window.enableShippingOverride = enableShippingOverride;
@@ -3801,8 +3630,6 @@ $(document).ready(function() {
     window.onRowNameChanged = onRowNameChanged;
     window.onRowSkuChanged = onRowSkuChanged;
     window.applyPriceToSize = applyPriceToSize;
-    window.applyShippingToSize = applyShippingToSize;
-    window.applyDefaultShippingToAllVariants = applyDefaultShippingToAllVariants;
     window.toggleUkuranCard = toggleUkuranCard;
     window.toggleAllUkuranCards = toggleAllUkuranCards;
 });
