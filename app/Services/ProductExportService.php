@@ -60,7 +60,7 @@ class ProductExportService
     /**
      * Generate PhpSpreadsheet object matching Template Export Item Master.
      * Columns:
-     * KODE BARANG, NAMA BARANG, JENIS BARANG, ARTIKEL, KAIN, PANJANG, LEBAR, KODE VARIASI, HARGA MODAL, HARGA JUAL
+     * KODE BARANG, NAMA BARANG, JENIS BARANG, ARTIKEL, KAIN, PANJANG, LEBAR, SKU, HARGA MODAL, HARGA JUAL
      */
     public function generateSpreadsheet(?Request $request = null): Spreadsheet
     {
@@ -76,7 +76,7 @@ class ProductExportService
             'KAIN',
             'PANJANG',
             'LEBAR',
-            'KODE VARIASI',
+            'SKU',
             'HARGA MODAL',
             'HARGA JUAL',
         ];

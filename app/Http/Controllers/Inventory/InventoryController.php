@@ -212,13 +212,21 @@ class InventoryController extends Controller
             $headers[$colKey] = strtolower(trim((string)$colVal));
         }
 
-        // Check if 'sku' and 'incoming' exist in header
-        if (!in_array('sku', $headers) || !in_array('incoming', $headers)) {
-            return back()->with('error', 'Header file harus menyertakan kolom "sku" dan "incoming".');
+        // Check if 'sku' exists in header (mandatory hanya sku)
+        $skuCol = array_search('sku', $headers);
+        if ($skuCol === false) {
+            $msg = 'Header file harus menyertakan kolom "sku". Kolom lain seperti stock/warehouse bersifat opsional.';
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
         }
 
-        $skuCol = array_search('sku', $headers);
-        $incomingCol = array_search('incoming', $headers);
+        $incomingCol = array_search('stock', $headers);
+        if ($incomingCol === false) {
+            $incomingCol = array_search('incoming', $headers);
+        }
+
         $whCol = array_search('warehouse_code', $headers);
 
         $success = 0;
@@ -243,8 +251,16 @@ class InventoryController extends Controller
                 continue;
             }
 
-            // Find variant by SKU (case-insensitive & trimmed)
-            $variant = Variant::where('sku', $sku)->orWhereRaw('LOWER(TRIM(sku)) = ?', [strtolower($sku)])->first();
+            // Find variant by SKU (case-insensitive & trimmed, prioritize active)
+            $variant = Variant::where('deleted', false)
+                ->where(function($q) use ($sku) {
+                    $q->where('sku', $sku)->orWhereRaw('LOWER(TRIM(sku)) = ?', [strtolower($sku)]);
+                })->first();
+
+            if (!$variant) {
+                $variant = Variant::where('sku', $sku)->orWhereRaw('LOWER(TRIM(sku)) = ?', [strtolower($sku)])->first();
+            }
+
             if (!$variant) {
                 $failed++;
                 $errors[] = [
@@ -255,18 +271,30 @@ class InventoryController extends Controller
                 continue;
             }
 
-            // Validate incoming
-            $incomingVal = $row[$incomingCol] ?? null;
-            if ($incomingVal === null || trim((string)$incomingVal) === '' || !is_numeric($incomingVal) || (int)$incomingVal < 0) {
-                $failed++;
-                $errors[] = [
-                    'row' => $rowNumber,
-                    'sku' => $sku,
-                    'message' => "Nilai incoming '{$incomingVal}' tidak valid (harus angka positif atau nol)."
-                ];
+            // Validate stock
+            $incomingQty = 0;
+            if ($incomingCol !== false) {
+                $incomingVal = $row[$incomingCol] ?? null;
+                if ($incomingVal !== null && trim((string)$incomingVal) !== '') {
+                    // Jika stock tidak bernilai angka maka ditolak
+                    if (!is_numeric($incomingVal) || (float)$incomingVal < 0) {
+                        $failed++;
+                        $errors[] = [
+                            'row' => $rowNumber,
+                            'sku' => $sku,
+                            'message' => "Nilai stock '{$incomingVal}' ditolak karena bukan angka numerik positif atau nol."
+                        ];
+                        continue;
+                    }
+                    $incomingQty = (int) $incomingVal;
+                }
+            }
+
+            // Jika diisi <= 0 (default 0 atau kosong), dilewati
+            if ($incomingQty <= 0) {
+                $skipped++;
                 continue;
             }
-            $incomingQty = (int) $incomingVal;
 
             // Determine target warehouse
             $targetWarehouse = $fallbackWarehouse;
@@ -342,7 +370,165 @@ class InventoryController extends Controller
             'errors' => $errors,
         ];
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'result' => $result,
+                'message' => "Import selesai: {$success} baris berhasil diproses, {$skipped} baris dilewati, {$failed} baris ditolak."
+            ]);
+        }
+
         return back()->with('import_result', $result);
+    }
+
+    /**
+     * Preview spreadsheet data before importing.
+     */
+    public function importPreview(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
+            'warehouse_id' => 'nullable|uuid|exists:warehouses,id',
+            'store_channel_id' => 'nullable|uuid|exists:store_channel,id',
+        ]);
+
+        try {
+            $path = $request->file('file')->getRealPath();
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
+            $sheet = $spreadsheet->getActiveSheet();
+            $rawRows = $sheet->toArray(null, true, true, true);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membaca file spreadsheet: ' . $e->getMessage()
+            ], 422);
+        }
+
+        if (count($rawRows) < 2) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File spreadsheet kosong atau tidak memiliki baris data.'
+            ], 422);
+        }
+
+        $headerRow = array_shift($rawRows);
+        $headers = [];
+        foreach ($headerRow as $colKey => $colVal) {
+            $headers[$colKey] = strtolower(trim((string)$colVal));
+        }
+
+        $skuCol = array_search('sku', $headers);
+        if ($skuCol === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Header file harus menyertakan kolom "sku". Kolom lain seperti stock bersifat opsional.'
+            ], 422);
+        }
+
+        $incomingCol = array_search('stock', $headers);
+        if ($incomingCol === false) {
+            $incomingCol = array_search('incoming', $headers);
+        }
+        $refNameCol = array_search('reference_product_name', $headers);
+
+        // Preload active variants with product
+        $activeVariants = Variant::with('product')
+            ->whereNotNull('sku')
+            ->where('sku', '!=', '')
+            ->where('deleted', false)
+            ->get()
+            ->keyBy(fn($v) => strtolower(trim($v->sku)));
+
+        $totalRows = 0;
+        $readyCount = 0;
+        $skippedCount = 0;
+        $rejectedCount = 0;
+        $previewRows = [];
+
+        foreach ($rawRows as $rowIndex => $row) {
+            if (empty(array_filter($row, fn($v) => !is_null($v) && trim((string)$v) !== ''))) {
+                continue;
+            }
+
+            $sku = trim((string)($row[$skuCol] ?? ''));
+            if (empty($sku)) {
+                continue;
+            }
+
+            $totalRows++;
+            $skuLower = strtolower($sku);
+            $variant = $activeVariants[$skuLower] ?? null;
+
+            $productName = $variant 
+                ? trim(($variant->product?->name ?? '') . ($variant->variant_name ? ' - ' . $variant->variant_name : ''))
+                : (trim((string)($row[$refNameCol] ?? '')) ?: '-');
+
+            $status = 'ready';
+            $statusLabel = 'Siap Masuk';
+            $message = '';
+            $stockQty = 0;
+
+            if (!$variant) {
+                $status = 'rejected';
+                $statusLabel = 'Ditolak (SKU Tidak Ditemukan)';
+                $message = "SKU '{$sku}' tidak ditemukan di katalog.";
+                $rejectedCount++;
+            } else {
+                if ($incomingCol !== false) {
+                    $rawStock = $row[$incomingCol] ?? null;
+                    if ($rawStock !== null && trim((string)$rawStock) !== '') {
+                        if (!is_numeric($rawStock) || (float)$rawStock < 0) {
+                            $status = 'rejected';
+                            $statusLabel = 'Ditolak (Bukan Angka)';
+                            $message = "Nilai stock '{$rawStock}' tidak valid (harus angka numerik positif atau nol).";
+                            $rejectedCount++;
+                        } else {
+                            $stockQty = (int)$rawStock;
+                            if ($stockQty > 0) {
+                                $status = 'ready';
+                                $statusLabel = 'Siap Masuk';
+                                $readyCount++;
+                            } else {
+                                $status = 'skipped';
+                                $statusLabel = 'Dilewati (Stok 0)';
+                                $skippedCount++;
+                            }
+                        }
+                    } else {
+                        $status = 'skipped';
+                        $statusLabel = 'Dilewati (Kosong)';
+                        $skippedCount++;
+                    }
+                } else {
+                    $status = 'skipped';
+                    $statusLabel = 'Dilewati (Kolom Stock Tidak Ada)';
+                    $skippedCount++;
+                }
+            }
+
+            if (count($previewRows) < 30) {
+                $previewRows[] = [
+                    'row_number' => $rowIndex,
+                    'sku' => $sku,
+                    'product_name' => $productName,
+                    'stock_val' => ($incomingCol !== false) ? ($row[$incomingCol] ?? '-') : '-',
+                    'stock_qty' => $stockQty,
+                    'status' => $status,
+                    'status_label' => $statusLabel,
+                    'message' => $message,
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'total_rows' => $totalRows,
+            'ready_count' => $readyCount,
+            'skipped_count' => $skippedCount,
+            'rejected_count' => $rejectedCount,
+            'has_incoming_column' => ($incomingCol !== false),
+            'preview_rows' => $previewRows,
+        ]);
     }
 
     public function importTemplate()
@@ -352,32 +538,36 @@ class InventoryController extends Controller
         $sheet->setTitle('inventory_incoming');
 
         // Headers
-        $headers = ['sku', 'incoming', 'warehouse_code', 'reference_product_name'];
+        $headers = ['sku', 'stock', 'warehouse_code', 'reference_product_name'];
         $sheet->fromArray($headers, null, 'A1');
 
         // Style header row
         $sheet->getStyle('A1:D1')->getFont()->setBold(true);
 
-        // Prepopulate with up to 10 actual SKUs from DB as examples
+        // Prepopulate with all active SKUs from DB with default stock = 0
         $variants = Variant::with('product')
             ->whereNotNull('sku')
             ->where('sku', '!=', '')
             ->where('deleted', false)
-            ->limit(10)
+            ->orderBy('sku', 'asc')
             ->get();
 
         $defaultWarehouse = InventoryService::getDefaultWarehouse();
         $whCode = $defaultWarehouse?->code ?? 'GD-JKT01';
 
-        $rowIdx = 2;
+        $dataRows = [];
         foreach ($variants as $v) {
-            $sheet->fromArray([
+            $productName = trim(($v->product?->name ?? '') . ($v->variant_name ? ' - ' . $v->variant_name : ''));
+            $dataRows[] = [
                 $v->sku,
-                50, // sample incoming qty
+                0, // default stock 0
                 $whCode,
-                ($v->product?->name ?? '') . ' - ' . ($v->variant_name ?? '')
-            ], null, 'A' . $rowIdx);
-            $rowIdx++;
+                $productName
+            ];
+        }
+
+        if (!empty($dataRows)) {
+            $sheet->fromArray($dataRows, null, 'A2');
         }
 
         // Auto size columns
