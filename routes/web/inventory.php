@@ -8,6 +8,7 @@ use App\Http\Controllers\Warehouse\WarehouseController;
 Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
 Route::get('/inventory/import', [InventoryController::class, 'importForm'])->name('inventory.import.form');
 Route::post('/inventory/import', [InventoryController::class, 'importStore'])->name('inventory.import.store');
+Route::post('/inventory/import/preview', [InventoryController::class, 'importPreview'])->name('inventory.import.preview');
 Route::get('/inventory/import/template', [InventoryController::class, 'importTemplate'])->name('inventory.import.template');
 Route::get('/inventory/channels/search', [InventoryController::class, 'searchChannels'])->name('inventory.channels.search');
 Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
