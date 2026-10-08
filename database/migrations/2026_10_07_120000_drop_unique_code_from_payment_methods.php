@@ -14,10 +14,6 @@ return new class extends Migration
         DB::statement('ALTER TABLE public.payment_methods DROP CONSTRAINT IF EXISTS payment_methods_code_unique CASCADE');
         DB::statement('DROP INDEX IF EXISTS payment_methods_code_unique');
 
-        // Drop constraint and index on fastapi schema if exists
-        DB::statement('ALTER TABLE fastapi.payment_methods DROP CONSTRAINT IF EXISTS ix_payment_methods_code CASCADE');
-        DB::statement('DROP INDEX IF EXISTS fastapi.ix_payment_methods_code');
-
         // Recreate as standard non-unique index for fast querying
         DB::statement('CREATE INDEX IF NOT EXISTS payment_methods_code_idx ON public.payment_methods (code)');
     }
