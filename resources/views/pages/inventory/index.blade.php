@@ -207,7 +207,7 @@
                         $inc = $vInv ? (int)$vInv->incoming : 0;
                         $onOrd = $vInv ? (int)$vInv->on_order : 0;
                         $outg = $vInv ? (int)$vInv->outgoing : 0;
-                        $avail = $vInv ? (int)$vInv->available : max(0, $onStk - $onOrd - $outg);
+                        $avail = $vInv ? (int)$vInv->available : max(0, $onStk - $onOrd);
 
                         $totalProdOnStock += $onStk;
                         $totalProdIncoming += $inc;
@@ -275,16 +275,16 @@
                                 <tr class="bg-surface-container-low/60 border-b border-outline-variant/20 text-on-surface-variant text-[11px] font-bold uppercase tracking-wider">
                                     <th class="py-2.5 px-4 min-w-[220px]">Varian & SKU</th>
                                     <th class="py-2.5 px-3 min-w-[150px]">Lokasi Gudang</th>
-                                    <th class="py-2.5 px-3 text-center min-w-[110px] bg-slate-100/70 text-slate-800">
+                                    <th class="py-2.5 px-3 text-center min-w-[100px] bg-slate-100/70 text-slate-800">
                                         On Stock
                                     </th>
-                                    <th class="py-2.5 px-3 text-center min-w-[130px] bg-blue-50/70 text-blue-900 border-x border-blue-200/60">
-                                        Incoming (Isi Stok)
+                                    <th class="py-2.5 px-3 text-center min-w-[120px] bg-blue-50/70 text-blue-900 border-x border-blue-200/60">
+                                        Incoming (Input Stok)
                                     </th>
                                     <th class="py-2.5 px-2.5 text-center min-w-[75px]">On Order</th>
                                     <th class="py-2.5 px-2.5 text-center min-w-[75px]">Outgoing</th>
-                                    <th class="py-2.5 px-3 text-center min-w-[100px] bg-success/5 text-success">Available</th>
-                                    <th class="py-2.5 px-3 text-center min-w-[90px]">Aksi</th>
+                                    <th class="py-2.5 px-3 text-center min-w-[95px] bg-success/5 text-success">Available</th>
+                                    <th class="py-2.5 px-3 text-center min-w-[85px]">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-outline-variant/15">
@@ -295,7 +295,8 @@
                                         $incomingVal = $inventory ? (int)$inventory->incoming : 0;
                                         $onOrderVal = $inventory ? (int)$inventory->on_order : 0;
                                         $outgoingVal = $inventory ? (int)$inventory->outgoing : 0;
-                                        $availableVal = $inventory ? (int)$inventory->available : max(0, $onStockVal - $onOrderVal - $outgoingVal);
+                                        // Available: on stock - on order
+                                        $availableVal = $inventory ? (int)$inventory->available : max(0, $onStockVal - $onOrderVal);
                                         $whName = $inventory?->warehouse?->name ?? ($defaultWarehouse?->name ?? 'Gudang Utama');
                                         $whCode = $inventory?->warehouse?->code ?? ($defaultWarehouse?->code ?? 'GD-JKT01');
                                         $chName = $inventory?->channel?->name ?? ($defaultChannel?->name ?? 'Web IMG');
@@ -335,7 +336,7 @@
                                             </div>
                                         </td>
 
-                                        <!-- On Stock (Bertambah dari Incoming) -->
+                                        <!-- On Stock: on stock + incoming terakhir - outgoing -->
                                         <td class="py-2.5 px-3 text-center bg-slate-50/50">
                                             <div class="inline-flex flex-col items-center">
                                                 <span id="onstock-display-{{ $variant->id }}" class="font-mono font-bold text-xs text-on-surface">
@@ -345,45 +346,45 @@
                                             </div>
                                         </td>
 
-                                        <!-- DIRECT EDITABLE INCOMING (SKU diisi Incoming, On Stock nambah dari Incoming) -->
+                                        <!-- DIRECT EDITABLE INCOMING (HANYA INCOMING YANG EDITABLE, NILAI TERAKHIR TAMPIL BUKAN 0) -->
                                         <td class="py-2.5 px-3 text-center bg-blue-50/30 border-x border-blue-200/50">
-                                            <div class="inline-flex items-center gap-1.5">
+                                            <div class="inline-flex items-center justify-center">
                                                 <input 
                                                     type="number" 
                                                     min="0" 
                                                     step="1"
                                                     placeholder="0"
-                                                    value="" 
+                                                    value="{{ $incomingVal }}" 
                                                     id="incoming-input-{{ $variant->id }}"
                                                     data-variant-id="{{ $variant->id }}"
                                                     data-product-id="{{ $product->id }}"
                                                     data-initial-onstock="{{ $onStockVal }}"
                                                     data-initial-incoming="{{ $incomingVal }}"
-                                                    data-on-order="{{ $onOrderVal }}"
                                                     data-outgoing="{{ $outgoingVal }}"
+                                                    data-on-order="{{ $onOrderVal }}"
                                                     oninput="handleIncomingInput('{{ $variant->id }}')"
                                                     onkeydown="if(event.key==='Enter') { event.preventDefault(); quickSaveIncoming('{{ $variant->id }}'); }"
-                                                    class="incoming-edit-input w-20 px-2.5 py-1 text-center font-mono font-bold text-xs bg-white border border-blue-300 rounded-lg text-blue-950 focus:ring-2 focus:ring-blue-400/30 focus:border-blue-500 focus:outline-none shadow-2xs transition-all"
-                                                    title="Ketik jumlah incoming (misal: 5). On Stock (10) akan otomatis bertambah menjadi 15."
+                                                    class="incoming-edit-input w-20 px-2 py-1 text-center font-mono font-bold text-xs bg-white border border-blue-300 rounded-lg text-blue-950 focus:ring-2 focus:ring-blue-400/30 focus:border-blue-500 focus:outline-none shadow-2xs transition-all"
+                                                    title="Input incoming terakhir (tersimpan tidak 0). On Stock: on stock + incoming terakhir - outgoing"
                                                 >
                                             </div>
                                         </td>
 
-                                        <!-- On Order -->
+                                        <!-- On Order: Order yang sudah melakukan pembayaran -->
                                         <td class="py-3 px-2.5 text-center">
-                                            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold {{ $onOrderVal > 0 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-400' }}">
+                                            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold {{ $onOrderVal > 0 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-400' }}" title="Order yang sudah melakukan pembayaran">
                                                 {{ number_format($onOrderVal) }}
                                             </span>
                                         </td>
 
-                                        <!-- Outgoing -->
+                                        <!-- Outgoing: Data yang sudah dikirim / delivery -->
                                         <td class="py-3 px-2.5 text-center">
-                                            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold {{ $outgoingVal > 0 ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-400' }}">
+                                            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold {{ $outgoingVal > 0 ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-400' }}" title="Data yang sudah dikirim / delivery">
                                                 {{ number_format($outgoingVal) }}
                                             </span>
                                         </td>
 
-                                        <!-- Available (Live calculated) -->
+                                        <!-- Available: on stock - on order -->
                                         <td class="py-3 px-3 text-center bg-success/5">
                                             <span id="available-badge-{{ $variant->id }}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold {{ $availableVal > 0 ? 'bg-success/15 text-success border border-success/30' : 'bg-danger/10 text-danger border border-danger/20' }}">
                                                 {{ number_format($availableVal) }}
@@ -397,7 +398,7 @@
                                                 id="btn-save-{{ $variant->id }}"
                                                 onclick="quickSaveIncoming('{{ $variant->id }}')" 
                                                 class="inline-flex items-center justify-center gap-1 px-2.5 py-1 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-all shadow-2xs"
-                                                title="Simpan penambahan stok dari incoming"
+                                                title="Simpan nilai incoming terakhir"
                                             >
                                                 <span class="material-symbols-outlined text-[15px]">save</span>
                                                 <span>Simpan</span>
@@ -479,29 +480,30 @@
         }, 3000);
     }
 
-    function handleIncomingInput(variantId) {
-        const input = document.getElementById(`incoming-input-${variantId}`);
+    window.handleIncomingInput = function(variantId) {
+        const incInput = document.getElementById(`incoming-input-${variantId}`);
         const onstockDisplay = document.getElementById(`onstock-display-${variantId}`);
         const onstockCalc = document.getElementById(`onstock-calc-${variantId}`);
         const availBadge = document.getElementById(`available-badge-${variantId}`);
-        if (!input) return;
+        if (!incInput) return;
 
-        const baseOnStock = parseInt(input.dataset.initialOnstock || '0');
-        const incomingVal = parseInt(input.value) || 0;
-        const onOrder = parseInt(input.dataset.onOrder || '0');
-        const outgoing = parseInt(input.dataset.outgoing || '0');
+        const baseOnStock = parseInt(incInput.dataset.initialOnstock || '0');
+        const onOrder = parseInt(incInput.dataset.onOrder || '0');
 
-        // On Stock nambah data dari incoming (misal: On Stock 10, incoming 5 -> On Stock jadi 15)
-        const newOnStock = baseOnStock + incomingVal;
-        const newAvailable = Math.max(0, newOnStock - onOrder - outgoing);
+        const currentInc = parseInt(incInput.value) || 0;
+
+        // Logika bisnis: On Stock sekarang + incoming baru (misal on_stock 20 + incoming 50 = 70)
+        const newOnStock = Math.max(0, baseOnStock + currentInc);
+        // Available : on stock - on order
+        const newAvailable = Math.max(0, newOnStock - onOrder);
 
         if (onstockDisplay) {
             onstockDisplay.textContent = newOnStock.toLocaleString('id-ID');
         }
 
         if (onstockCalc) {
-            if (incomingVal > 0) {
-                onstockCalc.textContent = `(+${incomingVal})`;
+            if (currentInc > 0) {
+                onstockCalc.textContent = `(+${currentInc})`;
                 onstockCalc.classList.remove('hidden');
             } else {
                 onstockCalc.classList.add('hidden');
@@ -517,50 +519,52 @@
             }
         }
 
-        const productId = input.dataset.productId;
+        const productId = incInput.dataset.productId;
         updateProductTotals(productId);
     }
 
-    function updateProductTotals(productId) {
+    window.updateProductTotals = function(productId) {
         const prodGroup = document.getElementById(`product-group-${productId}`);
         if (!prodGroup) return;
 
         let sumOnStock = 0;
         let sumAvail = 0;
-        prodGroup.querySelectorAll('.incoming-edit-input').forEach(inp => {
-            const base = parseInt(inp.dataset.initialOnstock || '0');
-            const inc = parseInt(inp.value) || 0;
-            const ord = parseInt(inp.dataset.onOrder || '0');
-            const out = parseInt(inp.dataset.outgoing || '0');
-            const totalStock = base + inc;
+        prodGroup.querySelectorAll('.variant-row').forEach(row => {
+            const incInp = row.querySelector('.incoming-edit-input');
+            if (!incInp) return;
+
+            const base = parseInt(incInp.dataset.initialOnstock || '0');
+            const ord = parseInt(incInp.dataset.onOrder || '0');
+
+            const curInc = parseInt(incInp.value) || 0;
+            const totalStock = Math.max(0, base + curInc);
             sumOnStock += totalStock;
-            sumAvail += Math.max(0, totalStock - ord - out);
+            sumAvail += Math.max(0, totalStock - ord);
         });
 
         const totOnStockEl = prodGroup.querySelector('.prod-total-onstock');
         const totAvailEl = prodGroup.querySelector('.prod-total-available');
         if (totOnStockEl) totOnStockEl.textContent = sumOnStock.toLocaleString('id-ID');
         if (totAvailEl) totAvailEl.textContent = sumAvail.toLocaleString('id-ID');
-    }
+    };
 
-    function quickSaveIncoming(variantId) {
-        const input = document.getElementById(`incoming-input-${variantId}`);
+    window.quickSaveIncoming = function(variantId) {
+        const incInput = document.getElementById(`incoming-input-${variantId}`);
         const btn = document.getElementById(`btn-save-${variantId}`);
         const onstockDisplay = document.getElementById(`onstock-display-${variantId}`);
         const onstockCalc = document.getElementById(`onstock-calc-${variantId}`);
         const availBadge = document.getElementById(`available-badge-${variantId}`);
-        if (!input) return;
+        if (!incInput) return;
 
-        const incomingVal = parseInt(input.value);
+        const incomingVal = parseInt(incInput.value);
+
         if (isNaN(incomingVal) || incomingVal < 0) {
             showInventoryToast('Jumlah incoming harus berupa angka minimal 0', false);
-            input.focus();
+            incInput.focus();
             return;
         }
 
-        const productId = input.dataset.productId;
-        const baseOnStock = parseInt(input.dataset.initialOnstock || '0');
-        const newOnStock = baseOnStock + incomingVal;
+        const productId = incInput.dataset.productId;
 
         // Loading state on button
         if (btn) {
@@ -580,7 +584,6 @@
                 variant_id: variantId,
                 product_id: productId,
                 incoming: incomingVal,
-                on_stock: newOnStock,
                 warehouse_id: '{{ request('warehouse_id') }}' || null,
                 store_channel_id: '{{ request('store_channel_id') }}' || null
             })
@@ -601,10 +604,11 @@
             }
 
             if (data.success) {
-                // Update base dataset to the new on_stock and clear incoming input so next incoming addition is additive
-                input.dataset.initialOnstock = data.data.on_stock;
-                input.dataset.initialIncoming = data.data.incoming;
-                input.value = '';
+                // Update datasets and keep inputs showing current saved values (do not reset to empty/0)
+                incInput.dataset.initialOnstock = data.data.on_stock;
+                incInput.dataset.initialIncoming = data.data.incoming;
+                incInput.value = data.data.incoming;
+
                 if (onstockDisplay) onstockDisplay.textContent = Number(data.data.on_stock).toLocaleString('id-ID');
                 if (onstockCalc) onstockCalc.classList.add('hidden');
                 if (availBadge) availBadge.textContent = Number(data.data.available).toLocaleString('id-ID');

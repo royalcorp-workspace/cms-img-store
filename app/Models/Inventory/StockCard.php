@@ -4,67 +4,53 @@ namespace App\Models\Inventory;
 
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
-use App\Models\Store\Store;
 use App\Models\Store\StoreChannel;
 use App\Models\Warehouse\Warehouse;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Inventory extends Model
+class StockCard extends Model
 {
     use HasUuids;
 
-    protected $table = 'inventories';
+    protected $table = 'stock_cards';
 
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'inventory_id',
         'product_id',
         'product_variant_id',
         'warehouse_id',
-        'store_id',
         'store_channel_id',
-        'on_stock',
-        'incoming',
-        'on_order',
-        'outgoing',
-        'available',
-        'quantity',
+        'transaction_type',
+        'reference_type',
+        'reference_number',
+        'qty_in',
+        'qty_out',
+        'stock_before',
+        'stock_after',
+        'notes',
         'creator',
-        'editor',
-        'deleted',
     ];
 
     protected function casts(): array
     {
         return [
-            'on_stock' => 'integer',
-            'incoming' => 'integer',
-            'on_order' => 'integer',
-            'outgoing' => 'integer',
-            'available' => 'integer',
-            'quantity' => 'integer',
-            'deleted' => 'boolean',
+            'qty_in' => 'integer',
+            'qty_out' => 'integer',
+            'stock_before' => 'integer',
+            'stock_after' => 'integer',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
     }
 
-    protected static function boot(): void
+    public function inventory(): BelongsTo
     {
-        parent::boot();
-        static::addGlobalScope('not-deleted', fn($q) => $q->where('inventories.deleted', false));
-
-        static::saving(function (Inventory $inventory) {
-            // Formula: available = on_stock - on_order
-            $onStock = (int) ($inventory->on_stock ?? 0);
-            $onOrder = (int) ($inventory->on_order ?? 0);
-
-            $inventory->available = max(0, $onStock - $onOrder);
-            $inventory->quantity = $inventory->available;
-        });
+        return $this->belongsTo(Inventory::class, 'inventory_id');
     }
 
     public function product(): BelongsTo
@@ -80,11 +66,6 @@ class Inventory extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class, 'warehouse_id');
-    }
-
-    public function store(): BelongsTo
-    {
-        return $this->belongsTo(Store::class, 'store_id');
     }
 
     public function channel(): BelongsTo

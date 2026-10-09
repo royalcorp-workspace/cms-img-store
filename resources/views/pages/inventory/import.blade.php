@@ -245,7 +245,8 @@
                                         <th class="px-3 py-2 font-semibold text-on-surface-variant">Baris</th>
                                         <th class="px-3 py-2 font-semibold text-on-surface-variant">SKU</th>
                                         <th class="px-3 py-2 font-semibold text-on-surface-variant">Nama Produk</th>
-                                        <th class="px-3 py-2 font-semibold text-on-surface-variant text-right">Nilai Stock</th>
+                                        <th class="px-3 py-2 font-semibold text-on-surface-variant text-right">Incoming</th>
+                                        <th class="px-3 py-2 font-semibold text-on-surface-variant text-right">Outgoing</th>
                                         <th class="px-3 py-2 font-semibold text-on-surface-variant">Status</th>
                                     </tr>
                                 </thead>
@@ -458,19 +459,20 @@
                                     <td class="px-3 py-2 text-[11px] font-mono text-on-surface-variant font-bold">#${row.row_number}</td>
                                     <td class="px-3 py-2 text-[11px] font-mono font-semibold text-on-surface">${row.sku}</td>
                                     <td class="px-3 py-2 text-[11px] text-on-surface-variant truncate max-w-[200px]" title="${row.product_name}">${row.product_name}</td>
-                                    <td class="px-3 py-2 text-[11px] text-right font-mono font-semibold ${row.status === 'ready' ? 'text-success' : (row.status === 'rejected' ? 'text-danger' : 'text-on-surface-variant')}">${row.stock_val}</td>
+                                    <td class="px-3 py-2 text-[11px] text-right font-mono font-semibold ${row.stock_qty > 0 ? 'text-success' : 'text-on-surface-variant'}">${row.stock_val}</td>
+                                    <td class="px-3 py-2 text-[11px] text-right font-mono font-semibold ${row.outgoing_qty > 0 ? 'text-purple-700' : 'text-on-surface-variant'}">${row.outgoing_val || '-'}</td>
                                     <td class="px-3 py-2 text-[11px]">${badgeHtml}</td>
                                 </tr>
                             `;
                         });
                         previewTableBody.innerHTML = html;
                     } else {
-                        previewTableBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-xs text-on-surface-variant">Tidak ada baris data untuk ditampilkan.</td></tr>`;
+                        previewTableBody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-xs text-on-surface-variant">Tidak ada baris data untuk ditampilkan.</td></tr>`;
                     }
 
                 } catch (err) {
                     previewMetaText.textContent = 'Gagal menghubungi server untuk preview: ' + err.message;
-                    previewTableBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-xs text-danger">Koneksi gagal saat membaca preview file.</td></tr>`;
+                    previewTableBody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-xs text-danger">Koneksi gagal saat membaca preview file.</td></tr>`;
                 }
             }
 

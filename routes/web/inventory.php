@@ -4,8 +4,11 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Inventory\InventoryController;
 use App\Http\Controllers\Warehouse\WarehouseController;
 
+use App\Http\Controllers\Inventory\StockCardController;
+
 // Inventory routes
 Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+Route::get('/inventory/stock-card', [StockCardController::class, 'index'])->name('inventory.stock-card.index');
 Route::get('/inventory/import', [InventoryController::class, 'importForm'])->name('inventory.import.form');
 Route::post('/inventory/import', [InventoryController::class, 'importStore'])->name('inventory.import.store');
 Route::post('/inventory/import/preview', [InventoryController::class, 'importPreview'])->name('inventory.import.preview');

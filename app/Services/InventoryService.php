@@ -206,7 +206,7 @@ class InventoryService
     /**
      * Handle completed delivery: reduce outgoing and deduct on_stock.
      */
-    public static function recordWebOrderDelivered(string $variantId, int $quantity): bool
+    public static function recordWebOrderDelivered(string $variantId, int $quantity, ?string $orderNumber = null): bool
     {
         $channel = self::getWebImgChannel();
         $inventory = Inventory::where('product_variant_id', $variantId)
@@ -215,10 +215,57 @@ class InventoryService
 
         if (!$inventory) return false;
 
+        $stockBefore = (int)$inventory->on_stock;
         $inventory->outgoing = max(0, $inventory->outgoing - $quantity);
         $inventory->on_stock = max(0, $inventory->on_stock - $quantity);
         $inventory->save();
 
+        self::recordStockCard([
+            'inventory_id' => $inventory->id,
+            'product_id' => $inventory->product_id,
+            'product_variant_id' => $variantId,
+            'warehouse_id' => $inventory->warehouse_id,
+            'store_channel_id' => $inventory->store_channel_id,
+            'transaction_type' => 'outgoing',
+            'reference_type' => 'web_order',
+            'reference_number' => $orderNumber,
+            'qty_in' => 0,
+            'qty_out' => $quantity,
+            'stock_before' => $stockBefore,
+            'stock_after' => $inventory->on_stock,
+            'notes' => 'Pesanan terkirim / selesai pengantaran',
+            'creator' => 'System',
+        ]);
+
         return true;
+    }
+
+    /**
+     * Record a stock card movement entry.
+     */
+    public static function recordStockCard(array $data): ?\App\Models\Inventory\StockCard
+    {
+        try {
+            return \App\Models\Inventory\StockCard::create([
+                'id' => (string) Str::uuid(),
+                'inventory_id' => $data['inventory_id'] ?? null,
+                'product_id' => $data['product_id'] ?? null,
+                'product_variant_id' => $data['product_variant_id'],
+                'warehouse_id' => $data['warehouse_id'] ?? null,
+                'store_channel_id' => $data['store_channel_id'] ?? null,
+                'transaction_type' => $data['transaction_type'] ?? 'adjustment',
+                'reference_type' => $data['reference_type'] ?? 'manual',
+                'reference_number' => $data['reference_number'] ?? null,
+                'qty_in' => (int)($data['qty_in'] ?? 0),
+                'qty_out' => (int)($data['qty_out'] ?? 0),
+                'stock_before' => (int)($data['stock_before'] ?? 0),
+                'stock_after' => (int)($data['stock_after'] ?? 0),
+                'notes' => $data['notes'] ?? null,
+                'creator' => $data['creator'] ?? (\Illuminate\Support\Facades\Auth::user()?->name ?? 'Admin'),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create stock card: ' . $e->getMessage());
+            return null;
+        }
     }
 }

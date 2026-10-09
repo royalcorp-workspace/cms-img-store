@@ -227,6 +227,7 @@ class InventoryController extends Controller
             $incomingCol = array_search('incoming', $headers);
         }
 
+        $outgoingCol = array_search('outgoing', $headers);
         $whCol = array_search('warehouse_code', $headers);
 
         $success = 0;
@@ -271,27 +272,52 @@ class InventoryController extends Controller
                 continue;
             }
 
-            // Validate stock
+            // Validate incoming stock
+            $hasIncomingVal = false;
             $incomingQty = 0;
             if ($incomingCol !== false) {
                 $incomingVal = $row[$incomingCol] ?? null;
                 if ($incomingVal !== null && trim((string)$incomingVal) !== '') {
-                    // Jika stock tidak bernilai angka maka ditolak
                     if (!is_numeric($incomingVal) || (float)$incomingVal < 0) {
                         $failed++;
                         $errors[] = [
                             'row' => $rowNumber,
                             'sku' => $sku,
-                            'message' => "Nilai stock '{$incomingVal}' ditolak karena bukan angka numerik positif atau nol."
+                            'message' => "Nilai incoming/stock '{$incomingVal}' ditolak karena bukan angka numerik positif atau nol."
                         ];
                         continue;
                     }
                     $incomingQty = (int) $incomingVal;
+                    $hasIncomingVal = true;
                 }
             }
 
-            // Jika diisi <= 0 (default 0 atau kosong), dilewati
-            if ($incomingQty <= 0) {
+            // Validate outgoing stock
+            $hasOutgoingVal = false;
+            $outgoingQty = 0;
+            if ($outgoingCol !== false) {
+                $outgoingVal = $row[$outgoingCol] ?? null;
+                if ($outgoingVal !== null && trim((string)$outgoingVal) !== '') {
+                    if (!is_numeric($outgoingVal) || (float)$outgoingVal < 0) {
+                        $failed++;
+                        $errors[] = [
+                            'row' => $rowNumber,
+                            'sku' => $sku,
+                            'message' => "Nilai outgoing '{$outgoingVal}' ditolak karena bukan angka numerik positif atau nol."
+                        ];
+                        continue;
+                    }
+                    $outgoingQty = (int) $outgoingVal;
+                    $hasOutgoingVal = true;
+                }
+            }
+
+            // Jika tidak ada data incoming (>0) dan outgoing (>0), lewati
+            if (!$hasIncomingVal && !$hasOutgoingVal) {
+                $skipped++;
+                continue;
+            }
+            if ($incomingQty <= 0 && $outgoingQty <= 0) {
                 $skipped++;
                 continue;
             }
@@ -341,17 +367,47 @@ class InventoryController extends Controller
                 ]);
             }
 
-            // On Stock nambah data dari incoming (misal On Stock 10, incoming 5 -> On Stock 15)
-            $inventory->on_stock = (int)$inventory->on_stock + $incomingQty;
+            $stockBefore = (int) $inventory->on_stock;
+            $oldIncoming = (int) $inventory->incoming;
+            $oldOutgoing = (int) $inventory->outgoing;
 
             if ($mode === 'add') {
-                $inventory->incoming = (int)$inventory->incoming + $incomingQty;
+                $newIncoming = $hasIncomingVal ? ($oldIncoming + $incomingQty) : $oldIncoming;
+                $newOutgoing = $hasOutgoingVal ? ($oldOutgoing + $outgoingQty) : $oldOutgoing;
             } else {
-                $inventory->incoming = $incomingQty;
+                $newIncoming = $hasIncomingVal ? $incomingQty : $oldIncoming;
+                $newOutgoing = $hasOutgoingVal ? $outgoingQty : $oldOutgoing;
             }
 
+            // Persist incoming and outgoing values
+            $inventory->incoming = $newIncoming;
+            $inventory->outgoing = $newOutgoing;
+
+            // Update on_stock accordingly: On Stock bertambah dari incoming
+            // Misal on_stock 20 + incoming 50 = 70, dan incoming tetap 50
+            $inventory->on_stock = (int) $inventory->on_stock + $incomingQty;
+
+            $stockAfter = (int) $inventory->on_stock;
             $inventory->editor = Auth::user()?->name ?? 'Import SKU';
             $inventory->save();
+
+            // Record stock card entry
+            InventoryService::recordStockCard([
+                'inventory_id' => $inventory->id,
+                'product_id' => $variant->product_id,
+                'product_variant_id' => $variant->id,
+                'warehouse_id' => $inventory->warehouse_id,
+                'store_channel_id' => $inventory->store_channel_id,
+                'transaction_type' => 'import',
+                'reference_type' => 'import',
+                'reference_number' => "ROW-{$rowNumber}",
+                'qty_in' => $incomingQty,
+                'qty_out' => $outgoingQty,
+                'stock_before' => $stockBefore,
+                'stock_after' => $stockAfter,
+                'notes' => "Import spreadsheet baris {$rowNumber} (Mode: {$mode}, Inc: {$newIncoming}, Out: {$newOutgoing})",
+                'creator' => Auth::user()?->name ?? 'Import SKU',
+            ]);
 
             // Sync variant stock_quantity cache
             Variant::where('id', $variant->id)->update([
@@ -429,6 +485,7 @@ class InventoryController extends Controller
         if ($incomingCol === false) {
             $incomingCol = array_search('incoming', $headers);
         }
+        $outgoingCol = array_search('outgoing', $headers);
         $refNameCol = array_search('reference_product_name', $headers);
 
         // Preload active variants with product
@@ -467,6 +524,7 @@ class InventoryController extends Controller
             $statusLabel = 'Siap Masuk';
             $message = '';
             $stockQty = 0;
+            $outgoingQty = 0;
 
             if (!$variant) {
                 $status = 'rejected';
@@ -474,34 +532,48 @@ class InventoryController extends Controller
                 $message = "SKU '{$sku}' tidak ditemukan di katalog.";
                 $rejectedCount++;
             } else {
+                $hasValidInc = false;
+                $hasValidOut = false;
+
                 if ($incomingCol !== false) {
                     $rawStock = $row[$incomingCol] ?? null;
                     if ($rawStock !== null && trim((string)$rawStock) !== '') {
                         if (!is_numeric($rawStock) || (float)$rawStock < 0) {
                             $status = 'rejected';
-                            $statusLabel = 'Ditolak (Bukan Angka)';
-                            $message = "Nilai stock '{$rawStock}' tidak valid (harus angka numerik positif atau nol).";
+                            $statusLabel = 'Ditolak (Incoming Bukan Angka)';
+                            $message = "Nilai incoming '{$rawStock}' tidak valid (harus angka positif atau nol).";
                             $rejectedCount++;
+                            continue;
                         } else {
                             $stockQty = (int)$rawStock;
-                            if ($stockQty > 0) {
-                                $status = 'ready';
-                                $statusLabel = 'Siap Masuk';
-                                $readyCount++;
-                            } else {
-                                $status = 'skipped';
-                                $statusLabel = 'Dilewati (Stok 0)';
-                                $skippedCount++;
-                            }
+                            if ($stockQty > 0) $hasValidInc = true;
                         }
-                    } else {
-                        $status = 'skipped';
-                        $statusLabel = 'Dilewati (Kosong)';
-                        $skippedCount++;
                     }
+                }
+
+                if ($outgoingCol !== false) {
+                    $rawOut = $row[$outgoingCol] ?? null;
+                    if ($rawOut !== null && trim((string)$rawOut) !== '') {
+                        if (!is_numeric($rawOut) || (float)$rawOut < 0) {
+                            $status = 'rejected';
+                            $statusLabel = 'Ditolak (Outgoing Bukan Angka)';
+                            $message = "Nilai outgoing '{$rawOut}' tidak valid (harus angka positif atau nol).";
+                            $rejectedCount++;
+                            continue;
+                        } else {
+                            $outgoingQty = (int)$rawOut;
+                            if ($outgoingQty > 0) $hasValidOut = true;
+                        }
+                    }
+                }
+
+                if ($hasValidInc || $hasValidOut) {
+                    $status = 'ready';
+                    $statusLabel = 'Siap Masuk';
+                    $readyCount++;
                 } else {
                     $status = 'skipped';
-                    $statusLabel = 'Dilewati (Kolom Stock Tidak Ada)';
+                    $statusLabel = 'Dilewati (Stok 0 / Kosong)';
                     $skippedCount++;
                 }
             }
@@ -512,7 +584,9 @@ class InventoryController extends Controller
                     'sku' => $sku,
                     'product_name' => $productName,
                     'stock_val' => ($incomingCol !== false) ? ($row[$incomingCol] ?? '-') : '-',
+                    'outgoing_val' => ($outgoingCol !== false) ? ($row[$outgoingCol] ?? '-') : '-',
                     'stock_qty' => $stockQty,
+                    'outgoing_qty' => $outgoingQty,
                     'status' => $status,
                     'status_label' => $statusLabel,
                     'message' => $message,
@@ -537,12 +611,12 @@ class InventoryController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('inventory_incoming');
 
-        // Headers
-        $headers = ['sku', 'stock', 'warehouse_code', 'reference_product_name'];
+        // Headers: include incoming and outgoing
+        $headers = ['sku', 'incoming', 'outgoing', 'warehouse_code', 'reference_product_name'];
         $sheet->fromArray($headers, null, 'A1');
 
         // Style header row
-        $sheet->getStyle('A1:D1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:E1')->getFont()->setBold(true);
 
         // Prepopulate with all active SKUs from DB with default stock = 0
         $variants = Variant::with('product')
@@ -560,7 +634,8 @@ class InventoryController extends Controller
             $productName = trim(($v->product?->name ?? '') . ($v->variant_name ? ' - ' . $v->variant_name : ''));
             $dataRows[] = [
                 $v->sku,
-                0, // default stock 0
+                0, // default incoming 0
+                0, // default outgoing 0
                 $whCode,
                 $productName
             ];
@@ -571,7 +646,7 @@ class InventoryController extends Controller
         }
 
         // Auto size columns
-        foreach (range('A', 'D') as $col) {
+        foreach (range('A', 'E') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -668,7 +743,7 @@ class InventoryController extends Controller
                     $incoming = (int) ($item['incoming'] ?? 0);
                     $onOrder = (int) ($item['on_order'] ?? 0);
                     $outgoing = (int) ($item['outgoing'] ?? 0);
-                    $available = max(0, $onStock - $onOrder - $outgoing);
+                    $available = max(0, $onStock - $onOrder);
 
                     Inventory::updateOrCreate(
                         [
@@ -722,7 +797,7 @@ class InventoryController extends Controller
         $incoming = (int) ($validated['incoming'] ?? 0);
         $onOrder = (int) ($validated['on_order'] ?? 0);
         $outgoing = (int) ($validated['outgoing'] ?? 0);
-        $available = max(0, $onStock - $onOrder - $outgoing);
+        $available = max(0, $onStock - $onOrder);
 
         $inventory = Inventory::updateOrCreate(
             [
@@ -777,13 +852,12 @@ class InventoryController extends Controller
             'outgoing' => 'required|integer|min:0',
         ]);
 
-        $channel = StoreChannel::find($validated['store_channel_id']);
-
+        $stockBefore = (int) $inventory->on_stock;
         $onStock = (int) $validated['on_stock'];
         $incoming = (int) $validated['incoming'];
         $onOrder = (int) $validated['on_order'];
         $outgoing = (int) $validated['outgoing'];
-        $available = max(0, $onStock - $onOrder - $outgoing);
+        $available = max(0, $onStock - $onOrder);
 
         $inventory->update([
             'warehouse_id' => $validated['warehouse_id'],
@@ -796,6 +870,27 @@ class InventoryController extends Controller
             'available' => $available,
             'quantity' => $available,
             'editor' => Auth::user()?->name ?? 'Admin',
+        ]);
+
+        $diff = $onStock - $stockBefore;
+        $qtyIn = $diff > 0 ? $diff : 0;
+        $qtyOut = $diff < 0 ? abs($diff) : 0;
+
+        InventoryService::recordStockCard([
+            'inventory_id' => $inventory->id,
+            'product_id' => $inventory->product_id,
+            'product_variant_id' => $inventory->product_variant_id,
+            'warehouse_id' => $inventory->warehouse_id,
+            'store_channel_id' => $inventory->store_channel_id,
+            'transaction_type' => 'adjustment',
+            'reference_type' => 'manual',
+            'reference_number' => null,
+            'qty_in' => $qtyIn,
+            'qty_out' => $qtyOut,
+            'stock_before' => $stockBefore,
+            'stock_after' => $onStock,
+            'notes' => "Update form inventory (Incoming: {$incoming}, Outgoing: {$outgoing})",
+            'creator' => Auth::user()?->name ?? 'Admin',
         ]);
 
         // Sync variant cache
@@ -815,8 +910,7 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'variant_id' => 'required|uuid|exists:product_variants,id',
             'product_id' => 'nullable|uuid|exists:products,id',
-            'incoming' => 'nullable|integer|min:0',
-            'on_stock' => 'nullable|integer|min:0',
+            'incoming' => 'required|integer|min:0',
             'warehouse_id' => 'nullable|uuid|exists:warehouses,id',
             'store_channel_id' => 'nullable|uuid|exists:store_channel,id',
         ]);
@@ -835,22 +929,43 @@ class InventoryController extends Controller
             0
         );
 
-        // On Stock nambah data dari incoming (misal On Stock 10, incoming 5 -> On Stock 15)
-        if ($request->has('incoming')) {
-            $incoming = (int) ($validated['incoming'] ?? 0);
-            $inventory->incoming = $incoming;
+        $stockBefore = (int) $inventory->on_stock;
+        $outgoing = (int) $inventory->outgoing;
 
-            if ($request->has('on_stock') && !is_null($validated['on_stock'])) {
-                $inventory->on_stock = (int) $validated['on_stock'];
-            } else {
-                $inventory->on_stock = (int) $inventory->on_stock + $incoming;
-            }
-        } elseif ($request->has('on_stock') && !is_null($validated['on_stock'])) {
-            $inventory->on_stock = (int) $validated['on_stock'];
-        }
+        $incomingQty = (int) $validated['incoming'];
+        $inventory->incoming = $incomingQty;
 
+        // Logika bisnis:
+        // Misal on_stock 20 terus incoming datang 50, maka on_stock menjadi 70 (20 + 50)
+        // Dan kolom incoming tetap menyimpan 50 sebagai inputan terakhirnya.
+        $inventory->on_stock = max(0, $stockBefore + $incomingQty);
+
+        $stockAfter = (int) $inventory->on_stock;
         $inventory->editor = Auth::user()?->name ?? 'Admin';
-        $inventory->save(); // saving hook recalculates available and quantity
+        $inventory->save(); // saving hook calculates available = max(0, on_stock - on_order)
+
+        // Record stock card entry if there is incoming movement
+        $qtyIn = $incomingQty > 0 ? $incomingQty : 0;
+        $qtyOut = 0;
+
+        if ($incomingQty > 0) {
+            InventoryService::recordStockCard([
+                'inventory_id' => $inventory->id,
+                'product_id' => $productId,
+                'product_variant_id' => $variant->id,
+                'warehouse_id' => $inventory->warehouse_id,
+                'store_channel_id' => $inventory->store_channel_id,
+                'transaction_type' => 'incoming',
+                'reference_type' => 'table_edit',
+                'reference_number' => null,
+                'qty_in' => $incomingQty,
+                'qty_out' => 0,
+                'stock_before' => $stockBefore,
+                'stock_after' => $stockAfter,
+                'notes' => "Update incoming dari tabel inventory (Incoming: {$incomingQty}, Outgoing: {$outgoing})",
+                'creator' => Auth::user()?->name ?? 'Admin',
+            ]);
+        }
 
         // Sync variant's stock_quantity
         $totalAvailable = (int) Inventory::where('product_variant_id', $variant->id)
@@ -861,7 +976,7 @@ class InventoryController extends Controller
         $skuText = $variant->sku ? "[{$variant->sku}] " : '';
         return response()->json([
             'success' => true,
-            'message' => "Stok SKU {$skuText}{$variant->variant_name} berhasil diperbarui. On Stock: {$inventory->on_stock}.",
+            'message' => "Stok SKU {$skuText}{$variant->variant_name} berhasil diperbarui. On Stock: {$inventory->on_stock}, Incoming: {$inventory->incoming}, Outgoing: {$inventory->outgoing}.",
             'data' => [
                 'inventory_id' => $inventory->id,
                 'variant_id' => $variant->id,
@@ -890,6 +1005,11 @@ class InventoryController extends Controller
         $type = $validated['type'];
         $field = $validated['field'] ?? 'on_stock';
 
+        $stockBefore = (int) $inventory->on_stock;
+        $qtyIn = 0;
+        $qtyOut = 0;
+        $transType = 'adjustment';
+
         if ($type === 'set') {
             $inventory->$field = max(0, $amount);
         } elseif ($type === 'add') {
@@ -899,20 +1019,49 @@ class InventoryController extends Controller
             $transferQty = min((int)$inventory->incoming, max(0, $amount));
             $inventory->incoming = max(0, (int)$inventory->incoming - $transferQty);
             $inventory->on_stock = (int)$inventory->on_stock + $transferQty;
+            $qtyIn = $transferQty;
+            $transType = 'incoming';
         } elseif ($type === 'ship_outgoing') {
             // Order shipped: moves from on_order to outgoing
             $shipQty = min((int)$inventory->on_order, max(0, $amount));
             $inventory->on_order = max(0, (int)$inventory->on_order - $shipQty);
             $inventory->outgoing = (int)$inventory->outgoing + $shipQty;
+            $transType = 'outgoing';
         } elseif ($type === 'complete_delivery') {
             // Delivered: outgoing complete, items physically leave on_stock
             $compQty = min((int)$inventory->outgoing, max(0, $amount));
             $inventory->outgoing = max(0, (int)$inventory->outgoing - $compQty);
             $inventory->on_stock = max(0, (int)$inventory->on_stock - $compQty);
+            $qtyOut = $compQty;
+            $transType = 'outgoing';
         }
 
+        $stockAfter = (int) $inventory->on_stock;
         $inventory->editor = Auth::user()?->name ?? 'Admin';
         $inventory->save(); // saving hook calculates available and quantity automatically
+
+        $diffStock = $stockAfter - $stockBefore;
+        if ($qtyIn == 0 && $qtyOut == 0) {
+            if ($diffStock > 0) $qtyIn = $diffStock;
+            elseif ($diffStock < 0) $qtyOut = abs($diffStock);
+        }
+
+        InventoryService::recordStockCard([
+            'inventory_id' => $inventory->id,
+            'product_id' => $inventory->product_id,
+            'product_variant_id' => $inventory->product_variant_id,
+            'warehouse_id' => $inventory->warehouse_id,
+            'store_channel_id' => $inventory->store_channel_id,
+            'transaction_type' => $transType,
+            'reference_type' => 'adjustment',
+            'reference_number' => null,
+            'qty_in' => $qtyIn,
+            'qty_out' => $qtyOut,
+            'stock_before' => $stockBefore,
+            'stock_after' => $stockAfter,
+            'notes' => $validated['notes'] ?? "Penyesuaian stok ({$type} {$field} {$amount})",
+            'creator' => Auth::user()?->name ?? 'Admin',
+        ]);
 
         // Sync variant cache
         if ($inventory->product_variant_id) {
