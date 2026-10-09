@@ -58,10 +58,10 @@ class AppServiceProvider extends ServiceProvider
             $model = $data[0] ?? null;
             if ($model instanceof \Illuminate\Database\Eloquent\Model) {
                 $username = \App\Traits\HasAuditUser::resolveCurrentUsername();
-                if ($model->isFillable('creator') && empty($model->creator)) {
+                if (in_array('creator', $model->getFillable()) && empty($model->creator)) {
                     $model->creator = $username;
                 }
-                if ($model->isFillable('editor') && empty($model->editor)) {
+                if (in_array('editor', $model->getFillable()) && empty($model->editor)) {
                     $model->editor = $username;
                 }
                 if ($model->usesTimestamps()) {
@@ -79,7 +79,7 @@ class AppServiceProvider extends ServiceProvider
             $model = $data[0] ?? null;
             if ($model instanceof \Illuminate\Database\Eloquent\Model) {
                 $username = \App\Traits\HasAuditUser::resolveCurrentUsername();
-                if ($model->isFillable('editor')) {
+                if (in_array('editor', $model->getFillable())) {
                     $model->editor = $username;
                 }
                 if ($model->usesTimestamps()) {
