@@ -722,12 +722,12 @@ class Order extends Model
                 'icon' => 'package',
             ],
             'picked' => [
-                'label' => 'Paket Diambil Kurir',
+                'label' => 'Paket Telah Dijemput Kurir',
                 'badge_class' => 'bg-indigo-100 text-indigo-800 border-indigo-200',
                 'icon' => 'inventory_2',
             ],
             'picking_up' => [
-                'label' => 'Kurir Menjemput Paket',
+                'label' => 'Kurir Sedang Menjemput Paket',
                 'badge_class' => 'bg-amber-100 text-amber-800 border-amber-200',
                 'icon' => 'directions_run',
             ],
