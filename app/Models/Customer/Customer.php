@@ -20,6 +20,9 @@ class Customer extends Model
         'email',
         'phone',
         'customer_type',
+        'customer_code',
+        'birth_date',
+        'gender',
         'meta',
         'creator',
         'editor',
@@ -29,6 +32,7 @@ class Customer extends Model
     protected function casts(): array
     {
         return [
+            'birth_date' => 'date',
             'meta' => 'array',
             'deleted' => 'boolean',
             'created_at' => 'datetime',
@@ -36,9 +40,30 @@ class Customer extends Model
         ];
     }
 
+    /**
+     * Generate format customer code: CUST.Ymd.random number (e.g., CUST.20261014.8392)
+     */
+    public static function generateCustomerCode(?\DateTimeInterface $date = null): string
+    {
+        $dateStr = ($date ? $date->format('Ymd') : now()->format('Ymd'));
+        $prefix = "CUST.{$dateStr}.";
+
+        do {
+            $code = $prefix . mt_rand(1000, 9999);
+        } while (static::withoutGlobalScopes()->where('customer_code', $code)->exists());
+
+        return $code;
+    }
+
     protected static function boot(): void
     {
         parent::boot();
+
+        static::creating(function ($customer) {
+            if (empty($customer->customer_code)) {
+                $customer->customer_code = static::generateCustomerCode();
+            }
+        });
 
         static::addGlobalScope('active', function ($query) {
             $query->where($query->getModel()->getTable() . '.deleted', false);

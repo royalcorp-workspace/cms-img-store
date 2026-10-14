@@ -41,6 +41,10 @@ class Order extends Model
         'order_number',
         'order_date',
         'customer_id',
+        'store_id',
+        'store_channel_id',
+        'business_unit',
+        'address_number',
         'status',
         'jde_push_status',
         'jde_push_date',
@@ -64,7 +68,7 @@ class Order extends Model
         'courier_id',
     ];
 
-    protected $appends = ['status_badge_class', 'payment_status_badge_class', 'resi', 'courier_name'];
+    protected $appends = ['status_badge_class', 'payment_status_badge_class', 'resi', 'courier_name', 'jde_push_status_badge_class', 'jde_push_status_label'];
 
     protected function casts(): array
     {
@@ -72,6 +76,7 @@ class Order extends Model
             'order_date' => 'date:Y-m-d',
             'jde_push_date' => 'date:Y-m-d',
             'jde_push_status' => 'integer',
+            'address_number' => 'integer',
             'status' => 'integer',
             'payment_status' => 'integer',
             'subtotal' => 'decimal:2',
@@ -223,6 +228,16 @@ class Order extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id', 'id');
+    }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Store\Store::class, 'store_id');
+    }
+
+    public function storeChannel(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Store\StoreChannel::class, 'store_channel_id');
     }
 
     public function items(): HasMany
@@ -465,6 +480,10 @@ class Order extends Model
             'eta_source_label' => $this->delivery?->eta_source_label ?? null,
             'eta_label' => $this->delivery?->eta_label ?? ($this->meta['biteship_eta']['formatted_label'] ?? ($this->meta['shipping_eta_label'] ?? ($this->meta['shipping_duration'] ?? null))),
             'eta_notes' => $this->delivery?->eta_notes ?? null,
+            'jde_push_status' => (int) $this->jde_push_status,
+            'jde_push_status_label' => $this->jdePushStatusLabel(),
+            'jde_push_status_badge_class' => $this->jde_push_status_badge_class,
+            'jde_push_date' => $this->jde_push_date?->format('d/m/Y') ?? null,
         ];
     }
 
@@ -619,6 +638,21 @@ class Order extends Model
     public function jdePushStatusLabel(): string
     {
         return \App\Models\Reff::getShow('JdePushStatus', $this->jde_push_status, self::jdePushStatusLabels()[$this->jde_push_status] ?? 'Pending');
+    }
+
+    public function getJdePushStatusLabelAttribute(): string
+    {
+        return $this->jdePushStatusLabel();
+    }
+
+    public function getJdePushStatusBadgeClassAttribute(): string
+    {
+        return match ((int)$this->jde_push_status) {
+            self::JDE_STATUS_SUCCESS => 'bg-emerald-100 text-emerald-800 border-emerald-300',
+            self::JDE_STATUS_PROCESSING => 'bg-blue-100 text-blue-800 border-blue-300',
+            self::JDE_STATUS_FAILED => 'bg-rose-100 text-rose-800 border-rose-300',
+            default => 'bg-slate-100 text-slate-700 border-slate-300',
+        };
     }
 
     public function deliveryLogs(): \Illuminate\Database\Eloquent\Relations\HasMany

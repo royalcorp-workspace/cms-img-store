@@ -16,8 +16,13 @@ class StoreController extends Controller
         $query = Store::query()->with(['group', 'tier', 'owner']);
 
         if ($search = $request->query('search')) {
-            $query->where('name', 'ilike', "%{$search}%")
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
                   ->orWhere('code', 'ilike', "%{$search}%");
+                if (is_numeric($search)) {
+                    $q->orWhere('address_number', (int) $search);
+                }
+            });
         }
 
         if ($request->filled('store_group_id')) {
@@ -54,6 +59,7 @@ class StoreController extends Controller
             'store_group_id' => 'required|string|exists:store_group,id',
             'tier_id' => 'nullable|string|exists:store_tier,id',
             'code' => 'required|string|max:100',
+            'address_number' => 'nullable|integer|min:1',
             'name' => 'required|string|max:255',
             'owner_user_id' => 'nullable|string|exists:user_admin,id',
             'credit_limit' => 'nullable|numeric|min:0',
@@ -96,6 +102,7 @@ class StoreController extends Controller
             'store_group_id' => 'required|string|exists:store_group,id',
             'tier_id' => 'nullable|string|exists:store_tier,id',
             'code' => 'required|string|max:100',
+            'address_number' => 'nullable|integer|min:1',
             'name' => 'required|string|max:255',
             'owner_user_id' => 'nullable|string|exists:user_admin,id',
             'credit_limit' => 'nullable|numeric|min:0',

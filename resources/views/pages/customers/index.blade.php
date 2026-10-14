@@ -47,6 +47,8 @@
                             </div>
                         </th>
                         <th class="px-gutter py-4 font-headline-md text-[13px]">Phone</th>
+                        <th class="px-gutter py-4 font-headline-md text-[13px]">Gender</th>
+                        <th class="px-gutter py-4 font-headline-md text-[13px]">Tgl Lahir</th>
                         <th class="px-gutter py-4 font-headline-md text-[13px]">Orders</th>
                         <th class="px-gutter py-4 font-headline-md text-[13px]">Status</th>
                         <th class="px-gutter py-4 font-headline-md text-[13px] text-center">Actions</th>
@@ -63,10 +65,15 @@
                                 <div>
                                     <p class="font-headline-md text-on-surface">{{ $customer->name }}</p>
                                     <p class="text-label-sm text-on-surface-variant lowercase">{{ $customer->email }}</p>
+                                    @if($customer->customer_code)
+                                        <p class="text-[11px] font-mono font-bold text-indigo-700 dark:text-indigo-400 mt-0.5">{{ $customer->customer_code }}</p>
+                                    @endif
                                 </div>
                             </div>
                         </td>
                         <td class="px-gutter py-4 text-body-md">{{ $customer->phone ?? '-' }}</td>
+                        <td class="px-gutter py-4 text-body-md capitalize">{{ $customer->gender ?: '-' }}</td>
+                        <td class="px-gutter py-4 text-body-md">{{ $customer->birth_date ? $customer->birth_date->format('d M Y') : '-' }}</td>
                         <td class="px-gutter py-4 text-body-md font-bold">{{ $customer->orders->count() }}</td>
                         <td class="px-gutter py-4">
                             @if($customer->deleted)
@@ -92,7 +99,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-gutter py-8 text-center text-on-surface-variant">No customers found</td>
+                        <td colspan="7" class="px-gutter py-8 text-center text-on-surface-variant">No customers found</td>
                     </tr>
                     @endforelse
                 </tbody>

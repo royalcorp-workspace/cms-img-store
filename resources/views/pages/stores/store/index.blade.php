@@ -48,6 +48,7 @@
                 <thead>
                     <tr class="bg-surface-gray">
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Code</th>
+                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Address Number</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Name</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Group</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Tier</th>
@@ -60,6 +61,7 @@
                     @forelse($stores as $store)
                     <tr class="hover:bg-surface-container/30 transition-colors">
                         <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-semibold">{{ $store->code }}</td>
+                        <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $store->address_number ?? '-' }}</td>
                         <td class="px-gutter py-4 font-body-md text-body-md text-on-surface">{{ $store->name }}</td>
                         <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $store->group->name ?? '-' }}</td>
                         <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $store->tier->name ?? '-' }}</td>
@@ -82,7 +84,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-gutter py-8 text-center text-on-surface-variant">No stores found</td>
+                        <td colspan="8" class="px-gutter py-8 text-center text-on-surface-variant">No stores found</td>
                     </tr>
                     @endforelse
                 </tbody>

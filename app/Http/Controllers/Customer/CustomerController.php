@@ -17,7 +17,8 @@ class CustomerController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'ilike', "%{$search}%")
                   ->orWhere('email', 'ilike', "%{$search}%")
-                  ->orWhere('phone', 'ilike', "%{$search}%");
+                  ->orWhere('phone', 'ilike', "%{$search}%")
+                  ->orWhere('customer_code', 'ilike', "%{$search}%");
             });
         }
 
@@ -48,6 +49,9 @@ class CustomerController extends Controller
             'phone' => 'nullable|string|max:50',
             'user_id' => 'nullable|exists:users,id',
             'customer_type' => 'nullable|integer',
+            'customer_code' => 'nullable|string|max:100|unique:customers,customer_code',
+            'birth_date' => 'nullable|date',
+            'gender' => 'nullable|string|max:20',
             'label' => 'nullable|string|max:50',
             'sub_district_id' => 'nullable|exists:sub_districts,id',
             'address' => 'nullable|string',
@@ -56,11 +60,15 @@ class CustomerController extends Controller
         ]);
 
         $customer = Customer::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
             'user_id' => $validated['user_id'] ?? null,
             'customer_type' => $validated['customer_type'] ?? 1,
+            'customer_code' => $validated['customer_code'] ?? Customer::generateCustomerCode(),
+            'birth_date' => $validated['birth_date'] ?? null,
+            'gender' => $validated['gender'] ?? null,
         ]);
 
         // Create initial address if provided
@@ -109,6 +117,9 @@ class CustomerController extends Controller
             'phone' => 'nullable|string|max:50',
             'user_id' => 'nullable|exists:users,id',
             'customer_type' => 'nullable|integer',
+            'customer_code' => 'nullable|string|max:100|unique:customers,customer_code,' . $id,
+            'birth_date' => 'nullable|date',
+            'gender' => 'nullable|string|max:20',
         ]);
 
         $customer->update([
@@ -117,6 +128,9 @@ class CustomerController extends Controller
             'phone' => $validated['phone'],
             'user_id' => $validated['user_id'] ?? null,
             'customer_type' => $validated['customer_type'] ?? 1,
+            'customer_code' => $validated['customer_code'] ?? ($customer->customer_code ?: Customer::generateCustomerCode()),
+            'birth_date' => $validated['birth_date'] ?? null,
+            'gender' => $validated['gender'] ?? null,
         ]);
 
         return redirect()->route('customers.index')->with('success', 'Customer updated successfully');

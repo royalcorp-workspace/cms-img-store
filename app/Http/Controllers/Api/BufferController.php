@@ -195,6 +195,14 @@ class BufferController extends ApiController
             'meta' => 'nullable|array',
         ]);
 
+        // Pastikan customer memiliki customer_code saat checkout (format CUST.Ymd.random number)
+        if ($buffer->customer) {
+            if (empty($buffer->customer->customer_code)) {
+                $buffer->customer->customer_code = Customer::generateCustomerCode();
+                $buffer->customer->save();
+            }
+        }
+
         $orderNumber = Order::generateOrderNumber();
 
         $order = Order::create([

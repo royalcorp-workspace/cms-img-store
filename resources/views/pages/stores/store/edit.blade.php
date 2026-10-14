@@ -25,7 +25,7 @@
         @csrf
         @method('PUT')
         <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Store Group <span class="text-danger">*</span></label>
                     <select name="store_group_id" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" required>
@@ -38,8 +38,13 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-label-sm font-medium text-on-surface-variant">Code <span class="text-danger">*</span></label>
-                    <input type="text" name="code" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g., TOKO_A" required value="{{ old('code', $store->code) }}">
+                    <input type="text" name="code" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g., 11001006" required value="{{ old('code', $store->code) }}">
                     @error('code')<p class="text-danger text-sm">{{ $message }}</p>@enderror
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-label-sm font-medium text-on-surface-variant">Address Number</label>
+                    <input type="number" name="address_number" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none" placeholder="e.g., 100228" value="{{ old('address_number', $store->address_number) }}">
+                    @error('address_number')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

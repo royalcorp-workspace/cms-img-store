@@ -18,6 +18,21 @@
 <div class="space-y-4 pb-10">
     <!-- Action Buttons (Diatas Sub Menu) -->
     <div class="flex flex-wrap items-center justify-end gap-2">
+        <!-- Push to JDE (Hanya Muncul Jika Resi Sudah Ada) -->
+        <div id="jdeTopActionContainer" class="{{ $order->resi ? 'inline-flex' : 'hidden' }} items-center gap-1.5">
+            @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
+                <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-lg text-xs font-bold border border-emerald-300 dark:border-emerald-800" title="Pesanan sudah berhasil di-push ke JDE{{ $order->jde_push_date ? ' pada ' . $order->jde_push_date->format('d/m/Y') : '' }}">
+                    <span class="material-symbols-outlined text-[16px] text-emerald-600">cloud_done</span>
+                    <span>Sudah Push JDE</span>
+                </span>
+            @else
+                <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors">
+                    <span class="material-symbols-outlined text-[16px]">cloud_upload</span>
+                    <span id="btnPushToJdeTopText">Push ke JDE</span>
+                </button>
+            @endif
+        </div>
+
         @if($order->resi || $order->delivery_status)
             <button type="button" onclick='openResiModal(@json($resiModalData), "tracking")' class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors">
                 <span class="material-symbols-outlined text-[16px]">radar</span>
@@ -295,6 +310,60 @@
                             <span>Detail Pengiriman & Log Ekspedisi</span>
                         </a>
                     @endif
+
+                    <!-- Integrasi JDE (Hanya Muncul Jika Resi Ada) -->
+                    <div id="jdeCardSection" class="{{ $order->resi ? 'block' : 'hidden' }} pt-2 border-t border-outline-variant/40 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] text-on-surface-variant font-semibold flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px] text-indigo-600">sync_alt</span>
+                                Integrasi JDE
+                            </span>
+                            <span id="show-jde-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold border {{ $order->jde_push_status_badge_class }}">
+                                {{ $order->jdePushStatusLabel() }}
+                            </span>
+                        </div>
+                        <div class="p-2.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-lg border border-indigo-200/60 dark:border-indigo-900/40 flex items-center justify-between gap-2">
+                            <div class="text-[11px] text-on-surface">
+                                <div class="font-semibold text-indigo-950 dark:text-indigo-200" id="show-jde-status-title">
+                                    {{ (int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS ? 'Berhasil Terkirim ke JDE' : 'Siap Di-Push ke JDE' }}
+                                </div>
+                                <div class="text-[10px] text-on-surface-variant" id="show-jde-status-sub">
+                                    {{ $order->jde_push_date ? 'Tanggal: ' . $order->jde_push_date->format('d M Y') : 'Kirim data order & item ke JDE' }}
+                                </div>
+                            </div>
+                            <div id="jdeCardButtonContainer">
+                                @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md text-[11px] font-bold border border-emerald-200">
+                                        <span class="material-symbols-outlined text-[14px]">check</span>
+                                        Tersinkron
+                                    </span>
+                                @else
+                                    <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs">
+                                        <span class="material-symbols-outlined text-[14px]">cloud_upload</span>
+                                        <span>Push JDE</span>
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Info Business Unit & Address Number -->
+                        <div class="grid grid-cols-2 gap-1.5 text-[11px] bg-surface-container-low p-2 rounded-lg border border-outline-variant/40">
+                            <div>
+                                <span class="text-[10px] text-on-surface-variant block font-medium">Business Unit (Store):</span>
+                                <span class="font-bold text-primary font-mono text-xs">{{ $order->business_unit ?? ($order->store?->code ?? ($order->storeChannel?->code ?? config('services.jde.business_unit', '18011'))) }}</span>
+                                @if($order->store || $order->storeChannel)
+                                    <span class="text-[10px] text-on-surface-variant block truncate" title="{{ $order->store?->name ?? $order->storeChannel?->name }}">{{ $order->store?->name ?? $order->storeChannel?->name }}</span>
+                                @endif
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-on-surface-variant block font-medium">Address Number (Store):</span>
+                                <span class="font-bold text-indigo-700 dark:text-indigo-400 font-mono text-xs">{{ $order->address_number ?? ($order->store?->address_number ?? ($order->storeChannel?->address_number ?? config('services.jde.address_number', 100228))) }}</span>
+                                @if($order->customer?->customer_code)
+                                    <span class="text-[10px] text-on-surface-variant block font-mono">Customer: {{ $order->customer->customer_code }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -789,6 +858,103 @@ async function handleQuickStatusSubmit(e) {
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-outlined text-[14px]">save</span><span>Ubah</span>';
+    }
+}
+
+async function confirmPushToJde(orderId, orderNumber) {
+    const doPush = async () => {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+        const topBtn = document.getElementById('btnPushToJdeTop');
+        const cardBtn = document.getElementById('btnPushToJdeCard');
+        if (topBtn) {
+            topBtn.disabled = true;
+            topBtn.innerHTML = '<div class="inline-block animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Mengirim...';
+        }
+        if (cardBtn) {
+            cardBtn.disabled = true;
+            cardBtn.innerHTML = '<div class="inline-block animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Mengirim...';
+        }
+
+        try {
+            const response = await fetch(`/orders/${orderId}/push-to-jde`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil Push ke JDE!',
+                        text: data.message || `Pesanan #${orderNumber} berhasil dikirim ke JDE.`,
+                        confirmButtonColor: '#4f46e5'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    alert(data.message || `Pesanan #${orderNumber} berhasil dikirim ke JDE.`);
+                    window.location.reload();
+                }
+            } else {
+                const errMsg = data.message || 'Gagal melakukan push order ke JDE.';
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Push ke JDE',
+                        text: errMsg,
+                        confirmButtonColor: '#4f46e5'
+                    });
+                } else {
+                    alert(errMsg);
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            const errNet = 'Terjadi kesalahan jaringan saat menghubungi endpoint JDE.';
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gangguan Koneksi',
+                    text: errNet,
+                    confirmButtonColor: '#4f46e5'
+                });
+            } else {
+                alert(errNet);
+            }
+        } finally {
+            if (topBtn) {
+                topBtn.disabled = false;
+                topBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">cloud_upload</span><span id="btnPushToJdeTopText">Push ke JDE</span>';
+            }
+            if (cardBtn) {
+                cardBtn.disabled = false;
+                cardBtn.innerHTML = '<span class="material-symbols-outlined text-[14px]">cloud_upload</span><span>Push JDE</span>';
+            }
+        }
+    };
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'question',
+            title: 'Push ke JDE?',
+            html: `Apakah Anda yakin ingin mengirim data pesanan <b>#${orderNumber}</b> ke JDE?`,
+            showCancelButton: true,
+            confirmButtonColor: '#4f46e5',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Push ke JDE',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                doPush();
+            }
+        });
+    } else if (confirm(`Apakah Anda yakin ingin push pesanan #${orderNumber} ke JDE?`)) {
+        doPush();
     }
 }
 </script>

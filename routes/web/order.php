@@ -12,6 +12,7 @@ Route::post('/orders/{id}/update-resi', [OrderController::class, 'updateResi'])-
 Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
 Route::post('/orders/{id}/biteship-shipment', [OrderController::class, 'hitBiteship'])->name('orders.biteship-shipment');
 Route::get('/orders/{id}/biteship-tracking', [OrderController::class, 'trackBiteship'])->name('orders.biteship-tracking');
+Route::post('/orders/{id}/push-to-jde', [OrderController::class, 'pushToJde'])->name('orders.push-to-jde');
 
 Route::get('/settlements', [SettlementController::class, 'index'])->name('settlements.index');
 Route::get('/settlements/{id}', [SettlementController::class, 'show'])->name('settlements.show');

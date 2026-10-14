@@ -117,6 +117,19 @@
                                             {{ $order->delivery_status_label }}
                                         </span>
                                     </div>
+                                    <div class="mt-1 flex items-center gap-1" id="order-jde-status-{{ $order->id }}">
+                                        @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
+                                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200" title="Sudah di-push ke JDE{{ $order->jde_push_date ? ' (' . $order->jde_push_date->format('d/m/Y') : '' }})">
+                                                <span class="material-symbols-outlined text-[11px]">cloud_done</span>
+                                                <span>JDE Sent</span>
+                                            </span>
+                                        @else
+                                            <button type="button" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors" title="Push ke JDE">
+                                                <span class="material-symbols-outlined text-[11px]">cloud_upload</span>
+                                                <span>Push JDE</span>
+                                            </button>
+                                        @endif
+                                    </div>
                                 @elseif($order->status >= \App\Models\Order\Order::STATUS_SHIPPED)
                                     <div class="space-y-1">
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-semibold border border-slate-200" title="Resi sudah terkunci (Pesanan {{ $order->statusLabel() }})">
@@ -205,6 +218,83 @@
     document.getElementById('endDate').addEventListener('change', function() {
         window.location.href = buildUrl();
     });
+
+    async function confirmPushToJde(orderId, orderNumber) {
+        const doPush = async () => {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+            try {
+                const response = await fetch(`/orders/${orderId}/push-to-jde`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil Push ke JDE!',
+                            text: data.message || `Pesanan #${orderNumber} berhasil dikirim ke JDE.`,
+                            confirmButtonColor: '#4f46e5'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        alert(data.message || `Pesanan #${orderNumber} berhasil dikirim ke JDE.`);
+                        window.location.reload();
+                    }
+                } else {
+                    const errMsg = data.message || 'Gagal melakukan push order ke JDE.';
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Push ke JDE',
+                            text: errMsg,
+                            confirmButtonColor: '#4f46e5'
+                        });
+                    } else {
+                        alert(errMsg);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                const errNet = 'Terjadi kesalahan jaringan saat menghubungi endpoint JDE.';
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gangguan Koneksi',
+                        text: errNet,
+                        confirmButtonColor: '#4f46e5'
+                    });
+                } else {
+                    alert(errNet);
+                }
+            }
+        };
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'question',
+                title: 'Push ke JDE?',
+                html: `Apakah Anda yakin ingin mengirim data pesanan <b>#${orderNumber}</b> ke JDE?`,
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Push ke JDE',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    doPush();
+                }
+            });
+        } else if (confirm(`Apakah Anda yakin ingin push pesanan #${orderNumber} ke JDE?`)) {
+            doPush();
+        }
+    }
     </script>
 
     @include('pages.orders.partials.resi-modal')

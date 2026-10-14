@@ -2,6 +2,7 @@
 
 namespace App\Models\Store;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,8 @@ use App\Models\Store\StoreChannelStock;
 
 class StoreChannel extends Model
 {
+    use HasUuids;
+
     protected $table = 'store_channel';
 
     protected $keyType = 'string';
