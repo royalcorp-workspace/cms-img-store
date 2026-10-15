@@ -32,7 +32,14 @@
                     </div>
                 </div>
                 <h2 class="font-headline-md text-headline-md text-on-surface text-center mb-1">{{ $customer->name }}</h2>
-                <p class="text-body-md text-on-surface-variant text-center mb-4">{{ $customer->email }}</p>
+                <p class="text-body-md text-on-surface-variant text-center mb-2">{{ $customer->email }}</p>
+                @if($customer->customer_code)
+                    <p class="text-center mb-4">
+                        <span class="font-mono text-xs font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-md border border-indigo-200/80">
+                            {{ $customer->customer_code }}
+                        </span>
+                    </p>
+                @endif
                 <div class="flex items-center justify-center gap-2">
                     @if($customer->deleted)
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-danger/10 text-danger rounded-full text-label-sm font-label-sm">
@@ -53,6 +60,18 @@
                     <h3 class="font-headline-md text-headline-md text-on-surface">Customer Information</h3>
                 </div>
                 <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Customer Code</p>
+                        <p class="font-body-md text-body-md text-indigo-700 font-mono font-bold">{{ $customer->customer_code ?? '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Gender</p>
+                        <p class="font-body-md text-body-md text-on-surface capitalize">{{ $customer->gender ?: '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Tanggal Lahir</p>
+                        <p class="font-body-md text-body-md text-on-surface">{{ $customer->birth_date ? $customer->birth_date->format('d F Y') : '-' }}</p>
+                    </div>
                     <div>
                         <p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Phone</p>
                         <p class="font-body-md text-body-md text-on-surface">{{ $customer->phone ?? '-' }}</p>

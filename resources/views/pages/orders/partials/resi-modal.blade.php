@@ -1201,6 +1201,12 @@ function updateOrderUIElements(orderId, data) {
                     ${data.status_label || 'Resi Diterbitkan'}
                 </span>
             </div>
+            <div class="mt-1 flex items-center gap-1" id="order-jde-status-${orderId}">
+                <button type="button" onclick="confirmPushToJde('${orderId}', '${currentActiveOrderData?.order_number || orderId}')" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors" title="Push ke JDE">
+                    <span class="material-symbols-outlined text-[11px]">cloud_upload</span>
+                    <span>Push JDE</span>
+                </button>
+            </div>
         `;
     }
 
@@ -1227,6 +1233,18 @@ function updateOrderUIElements(orderId, data) {
         if (data.status_badge_class) {
             showStatusBadge.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold ' + data.status_badge_class;
         }
+    }
+
+    // Reveal JDE push button in show view
+    const jdeTopAction = document.getElementById('jdeTopActionContainer');
+    if (jdeTopAction) {
+        jdeTopAction.classList.remove('hidden');
+        jdeTopAction.classList.add('inline-flex');
+    }
+    const jdeCardSection = document.getElementById('jdeCardSection');
+    if (jdeCardSection) {
+        jdeCardSection.classList.remove('hidden');
+        jdeCardSection.classList.add('block');
     }
 
     // Reload page after brief delay if in show view to refresh entire order card

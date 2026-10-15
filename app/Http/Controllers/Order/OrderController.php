@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Order\Order;
 use App\Models\Packing\DeliveryLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -86,6 +88,8 @@ class OrderController extends Controller
     {
         $order = Order::with([
             'customer',
+            'store',
+            'storeChannel',
             'items.product.images',
             'items.variant',
             'courier',
@@ -852,5 +856,308 @@ class OrderController extends Controller
                 'events' => $events,
             ],
         ], 200);
+    }
+
+    public function pushToJde(Request $request, string $id)
+    {
+        $order = Order::with(['items.variant', 'items.product', 'customer', 'store', 'storeChannel'])->findOrFail($id);
+
+        if (empty($order->resi)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pesanan belum memiliki nomor resi. Tombol push ke JDE hanya tersedia setelah nomor resi diisi manual atau didapatkan otomatis.',
+            ], 422);
+        }
+
+        if ($order->items->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pesanan tidak memiliki item untuk di-push ke JDE.',
+            ], 422);
+        }
+
+        $businessUnit = null;
+        $addressNumber = null;
+
+        // 1. Ambil dari kolom langsung di tabel orders jika sudah ada
+        if (!empty($order->business_unit)) {
+            $businessUnit = trim((string) $order->business_unit);
+        }
+        if (!empty($order->address_number)) {
+            $addressNumber = (int) $order->address_number;
+        }
+
+        // 2. Ambil dari meta order jika belum ada
+        if (!$businessUnit && !empty($order->meta['business_unit'])) {
+            $businessUnit = trim((string) $order->meta['business_unit']);
+        }
+        if (!$addressNumber && !empty($order->meta['address_number'])) {
+            $addressNumber = (int) $order->meta['address_number'];
+        }
+
+        // 3. Ambil dari relasi Channel
+        $channel = $order->storeChannel;
+        if (!$channel && !empty($order->store_channel_id)) {
+            $channel = \App\Models\Store\StoreChannel::with('store.group')->find($order->store_channel_id);
+        }
+        if (!$channel && !empty($order->meta['store_channel_id'])) {
+            $channel = \App\Models\Store\StoreChannel::with('store.group')->find($order->meta['store_channel_id']);
+        }
+
+        if ($channel) {
+            $rawCode = trim((string) $channel->code);
+            $cleanCode = preg_replace('/-[A-Za-z0-9]+$/', '', $rawCode);
+            $businessUnit = $businessUnit ?: ($cleanCode ?: ($channel->store?->code ?? $channel->store?->group?->code));
+
+            if (!$addressNumber && !empty($channel->address_number)) {
+                $addressNumber = (int) $channel->address_number;
+            }
+            if (!$addressNumber && !empty($channel->store?->address_number)) {
+                $addressNumber = (int) $channel->store->address_number;
+            }
+        }
+
+        // 4. Ambil dari relasi Store
+        $store = $order->store;
+        if (!$store && !empty($order->store_id)) {
+            $store = \App\Models\Store\Store::with('group')->find($order->store_id);
+        }
+        if (!$store && !empty($order->meta['store_id'])) {
+            $store = \App\Models\Store\Store::with('group')->find($order->meta['store_id']);
+        }
+
+        if ($store) {
+            $businessUnit = $businessUnit ?: ($store->code ?? $store->group?->code);
+            if (!$addressNumber && !empty($store->address_number)) {
+                $addressNumber = (int) $store->address_number;
+            }
+        }
+
+        // 5. Default fallback dari konfigurasi jika store belum memiliki address_number
+        $businessUnit = (string) ($businessUnit ?: config('services.jde.business_unit', env('JDE_BUSINESS_UNIT', '18011')));
+        $addressNumber = (int) ($addressNumber ?: config('services.jde.address_number', env('JDE_ADDRESS_NUMBER', 100228)));
+
+        // Persist ke database orders agar tercatat permanen
+        if ($order->business_unit !== $businessUnit || (int)$order->address_number !== $addressNumber) {
+            $order->business_unit = $businessUnit;
+            $order->address_number = $addressNumber;
+            if ($channel && !$order->store_channel_id) {
+                $order->store_channel_id = $channel->id;
+            }
+            if ($store && !$order->store_id) {
+                $order->store_id = $store->id;
+            }
+            $order->save();
+        }
+
+        $cleanOrderNumber = ltrim((string) $order->order_number, '#');
+        $prefix = (string) config('services.jde.keterangan_prefix', env('JDE_KETERANGAN_PREFIX', 'WEB-IMG '));
+        if (str_ends_with($prefix, '-') || str_ends_with($prefix, '_')) {
+            $keterangan = $prefix . $cleanOrderNumber;
+        } else {
+            $keterangan = rtrim($prefix) . ' ' . $cleanOrderNumber;
+        }
+
+        $orderLines = [];
+        foreach ($order->items as $item) {
+            $secondItemNumber = $item->getJdeItemNumber();
+
+            $orderLines[] = [
+                '2nd_item_number' => (string) $secondItemNumber,
+                'qty' => (int) $item->quantity,
+            ];
+        }
+
+        $username = config('services.jde.username', env('JDE_USERNAME', 'UDO'));
+        $password = config('services.jde.password', env('JDE_PASSWORD', 'udoroyal'));
+        $environment = config('services.jde.environment', env('JDE_ENVIRONMENT', 'JPY920'));
+        $role = config('services.jde.role', env('JDE_ROLE', '*ALL'));
+
+        $payload = [
+            'username' => (string) $username,
+            'password' => (string) $password,
+            'environment' => (string) $environment,
+            'role' => (string) $role,
+            'business_unit' => $businessUnit,
+            'address_number' => $addressNumber,
+            'keterangan' => $keterangan,
+            'orderLines' => $orderLines,
+        ];
+
+        // Format payload langsung ke raw JSON string untuk pengiriman
+        $jsonPayload = json_encode($payload, JSON_UNESCAPED_SLASHES);
+
+        // Payload bertopeng untuk logging & meta (agar password tidak terekspos di log/db)
+        $logPayload = $payload;
+        if (!empty($logPayload['password'])) {
+            $logPayload['password'] = '********';
+        }
+
+        $endpoint = config('services.jde.endpoint', env('JDE_ENDPOINT'));
+        $timeout = (int) config('services.jde.timeout', 30);
+
+        if (empty($endpoint)) {
+            $this->logJde('warning', 'Push Order Aborted', [
+                'order_number' => $order->order_number,
+                'order_id' => $order->id,
+                'reason' => 'JDE_ENDPOINT not configured in .env',
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Konfigurasi JDE_ENDPOINT belum diset pada environment (.env).',
+            ], 422);
+        }
+
+        $this->logJde('info', 'Push Order Initiated', [
+            'order_number' => $order->order_number,
+            'order_id' => $order->id,
+            'admin' => auth()->user()->name ?? 'admin',
+            'endpoint' => $endpoint,
+            'payload' => $logPayload,
+        ]);
+
+        try {
+            $httpClient = Http::withoutVerifying()
+                ->timeout($timeout)
+                ->withHeaders([
+                    'Accept' => '*/*',
+                    'Content-Type' => 'application/json',
+                    'User-Agent' => 'PostmanRuntime/7.39.0',
+                    'Cache-Control' => 'no-cache',
+                ]);
+
+            // Mengirim langsung dalam format JSON string
+            $response = $httpClient->withBody($jsonPayload, 'application/json')->post($endpoint);
+
+            $responseData = $response->json();
+            $isOk = $response->successful();
+
+            if ($isOk && is_array($responseData) && isset($responseData['hasErrors']) && $responseData['hasErrors'] === true) {
+                $isOk = false;
+            }
+
+            $meta = $order->meta ?? [];
+            $meta['jde_push_payload'] = $logPayload;
+            $meta['jde_push_response'] = $responseData ?? $response->body();
+            $meta['jde_pushed_at'] = now()->toDateTimeString();
+            $meta['jde_pushed_by'] = auth()->user()->name ?? 'admin';
+
+            if ($isOk) {
+                $order->jde_push_status = Order::JDE_STATUS_SUCCESS;
+                $order->jde_push_date = now()->format('Y-m-d');
+                unset($meta['jde_push_error']);
+
+                $this->logJde('info', 'Push Order Success', [
+                    'order_number' => $order->order_number,
+                    'order_id' => $order->id,
+                    'status_code' => $response->status(),
+                    'response' => $responseData ?? $response->body(),
+                ]);
+            } else {
+                $order->jde_push_status = Order::JDE_STATUS_FAILED;
+                $meta['jde_push_error'] = is_array($responseData) ? json_encode($responseData) : ($response->body() ?: 'HTTP status ' . $response->status());
+
+                $this->logJde('warning', 'Push Order Error Response', [
+                    'order_number' => $order->order_number,
+                    'order_id' => $order->id,
+                    'status_code' => $response->status(),
+                    'error' => $meta['jde_push_error'],
+                    'payload' => $logPayload,
+                ]);
+            }
+
+            $order->meta = $meta;
+            $order->save();
+
+            if ($isOk) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pesanan #' . $order->order_number . ' berhasil di-push ke JDE.',
+                    'jde_push_status' => Order::JDE_STATUS_SUCCESS,
+                    'jde_push_status_label' => $order->jdePushStatusLabel(),
+                    'jde_push_date' => $order->jde_push_date?->format('d M Y') ?? now()->format('d M Y'),
+                    'response' => $responseData,
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'JDE mengembalikan respon error: ' . ($meta['jde_push_error'] ?? 'Terjadi kesalahan pada Orchestrator JDE'),
+                'jde_push_status' => Order::JDE_STATUS_FAILED,
+                'jde_push_status_label' => $order->jdePushStatusLabel(),
+                'response' => $responseData,
+            ], 400);
+
+        } catch (\Throwable $e) {
+            $meta = $order->meta ?? [];
+            $meta['jde_push_payload'] = $payload;
+            $meta['jde_push_error'] = $e->getMessage();
+            $meta['jde_push_failed_at'] = now()->toDateTimeString();
+
+            $order->jde_push_status = Order::JDE_STATUS_FAILED;
+            $order->meta = $meta;
+            $order->save();
+
+            $this->logJde('error', 'Push Order Exception', [
+                'order_number' => $order->order_number,
+                'order_id' => $order->id,
+                'exception' => $e->getMessage(),
+                'payload' => $payload,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghubungi service JDE: ' . $e->getMessage(),
+                'jde_push_status' => Order::JDE_STATUS_FAILED,
+                'jde_push_status_label' => $order->jdePushStatusLabel(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper untuk mencatat log JDE harian dalam format banner terstruktur dan rapi.
+     */
+    protected function logJde(string $level, string $title, array $details): void
+    {
+        $separator = str_repeat('=', 80);
+        $subSep    = str_repeat('-', 80);
+        $now       = now()->format('Y-m-d H:i:s');
+
+        $lines = [];
+        $lines[] = $separator;
+        $lines[] = sprintf("[%s] JDE INTEGRATION: %s", $now, strtoupper($title));
+        $lines[] = $subSep;
+
+        foreach ($details as $key => $val) {
+            $label = ucwords(str_replace('_', ' ', (string) $key));
+            if (is_array($val) || is_object($val)) {
+                $pretty = json_encode($val, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                $lines[] = sprintf("%-18s:\n%s", $label, $pretty);
+            } elseif (is_string($val) && (str_starts_with(trim($val), '{') || str_starts_with(trim($val), '['))) {
+                $decoded = json_decode($val, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $pretty = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                    $lines[] = sprintf("%-18s:\n%s", $label, $pretty);
+                } else {
+                    $lines[] = sprintf("%-18s: %s", $label, $val);
+                }
+            } else {
+                if (is_bool($val)) {
+                    $val = $val ? 'true' : 'false';
+                } elseif ($val === null || $val === '') {
+                    $val = '-';
+                }
+                $lines[] = sprintf("%-18s: %s", $label, (string) $val);
+            }
+        }
+
+        $lines[] = $separator;
+        $banner = implode("\n", $lines);
+
+        try {
+            Log::channel('jde')->$level($banner);
+        } catch (\Throwable) {
+            Log::$level($banner);
+        }
     }
 }

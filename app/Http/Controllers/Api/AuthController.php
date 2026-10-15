@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\User;
+use App\Models\Customer\Customer;
 use App\Traits\JwtTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -116,6 +117,27 @@ class AuthController extends ApiController
             Log::info('New user created from Firebase', ['user_id' => $user->id, 'email' => $email]);
         }
 
+        // Pastikan record Customer dan customer_code (format CUST.Ymd.random number) terisi
+        $customer = Customer::where('user_id', $user->id)
+            ->orWhereRaw('LOWER(email) = ?', [$normalizedEmail])
+            ->first();
+
+        if (!$customer) {
+            $customer = Customer::create([
+                'id'            => (string) Str::uuid(),
+                'user_id'       => $user->id,
+                'name'          => $user->name,
+                'email'         => $user->email,
+                'customer_code' => Customer::generateCustomerCode(),
+            ]);
+        } elseif (empty($customer->customer_code)) {
+            $customer->customer_code = Customer::generateCustomerCode();
+            if (!$customer->user_id) {
+                $customer->user_id = $user->id;
+            }
+            $customer->save();
+        }
+
         // --- Generate JWT lokal dengan auth_provider ---
         $jwtToken = $this->generateJwtToken($user, [
             'auth_provider'    => $authProvider,
@@ -133,6 +155,7 @@ class AuthController extends ApiController
                 'id'            => $user->id,
                 'name'          => $user->name,
                 'email'         => $user->email,
+                'customer_code' => $customer->customer_code,
                 'photo_url'     => $photoUrl,
                 'auth_provider' => $authProvider,
                 'is_google_login' => $isGoogleLogin,
@@ -323,6 +346,27 @@ class AuthController extends ApiController
             ]);
         }
 
+        $normalizedMockEmail = strtolower(trim($email));
+        $customer = Customer::where('user_id', $user->id)
+            ->orWhereRaw('LOWER(email) = ?', [$normalizedMockEmail])
+            ->first();
+
+        if (!$customer) {
+            $customer = Customer::create([
+                'id'            => (string) Str::uuid(),
+                'user_id'       => $user->id,
+                'name'          => $user->name,
+                'email'         => $user->email,
+                'customer_code' => Customer::generateCustomerCode(),
+            ]);
+        } elseif (empty($customer->customer_code)) {
+            $customer->customer_code = Customer::generateCustomerCode();
+            if (!$customer->user_id) {
+                $customer->user_id = $user->id;
+            }
+            $customer->save();
+        }
+
         $jwtToken = $this->generateJwtToken($user, [
             'auth_provider'   => 'mock',
             'is_google_login' => false,
@@ -335,6 +379,7 @@ class AuthController extends ApiController
                 'id'              => $user->id,
                 'name'            => $user->name,
                 'email'           => $user->email,
+                'customer_code'   => $customer->customer_code,
                 'auth_provider'   => 'mock',
                 'is_google_login' => false,
             ],

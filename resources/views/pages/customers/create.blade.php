@@ -52,12 +52,18 @@
                         @error('user_id')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                     </div>
                     <div class="space-y-1.5">
-                        <label class="block text-label-sm font-medium text-on-surface-variant">Customer Type <span class="text-danger">*</span></label>
-                        <select name="customer_type" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                            <option value="1" {{ old('customer_type') == '1' ? 'selected' : '' }}>Customer Biasa</option>
-                            <option value="2" {{ old('customer_type') == '2' ? 'selected' : '' }}>Reseller</option>
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Gender</label>
+                        <select name="gender" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                            <option value="">Pilih Gender</option>
+                            <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Laki-laki (Male)</option>
+                            <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Perempuan (Female)</option>
                         </select>
-                        @error('customer_type')<p class="text-danger text-sm">{{ $message }}</p>@enderror
+                        @error('gender')<p class="text-danger text-sm">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-label-sm font-medium text-on-surface-variant">Tanggal Lahir</label>
+                        <input type="date" name="birth_date" value="{{ old('birth_date') }}" class="w-full px-3 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                        @error('birth_date')<p class="text-danger text-sm">{{ $message }}</p>@enderror
                     </div>
                 </div>
 

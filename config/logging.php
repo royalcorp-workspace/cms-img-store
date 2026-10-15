@@ -183,6 +183,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'jde' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/jde/jde.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

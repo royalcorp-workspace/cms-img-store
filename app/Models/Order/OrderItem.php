@@ -67,4 +67,23 @@ class OrderItem extends Model
     {
         return $this->hasOne(\App\Models\Packing\PackingSlipItem::class, 'order_item_id');
     }
+
+    /**
+     * Dapatkan 2nd_item_number untuk JDE (hanya ambil base SKU murni sebelum dash/suffix)
+     * Contoh: KBR100010011348S200120-FS-T20 -> KBR100010011348S200120
+     */
+    public function getJdeItemNumber(): string
+    {
+        $raw = $this->variant?->sku
+            ?? ($this->meta['sku'] ?? null)
+            ?? $this->product?->code
+            ?? $this->name;
+
+        $clean = trim((string) $raw);
+        if (str_contains($clean, '-')) {
+            $clean = explode('-', $clean)[0];
+        }
+
+        return $clean;
+    }
 }

@@ -81,4 +81,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Role::class, 'model_has_roles', 'model_id', 'role_id');
     }
+
+    public function customer(): HasOne
+    {
+        return $this->hasOne(\App\Models\Customer\Customer::class, 'user_id', 'id');
+    }
 }

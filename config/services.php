@@ -54,4 +54,16 @@ return [
         'origin_contact_phone' => env('BITESHIP_ORIGIN_CONTACT_PHONE', '081112345678'),
     ],
 
+    'jde' => [
+        'endpoint' => env('JDE_ENDPOINT'),
+        'username' => env('JDE_USERNAME'),
+        'password' => env('JDE_PASSWORD'),
+        'environment' => env('JDE_ENVIRONMENT'),
+        'role' => env('JDE_ROLE'),
+        'business_unit' => env('JDE_BUSINESS_UNIT'),
+        'address_number' => (int) env('JDE_ADDRESS_NUMBER'),
+        'keterangan_prefix' => env('JDE_KETERANGAN_PREFIX', 'WEB-IMG '),
+        'timeout' => (int) env('JDE_TIMEOUT', 30),
+    ],
+
 ];

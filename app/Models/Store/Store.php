@@ -2,6 +2,7 @@
 
 namespace App\Models\Store;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,8 @@ use App\Models\Store\StoreChannelStock;
 
 class Store extends Model
 {
+    use HasUuids;
+
     protected $table = 'store';
 
     protected $keyType = 'string';
@@ -19,6 +22,7 @@ class Store extends Model
         'store_group_id',
         'tier_id',
         'code',
+        'address_number',
         'name',
         'owner_user_id',
         'credit_limit',
@@ -38,6 +42,7 @@ class Store extends Model
     protected function casts(): array
     {
         return [
+            'address_number' => 'integer',
             'credit_limit' => 'decimal:2',
             'outstanding_balance' => 'decimal:2',
             'documents' => 'array',
