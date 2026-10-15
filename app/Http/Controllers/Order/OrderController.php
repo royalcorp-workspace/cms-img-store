@@ -960,10 +960,7 @@ class OrderController extends Controller
 
         $orderLines = [];
         foreach ($order->items as $item) {
-            $secondItemNumber = $item->variant?->sku
-                ?? ($item->meta['sku'] ?? null)
-                ?? $item->product?->code
-                ?? $item->name;
+            $secondItemNumber = $item->getJdeItemNumber();
 
             $orderLines[] = [
                 '2nd_item_number' => (string) $secondItemNumber,
