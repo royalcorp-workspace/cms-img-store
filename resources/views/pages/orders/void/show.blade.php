@@ -111,7 +111,16 @@
                 <div class="space-y-3 text-body-md">
                     <div>
                         <p class="text-on-surface-variant text-sm">Metode Pembayaran</p>
-                        <p class="font-medium text-on-surface">{{ $orderData['payment_method'] ?? 'Belum dipilih' }}</p>
+                        @php
+                            $voidPmName = $orderData['payment_method_name'] ?? ($orderData['meta']['payment_method_name'] ?? null);
+                            if (!$voidPmName && !empty($orderData['payment_method'])) {
+                                $rawPm = (string)$orderData['payment_method'];
+                                $voidPmName = \Illuminate\Support\Str::isUuid($rawPm)
+                                    ? \App\Models\PaymentMethod::withoutGlobalScope('active')->find($rawPm)?->name
+                                    : ucwords(str_replace(['_', '-'], ' ', $rawPm));
+                            }
+                        @endphp
+                        <p class="font-medium text-on-surface">{{ $voidPmName ?: 'Belum dipilih' }}</p>
                     </div>
                     <div>
                         <p class="text-on-surface-variant text-sm">Dibuat Oleh</p>

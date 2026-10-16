@@ -40,7 +40,8 @@ class CustomerAddressController extends Controller
 
         $subDistrict = SubDistrict::find($validated['sub_district_id']);
 
-        if ($request->has('is_primary')) {
+        $isPrimary = $request->boolean('is_primary') || $customer->addresses()->count() === 0;
+        if ($isPrimary) {
             $customer->addresses()->update(['is_primary' => false]);
         }
 
@@ -54,8 +55,11 @@ class CustomerAddressController extends Controller
             'recipient_name' => $validated['recipient_name'],
             'phone' => $validated['phone'],
             'address' => $validated['address'],
-            'postal_code' => $validated['postal_code'],
-            'is_primary' => $request->has('is_primary') || $customer->addresses()->count() === 0,
+            'postal_code' => $validated['postal_code'] ?? null,
+            'is_primary' => $isPrimary,
+            'creator' => auth()->user()?->name ?? 'system',
+            'editor' => auth()->user()?->name ?? 'system',
+            'deleted' => false,
         ]);
 
         return redirect()->route('customers.edit', $customer->id)->with('success', 'Alamat berhasil ditambahkan.');
@@ -85,8 +89,11 @@ class CustomerAddressController extends Controller
 
         $subDistrict = SubDistrict::find($validated['sub_district_id']);
 
-        if ($request->has('is_primary') && !$address->is_primary) {
-            $customer->addresses()->update(['is_primary' => false]);
+        $isPrimary = $request->boolean('is_primary');
+        if ($isPrimary) {
+            $customer->addresses()->where('id', '!=', $address->id)->update(['is_primary' => false]);
+        } elseif ($customer->addresses()->count() <= 1) {
+            $isPrimary = true;
         }
 
         $address->update([
@@ -96,8 +103,9 @@ class CustomerAddressController extends Controller
             'recipient_name' => $validated['recipient_name'],
             'phone' => $validated['phone'],
             'address' => $validated['address'],
-            'postal_code' => $validated['postal_code'],
-            'is_primary' => $request->has('is_primary') ? true : $address->is_primary,
+            'postal_code' => $validated['postal_code'] ?? null,
+            'is_primary' => $isPrimary,
+            'editor' => auth()->user()?->name ?? 'system',
         ]);
 
         return redirect()->route('customers.edit', $customer->id)->with('success', 'Alamat berhasil diperbarui.');
@@ -105,8 +113,17 @@ class CustomerAddressController extends Controller
 
     public function destroy($customerId, $id)
     {
+        $customer = Customer::findOrFail($customerId);
         $address = Address::where('customer_id', $customerId)->findOrFail($id);
+        $wasPrimary = $address->is_primary;
         $address->delete();
+
+        if ($wasPrimary) {
+            $newPrimary = $customer->addresses()->first();
+            if ($newPrimary) {
+                $newPrimary->update(['is_primary' => true]);
+            }
+        }
 
         return redirect()->route('customers.edit', $customerId)->with('success', 'Alamat berhasil dihapus.');
     }

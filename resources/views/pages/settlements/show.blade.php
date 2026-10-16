@@ -64,7 +64,7 @@
                         {{ $order->customer_name ?? 'N/A' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ $order->payment_method ?? 'Espay' }}
+                        {{ $order->payment_method_name ?? ($order->payment_method ?? 'Espay') }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
                         Rp {{ number_format($order->grand_total ?? $order->total_amount, 0, ',', '.') }}
