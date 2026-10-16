@@ -37,6 +37,10 @@ Route::delete('media/{id}', [MediaController::class, 'destroy']);
 // Biteship Webhook Receivers (public endpoint for Biteship callback notifications)
 Route::post('webhooks/biteship', [\App\Http\Controllers\Api\Webhook\BiteshipWebhookController::class, 'handle']);
 
+// Internal Trigger for JDE Push from Webhook / Subsystems
+Route::post('orders/{order}/push-jde', [OrderController::class, 'pushJde']);
+Route::post('v1/orders/{order}/push-jde', [OrderController::class, 'pushJde']);
+
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('mock-login', [AuthController::class, 'mockLogin']);

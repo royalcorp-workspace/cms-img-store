@@ -68,7 +68,7 @@ class Order extends Model
         'courier_id',
     ];
 
-    protected $appends = ['status_badge_class', 'payment_status_badge_class', 'resi', 'courier_name', 'jde_push_status_badge_class', 'jde_push_status_label'];
+    protected $appends = ['status_badge_class', 'payment_status_badge_class', 'resi', 'courier_name', 'jde_push_status_badge_class', 'jde_push_status_label', 'payment_method_name', 'payment_method_code'];
 
     protected function casts(): array
     {
@@ -162,6 +162,14 @@ class Order extends Model
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Failed logging order creation: ' . $e->getMessage());
             }
+
+            try {
+                if ($model->isEligibleForJdePush()) {
+                    \App\Jobs\PushOrderToJdeJob::dispatch($model->id, 'order_created_auto')->afterCommit();
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed dispatching JDE push job on created: ' . $e->getMessage());
+            }
         });
 
         static::updating(function ($model) {
@@ -204,18 +212,61 @@ class Order extends Model
 
                 if ($model->wasChanged('jde_push_status')) {
                     $statusLabel = \App\Models\Reff::getShow('JdePushStatus', $model->jde_push_status, (string) $model->jde_push_status);
+                    $note = 'Status push JDE diubah ke ' . $statusLabel . ($model->jde_push_date ? ' (Tanggal: ' . $model->jde_push_date . ')' : '');
+                    if ((int)$model->jde_push_status === self::JDE_STATUS_FAILED && !empty($model->meta['jde_push_error'])) {
+                        $note .= ' - ' . \Illuminate\Support\Str::limit((string) $model->meta['jde_push_error'], 250);
+                    }
                     \App\Models\Order\OrderLog::create([
                         'order_id' => $model->id,
                         'action' => 'jde_push_status_changed',
                         'status_from' => (string) $model->getOriginal('jde_push_status'),
                         'status_to' => (string) $model->jde_push_status,
-                        'notes' => 'Status push JDE diubah ke ' . $statusLabel . ($model->jde_push_date ? ' (Tanggal: ' . $model->jde_push_date . ')' : ''),
+                        'notes' => $note,
                         'creator' => $username,
                         'editor' => $username,
                     ]);
                 }
+
+                if ($model->wasChanged('courier_id') && !empty($model->courier_id)) {
+                    $courierName = \App\Models\Shipping\Courier::find($model->courier_id)?->name ?? 'Kurir lain';
+                    \App\Models\Order\OrderLog::create([
+                        'order_id' => $model->id,
+                        'action' => 'courier_changed',
+                        'status_from' => (string) $model->getOriginal('courier_id'),
+                        'status_to' => (string) $model->courier_id,
+                        'notes' => 'Kurir pengiriman dipilih: ' . $courierName,
+                        'creator' => $username,
+                        'editor' => $username,
+                    ]);
+                }
+
+                if ($model->wasChanged('meta')) {
+                    $originalMeta = $model->getOriginal('meta') ?? [];
+                    $newMeta = $model->meta ?? [];
+                    $oldResi = $originalMeta['resi'] ?? ($originalMeta['tracking_number'] ?? null);
+                    $newResi = $newMeta['resi'] ?? ($newMeta['tracking_number'] ?? null);
+                    if ($newResi && $newResi !== $oldResi) {
+                        \App\Models\Order\OrderLog::create([
+                            'order_id' => $model->id,
+                            'action' => 'resi_updated',
+                            'status_from' => (string) ($oldResi ?: '-'),
+                            'status_to' => (string) $newResi,
+                            'notes' => 'Nomor resi pengiriman diinput: ' . $newResi,
+                            'creator' => $username,
+                            'editor' => $username,
+                        ]);
+                    }
+                }
+
+                // Otomatis buat Job Queue saat order memenuhi syarat push ke JDE (status 3 / Processing setelah bayar)
+                $statusBecameProcessing = $model->wasChanged('status') && (int) $model->status >= self::STATUS_PROCESSING && (int) $model->getOriginal('status') < self::STATUS_PROCESSING;
+                $paymentBecamePaid = $model->wasChanged('payment_status') && ((int) $model->payment_status === self::PAYMENT_PAID || (int) $model->payment_status === 2);
+
+                if (($statusBecameProcessing || $paymentBecamePaid) && $model->isEligibleForJdePush()) {
+                    \App\Jobs\PushOrderToJdeJob::dispatch($model->id, 'status_3_processing_trigger')->afterCommit();
+                }
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Failed logging order update: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning('Failed logging order update / dispatching JDE job: ' . $e->getMessage());
             }
         });
     }
@@ -248,6 +299,11 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'order_id', 'id');
+    }
+
+    public function paymentMethod(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\PaymentMethod::class, 'payment_method', 'id')->withoutGlobalScope('active');
     }
 
     public function pickingList(): \Illuminate\Database\Eloquent\Relations\HasOne
@@ -620,6 +676,121 @@ class Order extends Model
         };
     }
 
+    public function getPaymentMethodNameAttribute(): string
+    {
+        if (!empty($this->meta['payment_method_name'])) {
+            return (string) $this->meta['payment_method_name'];
+        }
+
+        if ($this->relationLoaded('paymentMethod') && $this->paymentMethod) {
+            return (string) $this->paymentMethod->name;
+        }
+
+        $raw = (string) ($this->payment_method ?? '');
+        if (empty($raw)) {
+            return 'N/A';
+        }
+
+        if (\Illuminate\Support\Str::isUuid($raw)) {
+            $pm = \App\Models\PaymentMethod::withoutGlobalScope('active')->find($raw);
+            if ($pm && !empty($pm->name)) {
+                return (string) $pm->name;
+            }
+        }
+
+        if (!empty($this->meta['payment_method_id']) && \Illuminate\Support\Str::isUuid((string)$this->meta['payment_method_id'])) {
+            $pm = \App\Models\PaymentMethod::withoutGlobalScope('active')->find($this->meta['payment_method_id']);
+            if ($pm && !empty($pm->name)) {
+                return (string) $pm->name;
+            }
+        }
+
+        $pmByCode = \App\Models\PaymentMethod::findByCodeOrBank($raw);
+        if ($pmByCode && !empty($pmByCode->name)) {
+            return (string) $pmByCode->name;
+        }
+
+        $code = strtolower($raw);
+        if (in_array($code, ['transfer_manual', 'trf', 'manual'], true)) {
+            return 'Transfer Bank Manual';
+        }
+        if ($code === '014' || str_contains($code, 'bca')) {
+            return 'BCA Virtual Account';
+        }
+        if ($code === '008' || str_contains($code, 'mandiri')) {
+            return 'Mandiri Virtual Account';
+        }
+        if ($code === '002' || str_contains($code, 'bri')) {
+            return 'BRI Virtual Account';
+        }
+        if ($code === '009' || str_contains($code, 'bni')) {
+            return 'BNI Virtual Account';
+        }
+        if ($code === '022' || str_contains($code, 'cimb')) {
+            return 'CIMB Niaga Virtual Account';
+        }
+        if ($code === '011' || str_contains($code, 'danamon')) {
+            return 'Danamon Virtual Account';
+        }
+        if ($code === '016' || str_contains($code, 'maybank') || str_contains($code, 'bii')) {
+            return 'Maybank Virtual Account';
+        }
+        if ($code === '013' || str_contains($code, 'permata')) {
+            return 'Permata Virtual Account';
+        }
+        if (str_contains($code, 'gopay')) {
+            return 'GoPay';
+        }
+        if (str_contains($code, 'ovo')) {
+            return 'OVO';
+        }
+        if (str_contains($code, 'qris')) {
+            return 'QRIS';
+        }
+        if (str_contains($code, 'credit') || str_contains($code, 'card')) {
+            return 'Kartu Kredit / Debit';
+        }
+
+        if (!\Illuminate\Support\Str::isUuid($raw)) {
+            return ucwords(str_replace(['_', '-'], ' ', $raw));
+        }
+
+        return 'N/A';
+    }
+
+    public function getPaymentMethodCodeAttribute(): string
+    {
+        if (!empty($this->meta['payment_method_code'])) {
+            return (string) $this->meta['payment_method_code'];
+        }
+
+        if ($this->relationLoaded('paymentMethod') && $this->paymentMethod) {
+            return (string) $this->paymentMethod->code;
+        }
+
+        $raw = (string) ($this->payment_method ?? '');
+        if (\Illuminate\Support\Str::isUuid($raw)) {
+            $pm = \App\Models\PaymentMethod::withoutGlobalScope('active')->find($raw);
+            if ($pm && !empty($pm->code)) {
+                return (string) $pm->code;
+            }
+        }
+
+        return $raw;
+    }
+
+    public function isManualTransfer(): bool
+    {
+        $code = strtolower($this->payment_method_code);
+        $raw = strtolower((string)($this->payment_method ?? ''));
+        return str_contains($code, 'transfer_manual')
+            || str_contains($code, 'manual')
+            || str_contains($raw, 'transfer_manual')
+            || str_contains($raw, 'manual')
+            || strtolower($this->payment_method_name) === 'transfer bank manual'
+            || strtolower($this->payment_method_name) === 'bank transfers';
+    }
+
     public static function jdePushStatusLabels(): array
     {
         $dbLabels = \App\Models\Reff::getOptions('JdePushStatus');
@@ -653,6 +824,47 @@ class Order extends Model
             self::JDE_STATUS_FAILED => 'bg-rose-100 text-rose-800 border-rose-300',
             default => 'bg-slate-100 text-slate-700 border-slate-300',
         };
+    }
+
+    /**
+     * Cek apakah status order sudah lunas dan sudah dimulai / diproses (Status >= 3 Processing).
+     */
+    public function isPaidOrStarted(): bool
+    {
+        // Toleransi perbedaan nilai payment_status antar modul (CMS: 1 = Paid, POS/Gateway: 2 = Paid)
+        $isPaid = (int) $this->payment_status === self::PAYMENT_PAID || (int) $this->payment_status === 2;
+        $isProcessingOrAbove = (int) $this->status >= self::STATUS_PROCESSING;
+
+        return $isPaid && $isProcessingOrAbove && !in_array((int) $this->status, [self::STATUS_DRAFT, self::STATUS_CANCELLED, self::STATUS_RETURNED], true);
+    }
+
+    /**
+     * Cek apakah order memenuhi kriteria pengiriman otomatis ke JDE.
+     * Tidak membutuhkan nomor resi (flow dimajukan saat order sudah bayar / dimulai).
+     */
+    public function isEligibleForJdePush(): bool
+    {
+        // 1. Guard jika sudah sukses terkirim ke JDE
+        if ((int) $this->jde_push_status === self::JDE_STATUS_SUCCESS) {
+            return false;
+        }
+
+        // 2. Jangan kirim jika draft, dibatalkan, atau diretur
+        if (in_array((int) $this->status, [self::STATUS_DRAFT, self::STATUS_CANCELLED, self::STATUS_RETURNED], true)) {
+            return false;
+        }
+
+        // 3. Status harus sudah bayar (lunas) atau dimulai
+        if (!$this->isPaidOrStarted()) {
+            return false;
+        }
+
+        // 4. Harus memiliki item produk
+        if ($this->relationLoaded('items')) {
+            return $this->items->isNotEmpty();
+        }
+
+        return $this->items()->exists();
     }
 
     public function deliveryLogs(): \Illuminate\Database\Eloquent\Relations\HasMany

@@ -76,7 +76,7 @@
                                     <span class="text-on-surface-variant">Guest</span>
                                 @endif
                             </td>
-                            <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ ucfirst(str_replace('_', ' ', $order->payment_method ?? 'N/A')) }}</td>
+                            <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $order->payment_method_name }}</td>
                             <td class="px-gutter py-4 text-center">
                                 @php
                                     $statusClass = match($order->status) {
@@ -117,19 +117,6 @@
                                             {{ $order->delivery_status_label }}
                                         </span>
                                     </div>
-                                    <div class="mt-1 flex items-center gap-1" id="order-jde-status-{{ $order->id }}">
-                                        @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200" title="Sudah di-push ke JDE{{ $order->jde_push_date ? ' (' . $order->jde_push_date->format('d/m/Y') : '' }})">
-                                                <span class="material-symbols-outlined text-[11px]">cloud_done</span>
-                                                <span>JDE Sent</span>
-                                            </span>
-                                        @else
-                                            <button type="button" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors" title="Push ke JDE">
-                                                <span class="material-symbols-outlined text-[11px]">cloud_upload</span>
-                                                <span>Push JDE</span>
-                                            </button>
-                                        @endif
-                                    </div>
                                 @elseif($order->status >= \App\Models\Order\Order::STATUS_SHIPPED)
                                     <div class="space-y-1">
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-semibold border border-slate-200" title="Resi sudah terkunci (Pesanan {{ $order->statusLabel() }})">
@@ -154,6 +141,32 @@
                                         <span class="material-symbols-outlined text-[14px]">add</span>
                                         <span>+ Resi</span>
                                     </button>
+                                @endif
+
+                                @if($order->isPaidOrStarted() || (int)$order->jde_push_status > 0)
+                                    <div class="mt-1.5 flex items-center gap-1 flex-wrap" id="order-jde-status-{{ $order->id }}">
+                                        @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
+                                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200" title="Sudah berhasil terkirim ke JDE{{ $order->jde_push_date ? ' (' . $order->jde_push_date->format('d/m/Y') : '' }})">
+                                                <span class="material-symbols-outlined text-[11px]">cloud_done</span>
+                                                <span>JDE Sent</span>
+                                            </span>
+                                        @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
+                                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 animate-pulse" title="Sedang diproses oleh Queue Worker">
+                                                <span class="material-symbols-outlined text-[11px] animate-spin">sync</span>
+                                                <span>JDE Processing</span>
+                                            </span>
+                                        @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
+                                            <button type="button" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 transition-colors" title="Gagal terkirim: {{ $order->meta['jde_push_error'] ?? 'Klik untuk retry manual' }}">
+                                                <span class="material-symbols-outlined text-[11px]">refresh</span>
+                                                <span>Retry JDE</span>
+                                            </button>
+                                        @else
+                                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200" title="Dalam antrean otomatis pengiriman JDE">
+                                                <span class="material-symbols-outlined text-[11px]">hourglass_top</span>
+                                                <span>JDE Queued</span>
+                                            </span>
+                                        @endif
+                                    </div>
                                 @endif
                             </td>
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-medium">Rp{{ number_format($order->total, 2, ',', '.') }}</td>
@@ -279,19 +292,19 @@
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'question',
-                title: 'Push ke JDE?',
-                html: `Apakah Anda yakin ingin mengirim data pesanan <b>#${orderNumber}</b> ke JDE?`,
+                title: 'Kirim / Retry ke JDE?',
+                html: `Pengiriman otomatis ditangani oleh Queue Worker. Jalankan pengiriman manual/retry sekarang untuk pesanan <b>#${orderNumber}</b>?`,
                 showCancelButton: true,
                 confirmButtonColor: '#4f46e5',
                 cancelButtonColor: '#64748b',
-                confirmButtonText: 'Ya, Push ke JDE',
+                confirmButtonText: 'Ya, Kirim Sekarang',
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
                     doPush();
                 }
             });
-        } else if (confirm(`Apakah Anda yakin ingin push pesanan #${orderNumber} ke JDE?`)) {
+        } else if (confirm(`Jalankan pengiriman manual/retry pesanan #${orderNumber} ke JDE sekarang?`)) {
             doPush();
         }
     }

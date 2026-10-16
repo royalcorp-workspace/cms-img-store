@@ -18,15 +18,25 @@
 <div class="space-y-4 pb-10">
     <!-- Action Buttons (Diatas Sub Menu) -->
     <div class="flex flex-wrap items-center justify-end gap-2">
-        <!-- Push to JDE (Hanya Muncul Jika Resi Sudah Ada) -->
-        <div id="jdeTopActionContainer" class="{{ $order->resi ? 'inline-flex' : 'hidden' }} items-center gap-1.5">
+        <!-- Integrasi JDE (Aktif untuk pesanan yang sudah bayar / dimulai) -->
+        <div id="jdeTopActionContainer" class="{{ ($order->isPaidOrStarted() || (int)$order->jde_push_status > 0) ? 'inline-flex' : 'hidden' }} items-center gap-1.5">
             @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
                 <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-lg text-xs font-bold border border-emerald-300 dark:border-emerald-800" title="Pesanan sudah berhasil di-push ke JDE{{ $order->jde_push_date ? ' pada ' . $order->jde_push_date->format('d/m/Y') : '' }}">
                     <span class="material-symbols-outlined text-[16px] text-emerald-600">cloud_done</span>
                     <span>Sudah Push JDE</span>
                 </span>
+            @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
+                <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-300 animate-pulse" title="Sedang diproses oleh Queue Worker">
+                    <span class="material-symbols-outlined text-[16px] animate-spin text-blue-600">sync</span>
+                    <span>JDE Processing</span>
+                </span>
+            @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
+                <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors" title="Gagal terkirim ke JDE. Klik untuk Retry manual.">
+                    <span class="material-symbols-outlined text-[16px]">refresh</span>
+                    <span id="btnPushToJdeTopText">Retry Push JDE</span>
+                </button>
             @else
-                <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors">
+                <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors" title="Pengiriman otomatis ditangani Queue Worker. Klik untuk kirim manual sekarang.">
                     <span class="material-symbols-outlined text-[16px]">cloud_upload</span>
                     <span id="btnPushToJdeTopText">Push ke JDE</span>
                 </button>
@@ -311,8 +321,8 @@
                         </a>
                     @endif
 
-                    <!-- Integrasi JDE (Hanya Muncul Jika Resi Ada) -->
-                    <div id="jdeCardSection" class="{{ $order->resi ? 'block' : 'hidden' }} pt-2 border-t border-outline-variant/40 space-y-2">
+                    <!-- Integrasi JDE (Aktif untuk pesanan yang sudah bayar / dimulai) -->
+                    <div id="jdeCardSection" class="{{ ($order->isPaidOrStarted() || (int)$order->jde_push_status > 0) ? 'block' : 'hidden' }} pt-2 border-t border-outline-variant/40 space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="text-[10px] text-on-surface-variant font-semibold flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[14px] text-indigo-600">sync_alt</span>
@@ -325,10 +335,24 @@
                         <div class="p-2.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-lg border border-indigo-200/60 dark:border-indigo-900/40 flex items-center justify-between gap-2">
                             <div class="text-[11px] text-on-surface">
                                 <div class="font-semibold text-indigo-950 dark:text-indigo-200" id="show-jde-status-title">
-                                    {{ (int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS ? 'Berhasil Terkirim ke JDE' : 'Siap Di-Push ke JDE' }}
+                                    @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
+                                        Berhasil Terkirim ke JDE
+                                    @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
+                                        Sedang Diproses oleh Queue Worker
+                                    @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
+                                        Gagal Terkirim ke JDE
+                                    @else
+                                        Antrean Otomatis JDE (Queue Worker)
+                                    @endif
                                 </div>
                                 <div class="text-[10px] text-on-surface-variant" id="show-jde-status-sub">
-                                    {{ $order->jde_push_date ? 'Tanggal: ' . $order->jde_push_date->format('d M Y') : 'Kirim data order & item ke JDE' }}
+                                    @if($order->jde_push_date)
+                                        Terkirim pada {{ $order->jde_push_date->format('d M Y') }}
+                                    @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
+                                        Percobaan gagal: {{ $order->meta['jde_push_retry_count'] ?? 1 }}x
+                                    @else
+                                        Queue worker & cron scheduler otomatis memproses pesanan ini
+                                    @endif
                                 </div>
                             </div>
                             <div id="jdeCardButtonContainer">
@@ -337,6 +361,16 @@
                                         <span class="material-symbols-outlined text-[14px]">check</span>
                                         Tersinkron
                                     </span>
+                                @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-800 rounded-md text-[11px] font-bold border border-blue-200 animate-pulse">
+                                        <span class="material-symbols-outlined text-[14px] animate-spin">sync</span>
+                                        Memproses...
+                                    </span>
+                                @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
+                                    <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs">
+                                        <span class="material-symbols-outlined text-[14px]">refresh</span>
+                                        <span>Retry JDE</span>
+                                    </button>
                                 @else
                                     <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs">
                                         <span class="material-symbols-outlined text-[14px]">cloud_upload</span>
@@ -345,6 +379,22 @@
                                 @endif
                             </div>
                         </div>
+
+                        @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED && !empty($order->meta['jde_push_error']))
+                            <div class="p-2.5 bg-rose-50 text-rose-800 text-[11px] rounded-lg border border-rose-200 space-y-1">
+                                <div class="font-bold flex items-center gap-1 text-rose-900">
+                                    <span class="material-symbols-outlined text-[14px] text-rose-600">error</span>
+                                    <span>Penyebab Kegagalan JDE:</span>
+                                </div>
+                                <div class="font-mono text-[10px] break-all max-h-24 overflow-y-auto bg-white/70 p-1.5 rounded border border-rose-200/60 text-rose-950">
+                                    {{ $order->meta['jde_push_error'] }}
+                                </div>
+                                <div class="text-[9px] text-rose-600 flex justify-between pt-0.5">
+                                    <span>Percobaan gagal: {{ $order->meta['jde_push_retry_count'] ?? 1 }}x</span>
+                                    <span>Waktu: {{ $order->meta['jde_push_failed_at'] ?? '-' }}</span>
+                                </div>
+                            </div>
+                        @endif
 
                         <!-- Info Business Unit & Address Number -->
                         <div class="grid grid-cols-2 gap-1.5 text-[11px] bg-surface-container-low p-2 rounded-lg border border-outline-variant/40">
@@ -435,7 +485,7 @@
                 <div class="space-y-2 text-xs">
                     <div class="flex justify-between py-1 border-b border-outline-variant/20">
                         <span class="text-on-surface-variant">Metode</span>
-                        <span class="font-bold text-on-surface">{{ ucfirst(str_replace('_', ' ', $order->payment_method ?? 'Transfer')) }}</span>
+                        <span class="font-bold text-on-surface">{{ $order->payment_method_name }}</span>
                     </div>
 
                     @if($order->invoice)
@@ -454,7 +504,7 @@
                         </div>
                     @endif
 
-                    @if(str_contains(strtolower((string)($order->payment_method ?? '')), 'transfer_manual') || str_contains(strtolower((string)($order->payment_method ?? '')), 'manual'))
+                    @if($order->isManualTransfer())
                         <form method="POST" action="{{ route('orders.verify-payment', $order->id) }}" class="pt-2 border-t border-outline-variant/40 space-y-2">
                             @csrf
                             <input type="hidden" name="status" value="2">
@@ -666,6 +716,206 @@
 
         </div>
 
+    </div>
+
+    <!-- Card: Riwayat Aktivitas & Order Logs (Full Width) -->
+    <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs overflow-hidden">
+        <!-- Header -->
+        <div class="p-4 border-b border-outline-variant/40 flex flex-wrap items-center justify-between gap-3 bg-surface-container-lowest">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[19px]">history</span>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-on-surface">Riwayat Aktivitas & Log Pesanan</h3>
+                    <p class="text-[11px] text-on-surface-variant">Catatan audit trail seluruh aktivitas, perubahan status, pembayaran, resi, dan integrasi JDE</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-container text-on-surface-variant border border-outline-variant/50">
+                    {{ $order->logs->count() }} Aktivitas
+                </span>
+            </div>
+        </div>
+
+        <!-- Order Activity Highlights Strip -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-surface-container-low/30 border-b border-outline-variant/40 text-xs">
+            <!-- 1. Status Pesanan -->
+            <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
+                <div class="text-[10px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px] text-primary">order_approve</span>
+                    Status Pesanan
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-bold {{ $order->statusBadgeClass }}">
+                        {{ $order->statusLabel() }}
+                    </span>
+                    <span class="text-[10px] text-on-surface-variant">
+                        Update: {{ $order->updated_at?->format('d/m/Y H:i') }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- 2. Status Pembayaran -->
+            <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
+                <div class="text-[10px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px] text-primary">payments</span>
+                    Pembayaran
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-bold {{ $order->paymentStatusBadgeClass }}">
+                        {{ $order->paymentStatusLabel() }}
+                    </span>
+                    <span class="text-[11px] font-medium text-on-surface">
+                        {{ $order->payment_method_name }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- 3. Status JDE -->
+            <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
+                <div class="text-[10px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px] text-primary">cloud_sync</span>
+                    Integrasi JDE
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-bold {{ $order->jdePushStatusBadgeClass }}">
+                        {{ $order->jdePushStatusLabel }}
+                    </span>
+                    @if($order->jde_push_date)
+                        <span class="text-[10px] text-on-surface-variant">
+                            {{ $order->jde_push_date->format('d/m/Y') }}
+                        </span>
+                    @endif
+                </div>
+                @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED && !empty($order->meta['jde_push_error']))
+                    <p class="text-[10px] text-rose-600 line-clamp-1 mt-0.5" title="{{ $order->meta['jde_push_error'] }}">
+                        {{ $order->meta['jde_push_error'] }}
+                    </p>
+                @endif
+            </div>
+
+            <!-- 4. Pengiriman & Resi -->
+            <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
+                <div class="text-[10px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px] text-primary">local_shipping</span>
+                    Pengiriman
+                </div>
+                <div class="text-[11px] text-on-surface flex items-center gap-1.5 flex-wrap">
+                    <span class="font-bold">{{ $order->courier_name ?? 'Kurir Belum Ditentukan' }}</span>
+                    @if($order->resi)
+                        <span class="font-mono px-1.5 py-0.2 bg-surface-container rounded text-[10px] text-primary font-bold">
+                            {{ $order->resi }}
+                        </span>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabel Log Aktivitas -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-surface-container-low/70 border-b border-outline-variant/40 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+                        <th class="py-2.5 px-3 w-10 text-center">No</th>
+                        <th class="py-2.5 px-3 min-w-[150px]">Waktu</th>
+                        <th class="py-2.5 px-3 min-w-[160px]">Aktivitas</th>
+                        <th class="py-2.5 px-3 min-w-[200px]">Perubahan Status</th>
+                        <th class="py-2.5 px-3 min-w-[280px]">Catatan / Keterangan</th>
+                        <th class="py-2.5 px-3 min-w-[130px]">Creator</th>
+                        <th class="py-2.5 px-3 min-w-[130px] text-right">Editor</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant/20">
+                    @forelse($order->logs as $index => $log)
+                        <tr class="hover:bg-surface-container-low/40 transition-colors">
+                            <!-- No -->
+                            <td class="py-3 px-3 text-center text-on-surface-variant font-medium align-top">
+                                {{ $index + 1 }}
+                            </td>
+
+                            <!-- Waktu -->
+                            <td class="py-3 px-3 align-top whitespace-nowrap">
+                                <div class="font-bold text-on-surface text-xs">
+                                    {{ $log->created_at ? $log->created_at->format('d/m/Y H:i:s') : '-' }}
+                                </div>
+                                <div class="text-[10px] text-on-surface-variant mt-0.5">
+                                    {{ $log->created_at ? $log->created_at->diffForHumans() : '' }}
+                                </div>
+                            </td>
+
+                            <!-- Aktivitas / Kategori -->
+                            <td class="py-3 px-3 align-top whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border {{ $log->action_badge_class }}">
+                                    <span class="material-symbols-outlined text-[15px]">{{ $log->action_icon }}</span>
+                                    <span>{{ $log->action_label }}</span>
+                                </span>
+                            </td>
+
+                            <!-- Perubahan Status (From -> To) -->
+                            <td class="py-3 px-3 align-top">
+                                @if($log->human_status_from || $log->human_status_to)
+                                    <div class="flex items-center gap-1.5 text-xs flex-wrap">
+                                        @if($log->human_status_from)
+                                            <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-medium text-[10px] border border-outline-variant/40">
+                                                {{ $log->human_status_from }}
+                                            </span>
+                                            <span class="material-symbols-outlined text-[13px] text-outline">arrow_forward</span>
+                                        @endif
+                                        <span class="px-2 py-0.5 rounded bg-primary/10 text-primary font-bold text-[10px] border border-primary/20">
+                                            {{ $log->human_status_to ?: '-' }}
+                                        </span>
+                                    </div>
+                                @else
+                                    <span class="text-on-surface-variant opacity-40">-</span>
+                                @endif
+                            </td>
+
+                            <!-- Catatan / Keterangan -->
+                            <td class="py-3 px-3 align-top">
+                                <div class="text-xs text-on-surface leading-relaxed">
+                                    {{ $log->notes ?: '-' }}
+                                </div>
+                            </td>
+
+                            <!-- Creator -->
+                            <td class="py-3 px-3 align-top whitespace-nowrap">
+                                <div class="font-bold text-xs text-on-surface">
+                                    {{ $log->creator ?: '-' }}
+                                </div>
+                                @if(($log->creator && in_array(strtolower($log->creator), ['system', 'queue_worker', 'cron_scheduler'])))
+                                    <span class="text-[10px] text-on-surface-variant opacity-80 block">
+                                        Automated Process
+                                    </span>
+                                @endif
+                            </td>
+
+                            <!-- Editor -->
+                            <td class="py-3 px-3 text-right align-top whitespace-nowrap">
+                                <div class="font-bold text-xs text-on-surface">
+                                    {{ $log->editor ?: '-' }}
+                                </div>
+                                @if(($log->editor && in_array(strtolower($log->editor), ['system', 'queue_worker', 'cron_scheduler'])))
+                                    <span class="text-[10px] text-on-surface-variant opacity-80 block">
+                                        Automated Process
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-on-surface-variant">
+                                <div class="flex flex-col items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-4xl text-outline-variant">history_toggle_off</span>
+                                    <p class="text-xs font-semibold">Belum ada riwayat aktivitas tercatat untuk pesanan ini.</p>
+                                    <p class="text-[11px] text-outline">Setiap perubahan status, pembayaran, dan integrasi JDE akan terekam secara otomatis di sini.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -941,19 +1191,19 @@ async function confirmPushToJde(orderId, orderNumber) {
     if (typeof Swal !== 'undefined') {
         Swal.fire({
             icon: 'question',
-            title: 'Push ke JDE?',
-            html: `Apakah Anda yakin ingin mengirim data pesanan <b>#${orderNumber}</b> ke JDE?`,
+            title: 'Kirim / Retry ke JDE?',
+            html: `Pengiriman otomatis ditangani oleh Queue Worker. Jalankan pengiriman manual/retry sekarang untuk pesanan <b>#${orderNumber}</b>?`,
             showCancelButton: true,
             confirmButtonColor: '#4f46e5',
             cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, Push ke JDE',
+            confirmButtonText: 'Ya, Kirim Sekarang',
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
                 doPush();
             }
         });
-    } else if (confirm(`Apakah Anda yakin ingin push pesanan #${orderNumber} ke JDE?`)) {
+    } else if (confirm(`Jalankan pengiriman manual/retry pesanan #${orderNumber} ke JDE sekarang?`)) {
         doPush();
     }
 }

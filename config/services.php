@@ -64,6 +64,9 @@ return [
         'address_number' => (int) env('JDE_ADDRESS_NUMBER'),
         'keterangan_prefix' => env('JDE_KETERANGAN_PREFIX', 'WEB-IMG '),
         'timeout' => (int) env('JDE_TIMEOUT', 30),
+        'max_retries' => (int) env('JDE_MAX_RETRIES', 5),
+        'retry_delay_minutes' => (int) env('JDE_RETRY_DELAY_MINUTES', 5),
+        'mock' => (bool) env('JDE_MOCK', false),
     ],
 
 ];

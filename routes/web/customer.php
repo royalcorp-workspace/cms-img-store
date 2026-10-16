@@ -11,7 +11,9 @@ Route::get('/customers/{id}/edit', [CustomerController::class, 'edit'])->name('c
 Route::put('/customers/{id}', [CustomerController::class, 'update'])->name('customers.update');
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy'])->name('customers.destroy');
 
-// Customer Addresses routes (Embedded in edit customer)
+// Customer Addresses routes (Embedded in edit customer & standalone)
+Route::get('/customers/{customer}/addresses', [\App\Http\Controllers\Customer\CustomerAddressController::class, 'index'])->name('customers.addresses.index');
+Route::get('/customers/{customer}/addresses/create', [\App\Http\Controllers\Customer\CustomerAddressController::class, 'create'])->name('customers.addresses.create');
 Route::post('/customers/{customer}/addresses', [\App\Http\Controllers\Customer\CustomerAddressController::class, 'store'])->name('customers.addresses.store');
 Route::get('/customers/{customer}/addresses/{address}/edit', [\App\Http\Controllers\Customer\CustomerAddressController::class, 'edit'])->name('customers.addresses.edit');
 Route::put('/customers/{customer}/addresses/{address}', [\App\Http\Controllers\Customer\CustomerAddressController::class, 'update'])->name('customers.addresses.update');

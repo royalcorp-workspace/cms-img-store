@@ -16,7 +16,10 @@
         </div>
         <div class="flex items-center gap-3">
             <a href="{{ route('customers.edit', $customer->id) }}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90 transition-all shadow-sm">
-                <span class="material-symbols-outlined text-[18px]">edit</span> Edit
+                <span class="material-symbols-outlined text-[18px]">edit</span> Edit Customer
+            </a>
+            <a href="{{ route('customers.index') }}" class="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-outline-variant text-secondary rounded-lg font-label-md hover:bg-surface-container transition-all">
+                <span class="material-symbols-outlined text-[18px]">arrow_back</span> Kembali
             </a>
         </div>
     </div>
@@ -147,7 +150,7 @@
                         @forelse($customer->orders->sortByDesc('created_at') as $order)
                         <tr class="hover:bg-surface-container-low transition-colors">
                             <td class="px-gutter py-4 text-body-md font-medium text-primary">
-                                <a href="{{ route('orders.show', $order->id) }}">#{{ strtoupper(substr($order->id, 0, 8)) }}</a>
+                                <a href="{{ route('orders.show', $order->id) }}" class="font-mono font-semibold hover:underline">{{ $order->order_number ?: ('#' . strtoupper(substr($order->id, 0, 8))) }}</a>
                             </td>
                             <td class="px-gutter py-4 text-body-md">{{ $order->created_at->format('d M Y') }}</td>
                             <td class="px-gutter py-4 text-body-md font-medium">

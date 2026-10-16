@@ -17,20 +17,31 @@ class ReconciliationController extends Controller
 
         $totalOrdersCount = Order::whereDate('created_at', $date)->count();
 
+        $manualMethodIds = \App\Models\PaymentMethod::withoutGlobalScope('active')
+            ->where(function ($mq) {
+                $mq->where('code', 'ilike', '%manual%')
+                   ->orWhere('name', 'ilike', '%manual%')
+                   ->orWhere('type', 1);
+            })->pluck('id')->filter()->values()->toArray();
+
+        $manualFilter = function($q) use ($manualMethodIds) {
+            $q->where('payment_method', 'ilike', '%transfer_manual%')
+              ->orWhere('payment_method', 'ilike', '%manual%')
+              ->orWhereRaw("meta->>'payment_method_code' ILIKE '%manual%'")
+              ->orWhereRaw("meta->>'payment_method_name' ILIKE '%manual%'");
+            if (!empty($manualMethodIds)) {
+                $q->orWhereIn('payment_method', $manualMethodIds);
+            }
+        };
+
         $pendingManualOrders = Order::where('status', Order::STATUS_PENDING_APPROVAL)
             ->where('payment_status', '!=', Order::PAYMENT_PAID)
-            ->where(function($q) {
-                $q->where('payment_method', 'ilike', '%transfer_manual%')
-                  ->orWhere('payment_method', 'ilike', '%manual%');
-            });
+            ->where($manualFilter);
         
         $totalPendingCount = $pendingManualOrders->count();
 
         $reconciledOrdersQuery = Order::where('payment_status', Order::PAYMENT_PAID)
-            ->where(function($q) {
-                $q->where('payment_method', 'ilike', '%transfer_manual%')
-                  ->orWhere('payment_method', 'ilike', '%manual%');
-            })
+            ->where($manualFilter)
             ->whereRaw("meta->>'reconciled_at' LIKE ?", ["$date%"]);
 
         $reconciledCount = (clone $reconciledOrdersQuery)->count();
