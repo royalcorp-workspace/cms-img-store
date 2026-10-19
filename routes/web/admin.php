@@ -22,3 +22,11 @@ Route::post('/permissions/sync', [PermissionController::class, 'sync'])->name('p
 
 // User Management Routes
 Route::resource('users', UserController::class);
+
+// Real-Time Notification Routes
+Route::prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('index');
+    Route::post('/{id}/read', [\App\Http\Controllers\Admin\NotificationController::class, 'markAsRead'])->name('read');
+    Route::post('/mark-all-read', [\App\Http\Controllers\Admin\NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+    Route::post('/test-stock-alert', [\App\Http\Controllers\Admin\NotificationController::class, 'testStockAlert'])->name('test-stock-alert');
+});

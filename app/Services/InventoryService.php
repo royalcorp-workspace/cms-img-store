@@ -268,4 +268,126 @@ class InventoryService
             return null;
         }
     }
+
+    /**
+     * Check inventory stock levels and trigger Pusher alert if on_stock is low or 0.
+     */
+    public static function checkAndBroadcastStockAlert(Inventory $inventory): ?\App\Models\Notification
+    {
+        try {
+            $onStock = (int) ($inventory->on_stock ?? 0);
+            $available = (int) ($inventory->available ?? 0);
+
+            // Condition: Trigger alert when on_stock is 0 or critical (<= 5)
+            if ($onStock > 5) {
+                return null;
+            }
+
+            // Load product and variant details if not loaded
+            if (!$inventory->relationLoaded('product') || !$inventory->product) {
+                $inventory->load('product');
+            }
+            if (!$inventory->relationLoaded('variant') || !$inventory->variant) {
+                $inventory->load('variant');
+            }
+            if (!$inventory->relationLoaded('warehouse') && $inventory->warehouse_id) {
+                $inventory->load('warehouse');
+            }
+            if (!$inventory->relationLoaded('store') && $inventory->store_id) {
+                $inventory->load('store');
+            }
+            if (!$inventory->relationLoaded('channel') && $inventory->store_channel_id) {
+                $inventory->load('channel');
+            }
+
+            $productName = $inventory->product?->name ?? 'Produk';
+            $variantName = $inventory->variant?->name ?? $inventory->variant?->sku ?? 'Varian Standar';
+            $sku = $inventory->variant?->sku ?? '-';
+
+            $locationParts = array_filter([
+                $inventory->warehouse?->name,
+                $inventory->store?->name,
+                $inventory->channel?->name,
+            ]);
+            $locationName = !empty($locationParts) ? implode(' / ', $locationParts) : 'Gudang Utama';
+
+            $isZero = $onStock <= 0;
+            $severity = $isZero ? 'critical' : 'warning';
+            $type = $isZero ? 'out_of_stock' : 'low_stock';
+
+            if ($isZero) {
+                $title = "🚨 STOK HABIS (0): {$productName}";
+                $message = "Stok on_stock untuk {$productName} ({$variantName}) di {$locationName} saat ini habis (0 unit)! Segera lakukan restock.";
+            } else {
+                $title = "⚠️ STOK MENIPIS ({$onStock}): {$productName}";
+                $message = "Stok on_stock untuk {$productName} ({$variantName}) di {$locationName} tersisa {$onStock} unit. Waspada agar tidak mencapai 0!";
+            }
+
+            // Link to inventory index filtering this variant or product
+            $linkUrl = route('inventory.index', ['search' => $inventory->variant?->name ?: $productName]);
+
+            // Avoid duplicate unread notification for the same product & variant with exact same title within the last 10 minutes
+            $recentNotif = \App\Models\Notification::where('type', 'stock_alert')
+                ->where('is_read', false)
+                ->where('title', $title)
+                ->where('created_at', '>=', now()->subMinutes(10))
+                ->first();
+
+            if ($recentNotif) {
+                $notification = $recentNotif;
+                $notification->touch();
+            } else {
+                $notification = \App\Models\Notification::create([
+                    'id' => (string) Str::uuid(),
+                    'user_id' => null,
+                    'title' => $title,
+                    'message' => $message,
+                    'type' => 'stock_alert',
+                    'link_url' => $linkUrl,
+                    'is_read' => false,
+                    'is_broadcast' => false, // false ensures it is private to Admin CMS and never leaks to public customer web
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            // Construct payload for Pusher broadcast
+            $payload = [
+                'id' => (string) $notification->id,
+                'inventory_id' => (string) $inventory->id,
+                'product_id' => (string) $inventory->product_id,
+                'product_variant_id' => (string) $inventory->product_variant_id,
+                'product_name' => $productName,
+                'variant_name' => $variantName,
+                'sku' => $sku,
+                'location_name' => $locationName,
+                'on_stock' => $onStock,
+                'available' => $available,
+                'type' => $type,
+                'severity' => $severity,
+                'title' => $title,
+                'message' => $message,
+                'link_url' => $linkUrl,
+                'created_at' => now()->toIso8601String(),
+                'time_ago' => 'Baru saja',
+            ];
+
+            // Real-time push notification via Pusher
+            broadcast(new \App\Events\StockAlertEvent($payload));
+
+            \Illuminate\Support\Facades\Log::info("Stock alert broadcasted via Pusher", [
+                'inventory_id' => $inventory->id,
+                'product_name' => $productName,
+                'on_stock' => $onStock,
+                'severity' => $severity,
+            ]);
+
+            return $notification;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to broadcast stock alert: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return null;
+        }
+    }
 }

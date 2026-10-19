@@ -65,6 +65,19 @@ class Inventory extends Model
             $inventory->available = max(0, $onStock - $onOrder);
             $inventory->quantity = $inventory->available;
         });
+
+        static::saved(function (Inventory $inventory) {
+            // Check if on_stock is low (<= 5) or out of stock (<= 0)
+            if ($inventory->wasRecentlyCreated || $inventory->wasChanged('on_stock')) {
+                if ((int) $inventory->on_stock <= 5) {
+                    try {
+                        \App\Services\InventoryService::checkAndBroadcastStockAlert($inventory);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Stock Alert broadcast failed: ' . $e->getMessage());
+                    }
+                }
+            }
+        });
     }
 
     public function product(): BelongsTo

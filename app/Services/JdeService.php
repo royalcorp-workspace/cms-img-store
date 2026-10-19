@@ -138,10 +138,13 @@ class JdeService
         $orderLines = [];
         foreach ($order->items as $item) {
             $secondItemNumber = method_exists($item, 'getJdeItemNumber') ? $item->getJdeItemNumber() : ($item->sku ?? '');
+            $unitPrice = (float) ($item->unit_price ?? 0);
+            $harga = ($unitPrice == (int) $unitPrice) ? (int) $unitPrice : $unitPrice;
 
             $orderLines[] = [
                 '2nd_item_number' => (string) $secondItemNumber,
                 'qty' => (int) $item->quantity,
+                'harga' => $harga,
             ];
         }
 

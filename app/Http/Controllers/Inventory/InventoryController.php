@@ -611,12 +611,12 @@ class InventoryController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('inventory_incoming');
 
-        // Headers: include incoming and outgoing
-        $headers = ['sku', 'incoming', 'outgoing', 'warehouse_code', 'reference_product_name'];
+        // Headers: include incoming without outgoing
+        $headers = ['sku', 'incoming', 'warehouse_code', 'reference_product_name'];
         $sheet->fromArray($headers, null, 'A1');
 
         // Style header row
-        $sheet->getStyle('A1:E1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:D1')->getFont()->setBold(true);
 
         // Prepopulate with all active SKUs from DB with default stock = 0
         $variants = Variant::with('product')
@@ -635,7 +635,6 @@ class InventoryController extends Controller
             $dataRows[] = [
                 $v->sku,
                 0, // default incoming 0
-                0, // default outgoing 0
                 $whCode,
                 $productName
             ];
@@ -646,7 +645,7 @@ class InventoryController extends Controller
         }
 
         // Auto size columns
-        foreach (range('A', 'E') as $col) {
+        foreach (range('A', 'D') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
