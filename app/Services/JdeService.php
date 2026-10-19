@@ -138,8 +138,13 @@ class JdeService
         $orderLines = [];
         foreach ($order->items as $item) {
             $secondItemNumber = method_exists($item, 'getJdeItemNumber') ? $item->getJdeItemNumber() : ($item->sku ?? '');
-            $unitPrice = (float) ($item->unit_price ?? 0);
-            $harga = ($unitPrice == (int) $unitPrice) ? (int) $unitPrice : $unitPrice;
+            
+            // Harga satuan setelah diskon (Net Price after discount)
+            $unitPriceAfterDisc = method_exists($item, 'getPriceAfterDiscount')
+                ? $item->getPriceAfterDiscount()
+                : (float) ($item->total && $item->quantity ? ($item->total / max(1, $item->quantity)) : ($item->unit_price ?? 0));
+
+            $harga = ($unitPriceAfterDisc == (int) $unitPriceAfterDisc) ? (int) $unitPriceAfterDisc : round($unitPriceAfterDisc, 2);
 
             $orderLines[] = [
                 '2nd_item_number' => (string) $secondItemNumber,
@@ -288,11 +293,15 @@ class JdeService
                 ];
             }
 
+            $cleanErrorMessage = $this->extractErrorMessage(
+                $responseData,
+                isset($response) ? $response->body() : null,
+                isset($response) ? $response->status() : 500
+            );
+
             // JDE mengembalikan error status / payload hasErrors
             $order->jde_push_status = Order::JDE_STATUS_FAILED;
-            $meta['jde_push_error'] = is_array($responseData)
-                ? json_encode($responseData)
-                : ((isset($response) ? $response->body() : '') ?: 'HTTP status ' . (isset($response) ? $response->status() : 500));
+            $meta['jde_push_error'] = $cleanErrorMessage;
             $meta['jde_push_failed_at'] = now()->toDateTimeString();
             $meta['jde_push_retry_count'] = $retryCount + 1;
 
@@ -300,7 +309,8 @@ class JdeService
                 'order_number' => $order->order_number,
                 'order_id' => $order->id,
                 'status_code' => isset($response) ? $response->status() : 500,
-                'error' => $meta['jde_push_error'],
+                'error' => $cleanErrorMessage,
+                'raw_response' => $responseData ?? ($response->body() ?? null),
                 'payload' => $logPayload,
             ]);
 
@@ -309,7 +319,8 @@ class JdeService
 
             return [
                 'success' => false,
-                'message' => 'JDE mengembalikan respon error: ' . ($meta['jde_push_error'] ?? 'Terjadi kesalahan pada Orchestrator JDE'),
+                'message' => 'Gagal Push ke JDE: ' . $cleanErrorMessage,
+                'error' => $cleanErrorMessage,
                 'jde_push_status' => Order::JDE_STATUS_FAILED,
                 'jde_push_status_label' => $order->jdePushStatusLabel(),
                 'response' => $responseData,
@@ -372,5 +383,115 @@ class JdeService
         } catch (\Throwable $e) {
             Log::$level($banner);
         }
+    }
+
+    /**
+     * Ekstrak pesan error JDE yang ramah bagi pengguna (bukan raw json/stacktrace).
+     */
+    public function extractErrorMessage($responseData, ?string $rawBody = null, int $statusCode = 500): string
+    {
+        if (is_string($responseData)) {
+            $decoded = json_decode($responseData, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $responseData = $decoded;
+            } else {
+                $rawBody = $responseData;
+            }
+        }
+
+        if (is_array($responseData)) {
+            // 1. userDefinedErrorText
+            if (!empty($responseData['userDefinedErrorText']) && is_string($responseData['userDefinedErrorText'])) {
+                $clean = trim($responseData['userDefinedErrorText']);
+                if ($clean !== '') {
+                    return $this->cleanTechnicalTrace($clean);
+                }
+            }
+
+            // 2. Cek message object
+            if (!empty($responseData['message'])) {
+                if (is_string($responseData['message'])) {
+                    $clean = trim($responseData['message']);
+                    if ($clean !== '') {
+                        return $this->cleanTechnicalTrace($clean);
+                    }
+                } elseif (is_array($responseData['message'])) {
+                    foreach ($responseData['message'] as $val) {
+                        if (is_array($val)) {
+                            if (!empty($val['Message']) && is_string($val['Message'])) {
+                                return $this->cleanTechnicalTrace($val['Message']);
+                            }
+                            if (!empty($val['message']) && is_string($val['message'])) {
+                                return $this->cleanTechnicalTrace($val['message']);
+                            }
+                        } elseif (is_string($val)) {
+                            return $this->cleanTechnicalTrace($val);
+                        }
+                    }
+                }
+            }
+
+            // 3. jde__simpleMessage
+            if (!empty($responseData['jde__simpleMessage']) && is_string($responseData['jde__simpleMessage'])) {
+                return $this->cleanTechnicalTrace($responseData['jde__simpleMessage']);
+            }
+
+            // 4. errors array (AIS / Orchestrator standard)
+            if (!empty($responseData['errors']) && is_array($responseData['errors'])) {
+                $firstErr = reset($responseData['errors']);
+                if (is_array($firstErr)) {
+                    $msg = $firstErr['MOBILE_ERROR'] ?? $firstErr['error'] ?? $firstErr['message'] ?? '';
+                    if ($msg) {
+                        return $this->cleanTechnicalTrace($msg);
+                    }
+                } elseif (is_string($firstErr)) {
+                    return $this->cleanTechnicalTrace($firstErr);
+                }
+            }
+
+            // 5. sysErrors array
+            if (!empty($responseData['sysErrors']) && is_array($responseData['sysErrors'])) {
+                $firstErr = reset($responseData['sysErrors']);
+                if (is_array($firstErr)) {
+                    $msg = $firstErr['DESC'] ?? $firstErr['TITLE'] ?? '';
+                    if ($msg) {
+                        return $this->cleanTechnicalTrace($msg);
+                    }
+                }
+            }
+        }
+
+        if (!empty($rawBody)) {
+            $rawClean = strip_tags($rawBody);
+            if (strlen($rawClean) > 300) {
+                $rawClean = substr($rawClean, 0, 300) . '...';
+            }
+            return trim($rawClean);
+        }
+
+        return 'Gagal memproses request pada server JDE (HTTP status ' . $statusCode . ').';
+    }
+
+    /**
+     * Bersihkan stack trace Java/Ruby dan format string teknis agar ramah dibaca pengguna.
+     */
+    public function cleanTechnicalTrace(string $msg): string
+    {
+        $msg = trim($msg);
+
+        // Contoh: org.jruby.embed.InvokeFailedException: (RuntimeError) Kode barang tidak ditemukan di Master Data JDE.: at RUBY.main(<script>:4)
+        if (preg_match('/\(RuntimeError\)\s*(.*?)(?::\s*at RUBY|$)/s', $msg, $matches)) {
+            $msg = $matches[1];
+        } elseif (preg_match('/failed:\s*(.*?)(?::\s*at RUBY|$)/s', $msg, $matches)) {
+            $msg = $matches[1];
+        }
+
+        // Hapus prefix exception class seperti "java.lang.Exception: " atau "InvokeFailedException: "
+        $msg = preg_replace('/^[a-zA-Z0-9_\.]+(?:Exception|Error):\s*/i', '', $msg);
+
+        // Hapus suffix stack trace ": at RUBY.main..." atau ": at com.oracle..."
+        $msg = preg_replace('/:\s*at\s+[a-zA-Z0-9_\.\(<>\/:\s]+$/i', '', $msg);
+
+        return trim($msg);
     }
 }

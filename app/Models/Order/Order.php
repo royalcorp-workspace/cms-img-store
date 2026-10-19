@@ -213,8 +213,8 @@ class Order extends Model
                 if ($model->wasChanged('jde_push_status')) {
                     $statusLabel = \App\Models\Reff::getShow('JdePushStatus', $model->jde_push_status, (string) $model->jde_push_status);
                     $note = 'Status push JDE diubah ke ' . $statusLabel . ($model->jde_push_date ? ' (Tanggal: ' . $model->jde_push_date . ')' : '');
-                    if ((int)$model->jde_push_status === self::JDE_STATUS_FAILED && !empty($model->meta['jde_push_error'])) {
-                        $note .= ' - ' . \Illuminate\Support\Str::limit((string) $model->meta['jde_push_error'], 250);
+                    if ((int)$model->jde_push_status === self::JDE_STATUS_FAILED && !empty($model->getJdeErrorMessage())) {
+                        $note .= ' - ' . \Illuminate\Support\Str::limit((string) $model->getJdeErrorMessage(), 250);
                     }
                     \App\Models\Order\OrderLog::create([
                         'order_id' => $model->id,
@@ -643,6 +643,13 @@ class Order extends Model
         };
     }
 
+    public function isPaymentPaid(): bool
+    {
+        return (int) $this->payment_status === self::PAYMENT_PAID 
+            || (int) $this->payment_status === 2 
+            || (int) $this->status >= self::STATUS_CONFIRMED;
+    }
+
     public static function paymentStatusLabels(): array
     {
         $dbLabels = \App\Models\Reff::getOptions('PaymentStatus');
@@ -661,11 +668,21 @@ class Order extends Model
 
     public function paymentStatusLabel(): string
     {
+        // Toleransi perbedaan nilai payment_status antar modul (CMS: 1 = Paid, POS/Gateway: 2 = Paid)
+        if ((int) $this->payment_status === 2 && $this->isPaidOrStarted()) {
+            return 'Paid';
+        }
+
         return \App\Models\Reff::getShow('PaymentStatus', $this->payment_status, self::paymentStatusLabels()[$this->payment_status] ?? 'Unknown');
     }
 
     public function getPaymentStatusBadgeClassAttribute(): string
     {
+        // Toleransi perbedaan nilai payment_status antar modul (CMS: 1 = Paid, POS/Gateway: 2 = Paid)
+        if ((int) $this->payment_status === 2 && $this->isPaidOrStarted()) {
+            return 'bg-success/10 text-success';
+        }
+
         return match ($this->payment_status) {
             self::PAYMENT_UNPAID => 'bg-gray-100 text-gray-600',
             self::PAYMENT_PAID => 'bg-success/10 text-success',
@@ -793,27 +810,44 @@ class Order extends Model
 
     public static function jdePushStatusLabels(): array
     {
-        $dbLabels = \App\Models\Reff::getOptions('JdePushStatus');
-        if (!empty($dbLabels)) {
-            return $dbLabels;
-        }
-
         return [
-            self::JDE_STATUS_PENDING => 'Pending',
-            self::JDE_STATUS_PROCESSING => 'Processing',
-            self::JDE_STATUS_SUCCESS => 'Success',
-            self::JDE_STATUS_FAILED => 'Failed',
+            self::JDE_STATUS_PENDING => 'Belum Di Push',
+            self::JDE_STATUS_PROCESSING => 'Dalam Antrian',
+            self::JDE_STATUS_SUCCESS => 'Sudah di Push',
+            self::JDE_STATUS_FAILED => 'Gagal di Push',
         ];
     }
 
     public function jdePushStatusLabel(): string
     {
-        return \App\Models\Reff::getShow('JdePushStatus', $this->jde_push_status, self::jdePushStatusLabels()[$this->jde_push_status] ?? 'Pending');
+        return self::jdePushStatusLabels()[$this->jde_push_status] 
+            ?? \App\Models\Reff::getShow('JdePushStatus', $this->jde_push_status, 'Belum Di Push');
     }
 
     public function getJdePushStatusLabelAttribute(): string
     {
         return $this->jdePushStatusLabel();
+    }
+
+    /**
+     * Dapatkan pesan error JDE yang ramah bagi pengguna (bukan raw json/stacktrace).
+     */
+    public function getJdeErrorMessage(): ?string
+    {
+        $rawError = $this->meta['jde_push_error'] ?? null;
+        if (!$rawError) {
+            return null;
+        }
+
+        if (is_string($rawError) && (str_starts_with(trim($rawError), '{') || str_starts_with(trim($rawError), '['))) {
+            try {
+                return app(\App\Services\JdeService::class)->extractErrorMessage($rawError);
+            } catch (\Throwable $e) {
+                return 'Terjadi kendala pada integrasi JDE.';
+            }
+        }
+
+        return (string) $rawError;
     }
 
     public function getJdePushStatusBadgeClassAttribute(): string

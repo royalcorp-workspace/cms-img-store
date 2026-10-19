@@ -86,4 +86,35 @@ class OrderItem extends Model
 
         return $clean;
     }
+
+    /**
+     * Dapatkan harga satuan setelah diskon per unit/SKU (Net Price per SKU, bukan total sales).
+     */
+    public function getPriceAfterDiscount(): float
+    {
+        $qty = max(1, (int) $this->quantity);
+
+        // 1. Cek meta['after_disc_price'] (harga satuan setelah diskon per SKU)
+        if (isset($this->meta['after_disc_price']) && is_numeric($this->meta['after_disc_price'])) {
+            $metaPrice = (float) $this->meta['after_disc_price'];
+            $unitPrice = (float) ($this->unit_price ?? 0);
+
+            // Pengaman: jika metaPrice melebihi unitPrice saat qty > 1, berarti tersimpan subtotal
+            if ($unitPrice > 0 && $metaPrice > $unitPrice && $qty > 1) {
+                return (float) ($metaPrice / $qty);
+            }
+            return $metaPrice;
+        }
+
+        // 2. Jika ada total baris, hitung harga satuan per SKU = total / qty
+        if (!empty($this->total) && (float) $this->total > 0) {
+            return (float) ($this->total / $qty);
+        }
+
+        // 3. Fallback: unit_price - (discount_nominal / qty)
+        $unitPrice = (float) ($this->unit_price ?? 0);
+        $discount = (float) ($this->discount_nominal ?? 0);
+
+        return max(0, $unitPrice - ($discount / $qty));
+    }
 }

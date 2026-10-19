@@ -53,6 +53,7 @@
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Payment</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Status</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Resi</th>
+                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Status JDE</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Action</th>
                     </tr>
@@ -61,7 +62,9 @@
                     @forelse($orders as $order)
                         <tr class="hover:bg-surface-container/30 transition-colors">
                             <td class="px-gutter py-4">
-                                <span class="font-headline-md text-headline-md text-primary font-semibold">#{{ $order->order_number }}</span>
+                                <a href="{{ route('orders.show', $order->id) }}" class="font-headline-md text-headline-md text-primary font-semibold hover:underline" title="Lihat Detail Pesanan">
+                                    #{{ $order->order_number }}
+                                </a>
                             </td>
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $order->created_at->format('d M Y') }}</td>
                             <td class="px-gutter py-4">
@@ -96,96 +99,63 @@
                                     <span class="w-1.5 h-1.5 rounded-full bg-current"></span> {{ $statusLabel }}
                                 </span>
                             </td>
-                            <td class="px-gutter py-4" id="order-resi-badge-{{ $order->id }}">
-                                <script>
-                                    window.ordersCache = window.ordersCache || {};
-                                    window.ordersCache['{{ $order->id }}'] = @json($order->resi_modal_data);
-                                </script>
+                            <td class="px-gutter py-4">
                                 @if($order->resi)
-                                    <div class="flex items-center gap-1.5">
-                                        <button type="button" onclick="openResiModal('{{ $order->id }}', 'tracking')" class="font-mono text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 px-2 py-0.5 rounded border border-primary/20 text-left transition-colors" title="Lihat Status Resi">
-                                            {{ $order->resi }}
-                                        </button>
-                                        <button type="button" onclick="openResiModal('{{ $order->id }}', 'tracking')" class="p-1 text-on-surface-variant hover:text-primary transition-colors" title="Lihat Status Resi">
-                                            <span class="material-symbols-outlined text-[16px]">visibility</span>
-                                        </button>
-                                    </div>
-                                    <div class="flex items-center gap-1 text-[10px] text-on-surface-variant mt-1 flex-wrap">
-                                        <span class="font-medium">{{ $order->courier_name ?? 'Kurir' }}</span>
-                                        <span>&bull;</span>
-                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold border {{ $order->delivery_status_badge_class }}">
-                                            {{ $order->delivery_status_label }}
-                                        </span>
-                                    </div>
-                                @elseif($order->status >= \App\Models\Order\Order::STATUS_SHIPPED)
-                                    <div class="space-y-1">
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-semibold border border-slate-200" title="Resi sudah terkunci (Pesanan {{ $order->statusLabel() }})">
-                                            <span class="material-symbols-outlined text-[12px]">lock</span>
-                                            <span>Resi Terkunci</span>
-                                        </span>
+                                    <div class="font-mono text-xs font-semibold text-on-surface">{{ $order->resi }}</div>
+                                    <div class="flex items-center gap-1 text-[10px] text-on-surface-variant mt-0.5 flex-wrap">
+                                        <span>{{ $order->courier_name ?? 'Kurir' }}</span>
                                         @if($order->delivery_status)
-                                            <div class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold border {{ $order->delivery_status_badge_class }}">
+                                            <span>&bull;</span>
+                                            <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold border {{ $order->delivery_status_badge_class }}">
                                                 {{ $order->delivery_status_label }}
-                                            </div>
+                                            </span>
                                         @endif
                                     </div>
-                                @elseif($order->delivery_status)
-                                    <button type="button" onclick="openResiModal('{{ $order->id }}', 'tracking')" class="text-left group" title="Lihat riwayat logs">
-                                        <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border {{ $order->delivery_status_badge_class }}">
-                                            {{ $order->delivery_status_label }}
-                                        </div>
-                                        <div class="text-[9px] text-primary group-hover:underline mt-0.5">+ Tambah Resi</div>
-                                    </button>
                                 @else
-                                    <button type="button" onclick="openResiModal('{{ $order->id }}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-dashed border-primary/40 text-[11px] font-semibold text-primary hover:bg-primary/5 transition-colors">
-                                        <span class="material-symbols-outlined text-[14px]">add</span>
-                                        <span>+ Resi</span>
-                                    </button>
+                                    <span class="text-xs text-on-surface-variant">-</span>
                                 @endif
-
-                                @if($order->isPaidOrStarted() || (int)$order->jde_push_status > 0)
-                                    <div class="mt-1.5 flex items-center gap-1 flex-wrap" id="order-jde-status-{{ $order->id }}">
-                                        @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200" title="Sudah berhasil terkirim ke JDE{{ $order->jde_push_date ? ' (' . $order->jde_push_date->format('d/m/Y') : '' }})">
-                                                <span class="material-symbols-outlined text-[11px]">cloud_done</span>
-                                                <span>JDE Sent</span>
-                                            </span>
-                                        @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
-                                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 animate-pulse" title="Sedang diproses oleh Queue Worker">
-                                                <span class="material-symbols-outlined text-[11px] animate-spin">sync</span>
-                                                <span>JDE Processing</span>
-                                            </span>
-                                        @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                                            <button type="button" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 transition-colors" title="Gagal terkirim: {{ $order->meta['jde_push_error'] ?? 'Klik untuk retry manual' }}">
-                                                <span class="material-symbols-outlined text-[11px]">refresh</span>
-                                                <span>Retry JDE</span>
-                                            </button>
-                                        @else
-                                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200" title="Dalam antrean otomatis pengiriman JDE">
-                                                <span class="material-symbols-outlined text-[11px]">hourglass_top</span>
-                                                <span>JDE Queued</span>
-                                            </span>
-                                        @endif
-                                    </div>
+                            </td>
+                            <td class="px-gutter py-4 text-center">
+                                @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60" title="Terkirim ke JDE{{ $order->jde_push_date ? ' (' . $order->jde_push_date->format('d/m/Y') : '' }})">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        <span>Sudah di Push</span>
+                                    </span>
+                                @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60" title="Sedang diproses JDE">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                                        <span>Dalam Antrian</span>
+                                    </span>
+                                @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-rose-700 border border-outline-variant/60" title="{{ $order->getJdeErrorMessage() ?? 'Gagal di Push' }}">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                        <span>Gagal di Push</span>
+                                    </span>
+                                @elseif($order->isPaidOrStarted())
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-on-surface-variant border border-outline-variant/60" title="Antrean JDE">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                        <span>Dalam Antrian</span>
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-on-surface-variant/70 border border-outline-variant/60">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                        <span>Belum Di Push</span>
+                                    </span>
                                 @endif
                             </td>
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-medium">Rp{{ number_format($order->total, 2, ',', '.') }}</td>
-                            <td class="px-gutter py-4">
-                                <div class="flex gap-2 justify-center">
-                                    @can('orders.biteship.track')
-                                        <button type="button" onclick="openResiModal('{{ $order->id }}', '{{ ($order->resi || $order->delivery_status) ? 'tracking' : 'manual' }}')" class="text-on-surface-variant hover:text-primary transition-colors" title="Resi & Log Pengiriman">
-                                            <span class="material-symbols-outlined text-[18px]">local_shipping</span>
-                                        </button>
-                                    @endcan
-                                    @can('orders.show')
-                                        <a href="{{ route('orders.show', $order->id) }}" class="text-on-surface-variant hover:text-primary transition-colors" title="View"><span class="material-symbols-outlined text-[18px]">visibility</span></a>
-                                    @endcan
-                                </div>
+                            <td class="px-gutter py-4 text-center">
+                                @can('orders.show')
+                                    <a href="{{ route('orders.show', $order->id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container hover:border-primary text-xs font-semibold text-primary transition-all shadow-2xs" title="Lihat Detail Pesanan">
+                                        <span class="material-symbols-outlined text-[16px]">visibility</span>
+                                        <span>Detail</span>
+                                    </a>
+                                @endcan
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-gutter py-8 text-center text-on-surface-variant">No orders found</td>
+                            <td colspan="9" class="px-gutter py-8 text-center text-on-surface-variant">No orders found</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -231,84 +201,5 @@
     document.getElementById('endDate').addEventListener('change', function() {
         window.location.href = buildUrl();
     });
-
-    async function confirmPushToJde(orderId, orderNumber) {
-        const doPush = async () => {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
-            try {
-                const response = await fetch(`/orders/${orderId}/push-to-jde`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    }
-                });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil Push ke JDE!',
-                            text: data.message || `Pesanan #${orderNumber} berhasil dikirim ke JDE.`,
-                            confirmButtonColor: '#4f46e5'
-                        }).then(() => {
-                            window.location.reload();
-                        });
-                    } else {
-                        alert(data.message || `Pesanan #${orderNumber} berhasil dikirim ke JDE.`);
-                        window.location.reload();
-                    }
-                } else {
-                    const errMsg = data.message || 'Gagal melakukan push order ke JDE.';
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal Push ke JDE',
-                            text: errMsg,
-                            confirmButtonColor: '#4f46e5'
-                        });
-                    } else {
-                        alert(errMsg);
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-                const errNet = 'Terjadi kesalahan jaringan saat menghubungi endpoint JDE.';
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gangguan Koneksi',
-                        text: errNet,
-                        confirmButtonColor: '#4f46e5'
-                    });
-                } else {
-                    alert(errNet);
-                }
-            }
-        };
-
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'question',
-                title: 'Kirim / Retry ke JDE?',
-                html: `Pengiriman otomatis ditangani oleh Queue Worker. Jalankan pengiriman manual/retry sekarang untuk pesanan <b>#${orderNumber}</b>?`,
-                showCancelButton: true,
-                confirmButtonColor: '#4f46e5',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Ya, Kirim Sekarang',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    doPush();
-                }
-            });
-        } else if (confirm(`Jalankan pengiriman manual/retry pesanan #${orderNumber} ke JDE sekarang?`)) {
-            doPush();
-        }
-    }
     </script>
-
-    @include('pages.orders.partials.resi-modal')
 @endsection
