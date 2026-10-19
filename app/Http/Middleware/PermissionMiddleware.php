@@ -50,7 +50,9 @@ class PermissionMiddleware
         $permissions = is_array($permission) ? $permission : explode('|', $permission);
 
         // 4. Excluded universal routes
-        $universalRoutes = ['login', 'logout', 'dashboard', 'profile.show', 'profile.update', 'profile.password'];
+        $universalRoutes = [
+            'login', 'logout', 'dashboard', 'profile.show', 'profile.update', 'profile.password'
+        ];
         foreach ($permissions as $p) {
             if (in_array($p, $universalRoutes, true)) {
                 return $next($request);
