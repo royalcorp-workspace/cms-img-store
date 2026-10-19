@@ -17,26 +17,26 @@
 
 <div class="space-y-4 pb-10">
     <!-- Action Buttons (Diatas Sub Menu) -->
-    <div class="flex flex-wrap items-center justify-end gap-2">
+    <div class="flex flex-wrap items-center justify-end gap-2.5">
         <!-- Integrasi JDE (Aktif untuk pesanan yang sudah bayar / dimulai) -->
         <div id="jdeTopActionContainer" class="{{ ($order->isPaidOrStarted() || (int)$order->jde_push_status > 0) ? 'inline-flex' : 'hidden' }} items-center gap-1.5">
             @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-lg text-xs font-bold border border-emerald-300 dark:border-emerald-800" title="Pesanan sudah berhasil di-push ke JDE{{ $order->jde_push_date ? ' pada ' . $order->jde_push_date->format('d/m/Y') : '' }}">
-                    <span class="material-symbols-outlined text-[16px] text-emerald-600">cloud_done</span>
-                    <span>Sudah Push JDE</span>
+                <span class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-container text-on-surface rounded-lg text-xs font-medium border border-outline-variant/60" title="Pesanan sudah berhasil di-push ke JDE{{ $order->jde_push_date ? ' pada ' . $order->jde_push_date->format('d/m/Y') : '' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>Sudah di Push</span>
                 </span>
             @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
-                <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-300 animate-pulse" title="Sedang diproses oleh Queue Worker">
-                    <span class="material-symbols-outlined text-[16px] animate-spin text-blue-600">sync</span>
-                    <span>JDE Processing</span>
+                <span class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-container text-on-surface rounded-lg text-xs font-medium border border-outline-variant/60" title="Sedang diproses oleh Queue Worker">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                    <span>Dalam Antrian</span>
                 </span>
             @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors" title="Gagal terkirim ke JDE. Klik untuk Retry manual.">
+                <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all" title="Gagal terkirim ke JDE. Klik untuk Retry manual.">
                     <span class="material-symbols-outlined text-[16px]">refresh</span>
-                    <span id="btnPushToJdeTopText">Retry Push JDE</span>
+                    <span id="btnPushToJdeTopText">Retry JDE</span>
                 </button>
             @else
-                <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors" title="Pengiriman otomatis ditangani Queue Worker. Klik untuk kirim manual sekarang.">
+                <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all" title="Pengiriman otomatis ditangani Queue Worker. Klik untuk kirim manual sekarang.">
                     <span class="material-symbols-outlined text-[16px]">cloud_upload</span>
                     <span id="btnPushToJdeTopText">Push ke JDE</span>
                 </button>
@@ -44,42 +44,27 @@
         </div>
 
         @if($order->resi || $order->delivery_status)
-            <button type="button" onclick='openResiModal(@json($resiModalData), "tracking")' class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors">
+            <button type="button" onclick='openResiModal(@json($resiModalData), "tracking")' class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all">
                 <span class="material-symbols-outlined text-[16px]">radar</span>
                 <span>Lacak Pengiriman</span>
             </button>
         @endif
 
-        @if(!empty($resiModalData['is_kurir_toko']))
-            <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-200 dark:border-blue-800" title="Pesanan dikirim dengan armada Kurir Toko (Hanya Resi Manual)">
-                <span class="material-symbols-outlined text-[16px]">store</span>
-                <span>Kurir Toko (Manual)</span>
-            </span>
-        @elseif(!empty($resiModalData['has_biteship_resi']))
-            <button type="button" disabled title="Resi ekspedisi sudah diterbitkan (Resi: {{ $order->resi }})." class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-not-allowed">
-                <span class="material-symbols-outlined text-[16px] text-slate-400">check_circle</span>
-                <span>Resi Ekspedisi Aktif</span>
-            </button>
-        @else
-            <button type="button" onclick='openResiModal(@json($resiModalData), "biteship")' class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors">
+        @if(empty($resiModalData['is_kurir_toko']) && empty($resiModalData['has_biteship_resi']) && $order->status < \App\Models\Order\Order::STATUS_SHIPPED)
+            <button type="button" onclick='openResiModal(@json($resiModalData), "biteship")' class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all">
                 <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
                 <span>Get Resi Otomatis</span>
             </button>
         @endif
 
-        @if($order->status >= \App\Models\Order\Order::STATUS_SHIPPED)
-            <button type="button" disabled title="Pesanan sudah berstatus {{ $order->statusLabel() }}. Nomor resi terkunci dan tidak dapat diubah lagi." class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-not-allowed">
-                <span class="material-symbols-outlined text-[16px]">lock</span>
-                <span>Resi Terkunci</span>
-            </button>
-        @else
-            <button type="button" onclick='openResiModal(@json($resiModalData), "manual")' class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary hover:opacity-90 text-white rounded-lg text-xs font-bold shadow-xs transition-opacity">
+        @if($order->status < \App\Models\Order\Order::STATUS_SHIPPED)
+            <button type="button" onclick='openResiModal(@json($resiModalData), "manual")' class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all">
                 <span class="material-symbols-outlined text-[16px]">edit_document</span>
                 <span id="show-header-resi-text">{{ $order->resi ? 'Ubah Resi' : 'Input Resi' }}</span>
             </button>
         @endif
 
-        <a href="{{ route('orders.index') }}" class="inline-flex items-center gap-1 px-3 py-2 border border-outline-variant text-on-surface-variant hover:bg-surface-container rounded-lg text-xs font-medium transition-colors">
+        <a href="{{ route('orders.index') }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-outline-variant bg-white text-on-surface hover:bg-surface-container rounded-lg text-xs font-semibold transition-all">
             <span class="material-symbols-outlined text-[16px]">arrow_back</span>
             <span>Kembali</span>
         </a>
@@ -97,11 +82,12 @@
             <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs p-4 space-y-3">
                 <div class="flex items-center justify-between border-b border-outline-variant/40 pb-2.5">
                     <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px] text-primary">info</span>
+                        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">info</span>
                         Status & Data Order
                     </span>
-                    <span id="show-order-status-badge" class="px-2.5 py-0.5 rounded text-[11px] font-bold {{ $order->statusBadgeClass }}">
-                        {{ $order->statusLabel() }}
+                    <span id="show-order-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                        <span class="w-1.5 h-1.5 rounded-full {{ in_array((int)$order->status, [4, 5]) ? 'bg-emerald-500' : (in_array((int)$order->status, [6, 7]) ? 'bg-rose-500' : ((int)$order->status === 0 ? 'bg-slate-400' : 'bg-blue-500')) }}"></span>
+                        <span>{{ $order->statusLabel() }}</span>
                     </span>
                 </div>
 
@@ -110,14 +96,14 @@
                     <div>
                         <span class="text-[10px] text-on-surface-variant font-semibold block uppercase">Nomor Pesanan</span>
                         <div class="flex items-center gap-2 mt-0.5">
-                            <span class="font-mono font-bold text-sm text-primary">#{{ $order->order_number }}</span>
-                            <span id="order-copy-label" class="hidden text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded transition-all items-center gap-0.5">
-                                <span class="material-symbols-outlined text-[12px]">check</span>
+                            <span class="font-mono font-bold text-sm text-on-surface">#{{ $order->order_number }}</span>
+                            <span id="order-copy-label" class="hidden text-[10px] font-medium text-on-surface bg-surface-container border border-outline-variant/60 px-1.5 py-0.5 rounded transition-all items-center gap-0.5">
+                                <span class="material-symbols-outlined text-[12px] text-emerald-600">check</span>
                                 Disalin
                             </span>
                         </div>
                     </div>
-                    <button type="button" id="order-copy-btn" onclick="copyOrderNumber('{{ $order->order_number }}')" class="p-1.5 text-on-surface-variant hover:text-primary rounded-md hover:bg-white transition-colors" title="Salin Nomor Order">
+                    <button type="button" id="order-copy-btn" onclick="copyOrderNumber('{{ $order->order_number }}')" class="p-1.5 text-on-surface-variant hover:text-on-surface rounded-md hover:bg-white transition-colors" title="Salin Nomor Order">
                         <span id="order-copy-icon" class="material-symbols-outlined text-[16px]">content_copy</span>
                     </button>
                 </div>
@@ -129,8 +115,9 @@
                     </div>
                     <div class="p-2 bg-surface-container-low rounded-lg border border-outline-variant/30">
                         <span class="text-[10px] text-on-surface-variant block">Status Bayar</span>
-                        <span class="font-bold text-[11px] {{ $order->payment_status == 1 ? 'text-emerald-700' : 'text-amber-700' }}">
-                            {{ $order->paymentStatusLabel() }}
+                        <span class="font-medium text-[11px] flex items-center gap-1.5 text-on-surface mt-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $order->isPaymentPaid() ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
+                            <span>{{ $order->paymentStatusLabel() }}</span>
                         </span>
                     </div>
                 </div>
@@ -146,7 +133,7 @@
                             Ubah Status Pesanan:
                         </label>
                         @if($isStatusLocked)
-                            <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <span class="text-[10px] font-medium text-on-surface-variant bg-surface-container border border-outline-variant/60 px-1.5 py-0.5 rounded flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[12px]">lock</span>
                                 Terkunci
                             </span>
@@ -163,7 +150,7 @@
                             <option value="6" {{ $order->status == 6 ? 'selected' : '' }}>Cancelled (Batal)</option>
                             <option value="7" {{ $order->status == 7 ? 'selected' : '' }}>Returned (Retur)</option>
                         </select>
-                        <button type="submit" id="quickStatusBtn" {{ $isStatusLocked ? 'disabled' : '' }} class="px-3 py-1.5 {{ $isStatusLocked ? 'bg-surface-container text-on-surface-variant/40 border-outline-variant/40 cursor-not-allowed' : 'bg-surface-container-high hover:bg-surface-container-highest border-outline-variant text-on-surface' }} border rounded-lg text-xs font-bold transition-colors shrink-0 flex items-center gap-1">
+                        <button type="submit" id="quickStatusBtn" {{ $isStatusLocked ? 'disabled' : '' }} class="px-3.5 py-1.5 {{ $isStatusLocked ? 'bg-surface-container text-on-surface-variant/40 border border-outline-variant/40 cursor-not-allowed' : 'bg-primary text-white hover:opacity-90 shadow-xs' }} rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1">
                             <span class="material-symbols-outlined text-[14px]">save</span>
                             <span>Ubah</span>
                         </button>
@@ -176,9 +163,9 @@
                 </form>
 
                 @if($order->notes)
-                    <div class="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-xs text-amber-900">
-                        <span class="text-[10px] font-bold uppercase block text-amber-800">Catatan Order:</span>
-                        <p class="mt-0.5 italic">{{ $order->notes }}</p>
+                    <div class="p-2.5 bg-surface-container-low border border-outline-variant/40 rounded-lg text-xs text-on-surface">
+                        <span class="text-[10px] font-semibold uppercase block text-on-surface-variant">Catatan Order:</span>
+                        <p class="mt-0.5 italic text-on-surface">{{ $order->notes }}</p>
                     </div>
                 @endif
             </div>
@@ -187,27 +174,22 @@
             <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs p-4 space-y-3">
                 <div class="flex items-center justify-between border-b border-outline-variant/40 pb-2.5">
                     <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px] text-primary">local_shipping</span>
+                        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">local_shipping</span>
                         Pengiriman & Resi
                     </span>
-                    @if($order->resi)
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            Resi Ada
-                        </span>
-                    @else
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-                            Belum Ada Resi
-                        </span>
-                    @endif
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                        <span class="w-1.5 h-1.5 rounded-full {{ $order->resi ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
+                        <span>{{ $order->resi ? 'Resi Ada' : 'Belum Ada Resi' }}</span>
+                    </span>
                 </div>
 
                 <div class="space-y-2 text-xs">
                     <div>
                         <span class="text-[10px] text-on-surface-variant font-semibold block mb-0.5">Kurir Pesanan</span>
                         <div class="flex items-center justify-between p-2 bg-surface-container-low rounded-lg border border-outline-variant/40">
-                            <span class="font-bold text-primary" id="show-order-courier-name">{{ $order->courier_name ?? 'Kurir Belum Diatur' }}</span>
+                            <span class="font-semibold text-on-surface" id="show-order-courier-name">{{ $order->courier_name ?? 'Kurir Belum Diatur' }}</span>
                             @if(!empty($order->meta['fulfillment_type']) || $order->isKurirToko())
-                                <span class="text-[10px] px-1.5 py-0.5 rounded font-bold {{ $order->isKurirToko() ? 'bg-blue-100 text-blue-800' : (($order->meta['fulfillment_type'] ?? '') === 'biteship' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700') }}">
+                                <span class="text-[10px] px-2 py-0.5 rounded font-medium bg-surface-container text-on-surface-variant border border-outline-variant/50">
                                     {{ $order->isKurirToko() ? 'Kurir Toko' : (($order->meta['fulfillment_type'] ?? '') === 'biteship' ? 'Ekspedisi Otomatis' : 'Input Manual') }}
                                 </span>
                             @endif
@@ -221,13 +203,13 @@
                                 <span class="font-mono font-bold text-xs text-on-surface select-all" id="show-order-resi-code">
                                     {{ $order->resi ?? 'Belum ada nomor resi' }}
                                 </span>
-                                <span id="resi-copy-label" class="hidden text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded transition-all items-center gap-0.5">
-                                    <span class="material-symbols-outlined text-[12px]">check</span>
+                                <span id="resi-copy-label" class="hidden text-[10px] font-medium text-on-surface bg-surface-container border border-outline-variant/60 px-1.5 py-0.5 rounded transition-all items-center gap-0.5">
+                                    <span class="material-symbols-outlined text-[12px] text-emerald-600">check</span>
                                     Disalin
                                 </span>
                             </div>
                             @if($order->resi)
-                                <button type="button" id="resi-copy-btn" onclick="copyResiCodeText('{{ $order->resi }}')" class="p-1 hover:text-primary rounded text-on-surface-variant transition-colors" title="Salin Resi">
+                                <button type="button" id="resi-copy-btn" onclick="copyResiCodeText('{{ $order->resi }}')" class="p-1 hover:text-on-surface rounded text-on-surface-variant transition-colors" title="Salin Resi">
                                     <span id="resi-copy-icon" class="material-symbols-outlined text-[15px]">content_copy</span>
                                 </button>
                             @endif
@@ -237,8 +219,8 @@
                     <div>
                         <span class="text-[10px] text-on-surface-variant font-semibold block mb-0.5">Status Pengiriman</span>
                         <div class="p-2 bg-surface-container-low rounded-lg border border-outline-variant/40 flex items-center justify-between">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border {{ $order->delivery_status_badge_class }}">
-                                <span class="material-symbols-outlined text-[14px]">local_shipping</span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                                <span class="w-1.5 h-1.5 rounded-full {{ str_contains(strtolower($order->delivery_status_label), 'deliver') || str_contains(strtolower($order->delivery_status_label), 'selesai') ? 'bg-emerald-500' : 'bg-blue-500' }}"></span>
                                 <span id="show-order-delivery-status">{{ $order->delivery_status_label }}</span>
                             </span>
                             @if($order->latest_delivery_log?->created_at)
@@ -260,13 +242,13 @@
                     @endphp
                     <div>
                         <span class="text-[10px] text-on-surface-variant font-semibold block mb-0.5">Estimasi Tiba (ETA)</span>
-                        <div class="p-2.5 bg-primary/5 rounded-lg border border-primary/20 flex flex-col gap-1">
+                        <div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant/40 flex flex-col gap-1">
                             <div class="flex items-center justify-between">
-                                <span class="font-bold text-xs text-primary flex items-center gap-1.5" id="show-order-eta-label">
-                                    <span class="material-symbols-outlined text-[16px]">schedule</span>
+                                <span class="font-medium text-xs text-on-surface flex items-center gap-1.5" id="show-order-eta-label">
+                                    <span class="material-symbols-outlined text-[15px] text-on-surface-variant">schedule</span>
                                     <span>{{ $etaLabel ?: 'Belum ditentukan' }}</span>
                                 </span>
-                                <span class="text-[10px] px-1.5 py-0.5 rounded font-bold {{ ($deliveryObj?->eta_source === 'store' || $order->isKurirToko()) ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
+                                <span class="text-[10px] px-2 py-0.5 rounded font-medium bg-surface-container text-on-surface-variant border border-outline-variant/50">
                                     {{ $etaSourceLabel }}
                                 </span>
                             </div>
@@ -277,46 +259,31 @@
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="grid grid-cols-2 gap-2 pt-1">
-                        @if($order->status >= \App\Models\Order\Order::STATUS_SHIPPED)
-                            <button type="button" disabled title="Nomor resi terkunci karena pesanan sudah {{ $order->statusLabel() }}" class="py-2 px-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold cursor-not-allowed flex items-center justify-center gap-1">
-                                <span class="material-symbols-outlined text-[15px]">lock</span>
-                                <span>Resi Terkunci</span>
-                            </button>
-                        @else
-                            <button type="button" onclick='openResiModal(@json($resiModalData), "manual")' class="py-2 px-2 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-on-surface rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1">
-                                <span class="material-symbols-outlined text-[15px] text-primary">edit_document</span>
+                    @if($order->status < \App\Models\Order\Order::STATUS_SHIPPED)
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <button type="button" onclick='openResiModal(@json($resiModalData), "manual")' class="py-2 px-3 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]">edit_document</span>
                                 <span>{{ $order->resi ? 'Ubah Resi' : 'Input Resi' }}</span>
                             </button>
-                        @endif
-                        @if(!empty($resiModalData['is_kurir_toko']))
-                            <div class="py-2 px-2 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-bold flex items-center justify-center gap-1 text-center" title="Pesanan dikirimkan melalui armada Kurir Toko (Hanya Resi Manual)">
-                                <span class="material-symbols-outlined text-[15px]">store</span>
-                                <span>Kurir Toko (Manual)</span>
-                            </div>
-                        @elseif(!empty($resiModalData['has_biteship_resi']))
-                            <button type="button" disabled title="Resi otomatis dari vendor ekspedisi sudah terbit" class="py-2 px-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border border-slate-200 dark:border-slate-700 cursor-not-allowed">
-                                <span class="material-symbols-outlined text-[15px] text-slate-400">check_circle</span>
-                                <span>Resi Ekspedisi Aktif</span>
-                            </button>
-                        @else
-                            <button type="button" onclick='openResiModal(@json($resiModalData), "biteship")' class="py-2 px-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 shadow-xs">
-                                <span class="material-symbols-outlined text-[15px]">cloud_sync</span>
-                                <span>Get Resi Otomatis</span>
-                            </button>
-                        @endif
-                    </div>
+                            @if(empty($resiModalData['is_kurir_toko']) && empty($resiModalData['has_biteship_resi']))
+                                <button type="button" onclick='openResiModal(@json($resiModalData), "biteship")' class="py-2 px-3 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
+                                    <span>Get Resi Otomatis</span>
+                                </button>
+                            @endif
+                        </div>
+                    @endif
 
                     @if($order->resi || $order->delivery_status)
-                        <button type="button" onclick='openResiModal(@json($resiModalData), "tracking")' class="w-full py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs">
-                            <span class="material-symbols-outlined text-[16px] text-emerald-600">radar</span>
+                        <button type="button" onclick='openResiModal(@json($resiModalData), "tracking")' class="w-full py-2 px-3 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px]">radar</span>
                             <span>Lacak Pesanan (Log Pengiriman)</span>
                         </button>
                     @endif
 
                     @if($order->delivery)
-                        <a href="{{ route('delivery.show', $order->delivery->id) }}" class="w-full py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs">
-                            <span class="material-symbols-outlined text-[16px] text-purple-600">local_shipping</span>
+                        <a href="{{ route('delivery.show', $order->delivery->id) }}" class="w-full py-2 px-3 border border-outline-variant bg-white text-on-surface hover:bg-surface-container rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px] text-on-surface-variant">local_shipping</span>
                             <span>Detail Pengiriman & Log Ekspedisi</span>
                         </a>
                     @endif
@@ -325,24 +292,25 @@
                     <div id="jdeCardSection" class="{{ ($order->isPaidOrStarted() || (int)$order->jde_push_status > 0) ? 'block' : 'hidden' }} pt-2 border-t border-outline-variant/40 space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="text-[10px] text-on-surface-variant font-semibold flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[14px] text-indigo-600">sync_alt</span>
+                                <span class="material-symbols-outlined text-[14px] text-on-surface-variant">sync_alt</span>
                                 Integrasi JDE
                             </span>
-                            <span id="show-jde-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold border {{ $order->jde_push_status_badge_class }}">
-                                {{ $order->jdePushStatusLabel() }}
+                            <span id="show-jde-status-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                                <span class="w-1.5 h-1.5 rounded-full {{ (int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS ? 'bg-emerald-500' : ((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING ? 'bg-blue-500 animate-pulse' : ((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED ? 'bg-rose-500' : 'bg-amber-500')) }}"></span>
+                                <span>{{ $order->jdePushStatusLabel() }}</span>
                             </span>
                         </div>
-                        <div class="p-2.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-lg border border-indigo-200/60 dark:border-indigo-900/40 flex items-center justify-between gap-2">
+                        <div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant/40 flex items-center justify-between gap-2">
                             <div class="text-[11px] text-on-surface">
-                                <div class="font-semibold text-indigo-950 dark:text-indigo-200" id="show-jde-status-title">
+                                <div class="font-medium text-on-surface" id="show-jde-status-title">
                                     @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                                        Berhasil Terkirim ke JDE
+                                        Sudah di Push
                                     @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
-                                        Sedang Diproses oleh Queue Worker
+                                        Dalam Antrian
                                     @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                                        Gagal Terkirim ke JDE
+                                        Gagal di Push
                                     @else
-                                        Antrean Otomatis JDE (Queue Worker)
+                                        Belum Di Push
                                     @endif
                                 </div>
                                 <div class="text-[10px] text-on-surface-variant" id="show-jde-status-sub">
@@ -351,45 +319,45 @@
                                     @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
                                         Percobaan gagal: {{ $order->meta['jde_push_retry_count'] ?? 1 }}x
                                     @else
-                                        Queue worker & cron scheduler otomatis memproses pesanan ini
+                                        Queue worker otomatis memproses pesanan ini
                                     @endif
                                 </div>
                             </div>
                             <div id="jdeCardButtonContainer">
                                 @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md text-[11px] font-bold border border-emerald-200">
-                                        <span class="material-symbols-outlined text-[14px]">check</span>
-                                        Tersinkron
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container text-on-surface rounded-md text-[11px] font-medium border border-outline-variant/60">
+                                        <span class="material-symbols-outlined text-[13px] text-emerald-600">check</span>
+                                        Sudah di Push
                                     </span>
                                 @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-800 rounded-md text-[11px] font-bold border border-blue-200 animate-pulse">
-                                        <span class="material-symbols-outlined text-[14px] animate-spin">sync</span>
-                                        Memproses...
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container text-on-surface rounded-md text-[11px] font-medium border border-outline-variant/60">
+                                        <span class="material-symbols-outlined text-[13px] text-blue-600 animate-spin">sync</span>
+                                        Dalam Antrian
                                     </span>
                                 @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                                    <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs">
-                                        <span class="material-symbols-outlined text-[14px]">refresh</span>
-                                        <span>Retry JDE</span>
+                                    <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3.5 py-1.5 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[15px]">refresh</span>
+                                        <span>Retry</span>
                                     </button>
                                 @else
-                                    <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs">
-                                        <span class="material-symbols-outlined text-[14px]">cloud_upload</span>
+                                    <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3.5 py-1.5 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[15px]">cloud_upload</span>
                                         <span>Push JDE</span>
                                     </button>
                                 @endif
                             </div>
                         </div>
 
-                        @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED && !empty($order->meta['jde_push_error']))
-                            <div class="p-2.5 bg-rose-50 text-rose-800 text-[11px] rounded-lg border border-rose-200 space-y-1">
-                                <div class="font-bold flex items-center gap-1 text-rose-900">
-                                    <span class="material-symbols-outlined text-[14px] text-rose-600">error</span>
+                        @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED && !empty($order->getJdeErrorMessage()))
+                            <div class="p-2.5 bg-surface-container-low text-on-surface text-[11px] rounded-lg border border-rose-300/70 space-y-1">
+                                <div class="font-medium flex items-center gap-1 text-rose-700">
+                                    <span class="material-symbols-outlined text-[14px]">error</span>
                                     <span>Penyebab Kegagalan JDE:</span>
                                 </div>
-                                <div class="font-mono text-[10px] break-all max-h-24 overflow-y-auto bg-white/70 p-1.5 rounded border border-rose-200/60 text-rose-950">
-                                    {{ $order->meta['jde_push_error'] }}
+                                <div class="text-[11px] font-medium leading-relaxed bg-white p-2 rounded border border-rose-200 text-rose-800">
+                                    {{ $order->getJdeErrorMessage() }}
                                 </div>
-                                <div class="text-[9px] text-rose-600 flex justify-between pt-0.5">
+                                <div class="text-[9px] text-on-surface-variant flex justify-between pt-0.5">
                                     <span>Percobaan gagal: {{ $order->meta['jde_push_retry_count'] ?? 1 }}x</span>
                                     <span>Waktu: {{ $order->meta['jde_push_failed_at'] ?? '-' }}</span>
                                 </div>
@@ -400,14 +368,14 @@
                         <div class="grid grid-cols-2 gap-1.5 text-[11px] bg-surface-container-low p-2 rounded-lg border border-outline-variant/40">
                             <div>
                                 <span class="text-[10px] text-on-surface-variant block font-medium">Business Unit (Store):</span>
-                                <span class="font-bold text-primary font-mono text-xs">{{ $order->business_unit ?? ($order->store?->code ?? ($order->storeChannel?->code ?? config('services.jde.business_unit', '18011'))) }}</span>
+                                <span class="font-bold text-on-surface font-mono text-xs">{{ $order->business_unit ?? ($order->store?->code ?? ($order->storeChannel?->code ?? config('services.jde.business_unit', '18011'))) }}</span>
                                 @if($order->store || $order->storeChannel)
                                     <span class="text-[10px] text-on-surface-variant block truncate" title="{{ $order->store?->name ?? $order->storeChannel?->name }}">{{ $order->store?->name ?? $order->storeChannel?->name }}</span>
                                 @endif
                             </div>
                             <div>
                                 <span class="text-[10px] text-on-surface-variant block font-medium">Address Number (Store):</span>
-                                <span class="font-bold text-indigo-700 dark:text-indigo-400 font-mono text-xs">{{ $order->address_number ?? ($order->store?->address_number ?? ($order->storeChannel?->address_number ?? config('services.jde.address_number', 100228))) }}</span>
+                                <span class="font-bold text-on-surface font-mono text-xs">{{ $order->address_number ?? ($order->store?->address_number ?? ($order->storeChannel?->address_number ?? config('services.jde.address_number', 100228))) }}</span>
                                 @if($order->customer?->customer_code)
                                     <span class="text-[10px] text-on-surface-variant block font-mono">Customer: {{ $order->customer->customer_code }}</span>
                                 @endif
@@ -421,11 +389,11 @@
             <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs p-4 space-y-3">
                 <div class="flex items-center justify-between border-b border-outline-variant/40 pb-2.5">
                     <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px] text-primary">location_on</span>
+                        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">location_on</span>
                         Alamat Pengiriman
                     </span>
                     @if(!empty($shippingMeta['postal_code']))
-                        <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-surface-container text-on-surface">
+                        <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-surface-container text-on-surface border border-outline-variant/40">
                             {{ $shippingMeta['postal_code'] }}
                         </span>
                     @endif
@@ -444,8 +412,8 @@
                         <div class="flex items-center justify-between mt-0.5">
                             <span class="font-mono font-medium text-on-surface">{{ $customerPhone ?? '-' }}</span>
                             @if($waPhone)
-                                <a href="https://wa.me/{{ $waPhone }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-semibold transition-colors">
-                                    <span class="material-symbols-outlined text-[13px]">chat</span>
+                                <a href="https://wa.me/{{ $waPhone }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-surface-container border border-outline-variant text-on-surface rounded text-[11px] font-medium transition-colors">
+                                    <span class="material-symbols-outlined text-[13px] text-emerald-600">chat</span>
                                     <span>WhatsApp</span>
                                 </a>
                             @endif
@@ -474,31 +442,32 @@
             <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs p-4 space-y-3">
                 <div class="flex items-center justify-between border-b border-outline-variant/40 pb-2.5">
                     <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px] text-primary">payments</span>
+                        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">payments</span>
                         Pembayaran
                     </span>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ $order->paymentStatusBadgeClass }}">
-                        {{ $order->paymentStatusLabel() }}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                        <span class="w-1.5 h-1.5 rounded-full {{ $order->isPaymentPaid() ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
+                        <span>{{ $order->paymentStatusLabel() }}</span>
                     </span>
                 </div>
 
                 <div class="space-y-2 text-xs">
                     <div class="flex justify-between py-1 border-b border-outline-variant/20">
                         <span class="text-on-surface-variant">Metode</span>
-                        <span class="font-bold text-on-surface">{{ $order->payment_method_name }}</span>
+                        <span class="font-medium text-on-surface">{{ $order->payment_method_name }}</span>
                     </div>
 
                     @if($order->invoice)
                         <div class="flex justify-between py-1 border-b border-outline-variant/20">
                             <span class="text-on-surface-variant">No. Faktur</span>
-                            <span class="font-mono font-bold text-primary">{{ $order->invoice->invoice_number }}</span>
+                            <span class="font-mono font-medium text-on-surface">{{ $order->invoice->invoice_number }}</span>
                         </div>
                     @endif
 
                     @if(!empty($order->meta['payment_proof']))
                         <div class="pt-2 space-y-1.5">
-                            <span class="text-[10px] font-bold uppercase text-on-surface-variant block">Bukti Transfer Pelanggan</span>
-                            <a href="{{ media_url($order->meta['payment_proof']) }}" target="_blank" class="block w-full py-1.5 text-center text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors">
+                            <span class="text-[10px] font-semibold uppercase text-on-surface-variant block">Bukti Transfer Pelanggan</span>
+                            <a href="{{ media_url($order->meta['payment_proof']) }}" target="_blank" class="block w-full py-1.5 text-center text-xs font-medium text-on-surface bg-white hover:bg-surface-container border border-outline-variant rounded-lg transition-colors">
                                 Lihat Bukti Transfer
                             </a>
                         </div>
@@ -509,8 +478,9 @@
                             @csrf
                             <input type="hidden" name="status" value="2">
                             <input type="hidden" name="payment_status" value="1">
-                            <button type="submit" class="w-full py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition-colors">
-                                Setujui Pembayaran (Mark Paid)
+                            <button type="submit" class="w-full py-2 px-4 bg-primary hover:opacity-90 text-white rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                                <span>Setujui Pembayaran (Mark Paid)</span>
                             </button>
                         </form>
                     @endif
@@ -526,7 +496,7 @@
             <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs overflow-hidden">
                 <div class="p-3.5 md:p-4 border-b border-outline-variant/40 flex items-center justify-between bg-surface-container-lowest">
                     <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[17px] text-primary">inventory_2</span>
+                        <span class="material-symbols-outlined text-[17px] text-on-surface-variant">inventory_2</span>
                         Rincian Item Produk ({{ $order->items->count() }} item)
                     </span>
                     <span class="text-xs text-on-surface-variant font-medium">
@@ -595,7 +565,7 @@
                                             <div class="space-y-0.5">
                                                 <div class="font-bold text-on-surface leading-tight text-xs">
                                                     @if($isBundleItem)
-                                                        <span class="text-[10px] text-primary font-semibold">[Bundling]</span>
+                                                        <span class="text-[10px] text-on-surface-variant font-medium">[Bundling]</span>
                                                     @endif
                                                     {{ $item->name }}
                                                 </div>
@@ -624,7 +594,7 @@
                                     </td>
 
                                     <!-- Qty -->
-                                    <td class="py-3 px-3 text-center font-bold text-primary align-top whitespace-nowrap">
+                                    <td class="py-3 px-3 text-center font-medium text-on-surface align-top whitespace-nowrap">
                                         {{ $item->quantity }}
                                     </td>
 
@@ -723,7 +693,7 @@
         <!-- Header -->
         <div class="p-4 border-b border-outline-variant/40 flex flex-wrap items-center justify-between gap-3 bg-surface-container-lowest">
             <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <div class="w-8 h-8 rounded-lg bg-surface-container text-on-surface-variant flex items-center justify-center">
                     <span class="material-symbols-outlined text-[19px]">history</span>
                 </div>
                 <div>
@@ -732,7 +702,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-container text-on-surface-variant border border-outline-variant/50">
+                <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-surface-container text-on-surface-variant border border-outline-variant/50">
                     {{ $order->logs->count() }} Aktivitas
                 </span>
             </div>
@@ -742,13 +712,14 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-surface-container-low/30 border-b border-outline-variant/40 text-xs">
             <!-- 1. Status Pesanan -->
             <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
-                <div class="text-[10px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px] text-primary">order_approve</span>
+                <div class="text-[10px] uppercase font-semibold text-on-surface-variant flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">order_approve</span>
                     Status Pesanan
                 </div>
                 <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded text-[11px] font-bold {{ $order->statusBadgeClass }}">
-                        {{ $order->statusLabel() }}
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                        <span class="w-1.5 h-1.5 rounded-full {{ in_array((int)$order->status, [4, 5]) ? 'bg-emerald-500' : (in_array((int)$order->status, [6, 7]) ? 'bg-rose-500' : ((int)$order->status === 0 ? 'bg-slate-400' : 'bg-blue-500')) }}"></span>
+                        <span>{{ $order->statusLabel() }}</span>
                     </span>
                     <span class="text-[10px] text-on-surface-variant">
                         Update: {{ $order->updated_at?->format('d/m/Y H:i') }}
@@ -758,13 +729,14 @@
 
             <!-- 2. Status Pembayaran -->
             <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
-                <div class="text-[10px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px] text-primary">payments</span>
+                <div class="text-[10px] uppercase font-semibold text-on-surface-variant flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">payments</span>
                     Pembayaran
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
-                    <span class="px-2 py-0.5 rounded text-[11px] font-bold {{ $order->paymentStatusBadgeClass }}">
-                        {{ $order->paymentStatusLabel() }}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                        <span class="w-1.5 h-1.5 rounded-full {{ $order->isPaymentPaid() ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
+                        <span>{{ $order->paymentStatusLabel() }}</span>
                     </span>
                     <span class="text-[11px] font-medium text-on-surface">
                         {{ $order->payment_method_name }}
@@ -774,13 +746,14 @@
 
             <!-- 3. Status JDE -->
             <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
-                <div class="text-[10px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px] text-primary">cloud_sync</span>
+                <div class="text-[10px] uppercase font-semibold text-on-surface-variant flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">cloud_sync</span>
                     Integrasi JDE
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
-                    <span class="px-2 py-0.5 rounded text-[11px] font-bold {{ $order->jdePushStatusBadgeClass }}">
-                        {{ $order->jdePushStatusLabel }}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                        <span class="w-1.5 h-1.5 rounded-full {{ (int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS ? 'bg-emerald-500' : ((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING ? 'bg-blue-500 animate-pulse' : ((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED ? 'bg-rose-500' : 'bg-amber-500')) }}"></span>
+                        <span>{{ $order->jdePushStatusLabel }}</span>
                     </span>
                     @if($order->jde_push_date)
                         <span class="text-[10px] text-on-surface-variant">
@@ -788,23 +761,23 @@
                         </span>
                     @endif
                 </div>
-                @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED && !empty($order->meta['jde_push_error']))
-                    <p class="text-[10px] text-rose-600 line-clamp-1 mt-0.5" title="{{ $order->meta['jde_push_error'] }}">
-                        {{ $order->meta['jde_push_error'] }}
+                @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED && !empty($order->getJdeErrorMessage()))
+                    <p class="text-[10px] text-rose-600 line-clamp-1 mt-0.5" title="{{ $order->getJdeErrorMessage() }}">
+                        {{ $order->getJdeErrorMessage() }}
                     </p>
                 @endif
             </div>
 
             <!-- 4. Pengiriman & Resi -->
             <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
-                <div class="text-[10px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px] text-primary">local_shipping</span>
+                <div class="text-[10px] uppercase font-semibold text-on-surface-variant flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">local_shipping</span>
                     Pengiriman
                 </div>
                 <div class="text-[11px] text-on-surface flex items-center gap-1.5 flex-wrap">
-                    <span class="font-bold">{{ $order->courier_name ?? 'Kurir Belum Ditentukan' }}</span>
+                    <span class="font-medium">{{ $order->courier_name ?? 'Kurir Belum Ditentukan' }}</span>
                     @if($order->resi)
-                        <span class="font-mono px-1.5 py-0.2 bg-surface-container rounded text-[10px] text-primary font-bold">
+                        <span class="font-mono px-1.5 py-0.2 bg-surface-container rounded text-[10px] text-on-surface font-medium border border-outline-variant/40">
                             {{ $order->resi }}
                         </span>
                     @endif
@@ -846,8 +819,8 @@
 
                             <!-- Aktivitas / Kategori -->
                             <td class="py-3 px-3 align-top whitespace-nowrap">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border {{ $log->action_badge_class }}">
-                                    <span class="material-symbols-outlined text-[15px]">{{ $log->action_icon }}</span>
+                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                                    <span class="material-symbols-outlined text-[14px] text-on-surface-variant">{{ $log->action_icon }}</span>
                                     <span>{{ $log->action_label }}</span>
                                 </span>
                             </td>
@@ -862,7 +835,7 @@
                                             </span>
                                             <span class="material-symbols-outlined text-[13px] text-outline">arrow_forward</span>
                                         @endif
-                                        <span class="px-2 py-0.5 rounded bg-primary/10 text-primary font-bold text-[10px] border border-primary/20">
+                                        <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-medium text-[10px] border border-outline-variant/50">
                                             {{ $log->human_status_to ?: '-' }}
                                         </span>
                                     </div>

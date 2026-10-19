@@ -124,8 +124,7 @@ class OrderLog extends Model
         if ($action === 'payment_status_changed') {
             return match ((int) $val) {
                 0 => 'Belum Bayar',
-                1 => 'Lunas (Paid)',
-                2 => 'Gagal',
+                1, 2 => 'Lunas (Paid)',
                 3 => 'Dikembalikan (Refund)',
                 4 => 'Sebagian',
                 default => 'Payment ' . $val,
@@ -134,10 +133,10 @@ class OrderLog extends Model
 
         if ($action === 'jde_push_status_changed') {
             return match ((int) $val) {
-                0 => 'Pending',
-                1 => 'Processing',
-                2 => 'Success (Terkirim)',
-                3 => 'Failed (Gagal)',
+                0 => 'Belum Di Push',
+                1 => 'Dalam Antrian',
+                2 => 'Sudah di Push',
+                3 => 'Gagal di Push',
                 default => 'JDE ' . $val,
             };
         }

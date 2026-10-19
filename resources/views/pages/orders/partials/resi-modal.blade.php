@@ -290,7 +290,7 @@
                         <button type="button" onclick="closeResiModal()" class="px-4 py-2 border border-outline-variant rounded-xl text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors">
                             Batal
                         </button>
-                        <button type="submit" id="hitBiteshipBtn" class="px-5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 active:scale-95">
+                        <button type="submit" id="hitBiteshipBtn" class="px-5 py-2 bg-primary hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5">
                             <span class="material-symbols-outlined text-[16px]" id="hitBiteshipIcon">cloud_sync</span>
                             <span id="hitBiteshipText">Get Resi Otomatis</span>
                         </button>
