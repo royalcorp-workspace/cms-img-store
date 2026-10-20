@@ -64,6 +64,13 @@
             </button>
         @endif
 
+        @if((int)$order->status === \App\Models\Order\Order::STATUS_SHIPPED)
+            <button type="button" id="btnCompleteOrderTop" onclick="confirmCompleteOrder('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all" title="Pesanan telah sampai dan diterima dengan baik oleh pelanggan">
+                <span class="material-symbols-outlined text-[16px]">task_alt</span>
+                <span>Selesaikan Pesanan</span>
+            </button>
+        @endif
+
         <a href="{{ route('orders.index') }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-outline-variant bg-white text-on-surface hover:bg-surface-container rounded-lg text-xs font-semibold transition-all">
             <span class="material-symbols-outlined text-[16px]">arrow_back</span>
             <span>Kembali</span>
@@ -122,45 +129,70 @@
                     </div>
                 </div>
 
-                @php
-                    $isStatusLocked = in_array((int)$order->status, [\App\Models\Order\Order::STATUS_SHIPPED, \App\Models\Order\Order::STATUS_DELIVERED]);
-                @endphp
-
-                <!-- Quick Status Change Form -->
-                <form id="quickStatusForm" onsubmit="handleQuickStatusSubmit(event)" class="pt-2 border-t border-outline-variant/40 space-y-2">
+                <!-- Status Pesanan (By Process) -->
+                <div class="pt-2 border-t border-outline-variant/40 space-y-2">
                     <div class="flex items-center justify-between">
-                        <label for="quickStatusSelect" class="block text-[11px] font-semibold text-on-surface">
-                            Ubah Status Pesanan:
-                        </label>
-                        @if($isStatusLocked)
-                            <span class="text-[10px] font-medium text-on-surface-variant bg-surface-container border border-outline-variant/60 px-1.5 py-0.5 rounded flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[12px]">lock</span>
-                                Terkunci
-                            </span>
-                        @endif
+                        <span class="block text-[11px] font-semibold text-on-surface">
+                            Alur Status Pesanan:
+                        </span>
+                        <span class="text-[10px] font-medium text-on-surface-variant bg-surface-container border border-outline-variant/60 px-1.5 py-0.5 rounded flex items-center gap-1" title="Perubahan status berjalan otomatis mengikuti proses pembayaran dan logistik pengiriman">
+                            <span class="material-symbols-outlined text-[12px] text-primary">autorenew</span>
+                            By Proses
+                        </span>
                     </div>
-                    <div class="flex gap-2">
-                        <select id="quickStatusSelect" {{ $isStatusLocked ? 'disabled' : '' }} class="flex-1 px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs {{ $isStatusLocked ? 'bg-surface-container-low text-on-surface-variant cursor-not-allowed opacity-75' : 'bg-white focus:ring-1 focus:ring-primary focus:outline-none' }}">
-                            <option value="0" {{ $order->status == 0 ? 'selected' : '' }}>Draft</option>
-                            <option value="1" {{ $order->status == 1 ? 'selected' : '' }}>Ordered (Menunggu)</option>
-                            <option value="2" {{ $order->status == 2 ? 'selected' : '' }}>Confirmed (Dikonfirmasi)</option>
-                            <option value="3" {{ $order->status == 3 ? 'selected' : '' }}>Processing (Diproses)</option>
-                            <option value="4" {{ $order->status == 4 ? 'selected' : '' }}>Shipped (Dikirim)</option>
-                            <option value="5" {{ $order->status == 5 ? 'selected' : '' }}>Delivered (Selesai)</option>
-                            <option value="6" {{ $order->status == 6 ? 'selected' : '' }}>Cancelled (Batal)</option>
-                            <option value="7" {{ $order->status == 7 ? 'selected' : '' }}>Returned (Retur)</option>
-                        </select>
-                        <button type="submit" id="quickStatusBtn" {{ $isStatusLocked ? 'disabled' : '' }} class="px-3.5 py-1.5 {{ $isStatusLocked ? 'bg-surface-container text-on-surface-variant/40 border border-outline-variant/40 cursor-not-allowed' : 'bg-primary text-white hover:opacity-90 shadow-xs' }} rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[14px]">save</span>
-                            <span>Ubah</span>
-                        </button>
-                    </div>
-                    @if($isStatusLocked)
-                        <p class="text-[10px] text-on-surface-variant italic">
-                            Status {{ $order->status == 4 ? 'Shipped (Dikirim)' : 'Delivered (Selesai)' }} sudah terkunci dan tidak dapat diubah lagi.
-                        </p>
+
+                    @if((int)$order->status === \App\Models\Order\Order::STATUS_SHIPPED)
+                        {{-- Status: Shipped (Sedang Dikirim) -> Tampilkan Notifikasi & Tombol Selesaikan Pesanan --}}
+                        <div class="p-3 bg-blue-50/70 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900/40 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="inline-flex items-center gap-1.5 text-blue-800 dark:text-blue-300 font-semibold text-xs">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                    <span>Sedang Dikirim (Shipped)</span>
+                                </span>
+                                @if($order->resi)
+                                    <span class="font-mono text-[10px] text-blue-700 bg-white/80 px-1.5 py-0.5 rounded border border-blue-200">
+                                        {{ $order->resi }}
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="text-[11px] text-blue-800/80 dark:text-blue-200/80 leading-relaxed">
+                                Pesanan sedang dalam perjalanan pengiriman. Bila barang telah sampai dan diterima dengan baik oleh pelanggan, silakan selesaikan pesanan ini.
+                            </p>
+                            <button type="button" id="btnCompleteOrderSidebar" onclick="confirmCompleteOrder('{{ $order->id }}', '{{ $order->order_number }}')" class="w-full py-2 px-3 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]">task_alt</span>
+                                <span>Selesaikan Pesanan (Tandai Diterima)</span>
+                            </button>
+                        </div>
+                    @elseif((int)$order->status === \App\Models\Order\Order::STATUS_DELIVERED)
+                        {{-- Status: Delivered (Selesai) --}}
+                        <div class="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800/40 text-xs flex items-start gap-2">
+                            <span class="material-symbols-outlined text-[18px] text-emerald-600 shrink-0 mt-0.5">verified</span>
+                            <div class="space-y-0.5">
+                                <span class="font-semibold text-emerald-900 dark:text-emerald-200 block text-[11px]">Pesanan Selesai (Delivered)</span>
+                                <p class="text-[10px] text-emerald-700 dark:text-emerald-300 leading-normal">
+                                    Seluruh proses pemesanan dan pengiriman barang telah selesai diterima oleh pelanggan.
+                                </p>
+                            </div>
+                        </div>
+                    @elseif((int)$order->status === \App\Models\Order\Order::STATUS_CANCELLED)
+                        {{-- Status: Batal --}}
+                        <div class="p-2.5 bg-rose-50/80 rounded-lg border border-rose-200 text-xs flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px] text-rose-600">cancel</span>
+                            <span class="text-[11px] text-rose-800 font-medium">Pesanan Dibatalkan (Cancelled)</span>
+                        </div>
+                    @else
+                        {{-- Status: Menunggu / Dikonfirmasi / Diproses (status < 4) --}}
+                        <div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant/30 text-xs space-y-1">
+                            <div class="flex items-center gap-1.5 text-on-surface font-semibold text-[11px]">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                <span>{{ $order->statusLabel() }}</span>
+                            </div>
+                            <p class="text-[10px] text-on-surface-variant leading-relaxed">
+                                Status pesanan akan otomatis berubah menjadi <strong class="text-on-surface font-semibold">Dikirim (Shipped)</strong> ketika nomor resi pengiriman dimasukkan melalui tombol <em>Input Resi</em> atau <em>Get Resi Otomatis</em>.
+                            </p>
+                        </div>
                     @endif
-                </form>
+                </div>
 
                 @if($order->notes)
                     <div class="p-2.5 bg-surface-container-low border border-outline-variant/40 rounded-lg text-xs text-on-surface">
@@ -985,102 +1017,104 @@ function fallbackCopyText(text, callback) {
     textArea.remove();
 }
 
-async function handleQuickStatusSubmit(e) {
-    e.preventDefault();
-    const isStatusLocked = {{ in_array((int)$order->status, [\App\Models\Order\Order::STATUS_SHIPPED, \App\Models\Order\Order::STATUS_DELIVERED]) ? 'true' : 'false' }};
-    if (isStatusLocked) {
-        if (typeof showToast === 'function') {
-            showToast('error', 'Status pesanan sudah terkunci dan tidak dapat diubah lagi.');
-        } else if (typeof showErrorPopup === 'function') {
-            showErrorPopup('Status pesanan sudah terkunci dan tidak dapat diubah lagi.');
+async function confirmCompleteOrder(orderId, orderNumber) {
+    const doComplete = async () => {
+        const topBtn = document.getElementById('btnCompleteOrderTop');
+        const sidebarBtn = document.getElementById('btnCompleteOrderSidebar');
+        if (topBtn) {
+            topBtn.disabled = true;
+            topBtn.innerHTML = '<div class="inline-block animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Menyelesaikan...';
         }
-        return;
-    }
+        if (sidebarBtn) {
+            sidebarBtn.disabled = true;
+            sidebarBtn.innerHTML = '<div class="inline-block animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Menyelesaikan...';
+        }
 
-    const select = document.getElementById('quickStatusSelect');
-    const targetStatus = parseInt(select.value);
-    const orderData = @json($resiModalData);
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
 
-    // If changing to Shipped (4) or Delivered (5) and there's no resi yet, open the modal to input resi
-    if ((targetStatus === 4 || targetStatus === 5) && !orderData.resi) {
-        const statusName = targetStatus === 5 ? 'Selesai (Delivered)' : 'Dikirim (Shipped)';
-        const confirmMsg = orderData.is_kurir_toko
-            ? 'Pesanan ini belum memiliki nomor resi / surat jalan. Untuk mengubah status menjadi ' + statusName + ', silakan masukkan nomor resi pengiriman terlebih dahulu. Buka form input resi sekarang?'
-            : 'Pesanan ini belum memiliki nomor resi. Untuk mengubah status menjadi ' + statusName + ', silakan masukkan nomor resi atau dapatkan resi ekspedisi otomatis. Buka form pengiriman sekarang?';
-
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Nomor Resi Diperlukan',
-                text: confirmMsg,
-                showCancelButton: true,
-                confirmButtonColor: '#1e3a8a',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Buka Form Resi',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const formStatusTarget = document.getElementById('formStatusTarget');
-                    const biteshipFinalStatus = document.getElementById('biteshipFinalStatus');
-                    if (formStatusTarget) formStatusTarget.value = targetStatus;
-                    if (biteshipFinalStatus) biteshipFinalStatus.value = targetStatus;
-                    openResiModal(orderData, 'manual');
-                }
+        try {
+            const response = await fetch(`/orders/${orderId}/update-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    status: 5 // STATUS_DELIVERED
+                })
             });
-            return;
-        } else if (confirm(confirmMsg)) {
-            const formStatusTarget = document.getElementById('formStatusTarget');
-            const biteshipFinalStatus = document.getElementById('biteshipFinalStatus');
-            if (formStatusTarget) formStatusTarget.value = targetStatus;
-            if (biteshipFinalStatus) biteshipFinalStatus.value = targetStatus;
-            openResiModal(orderData, 'manual');
-            return;
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Pesanan Selesai!',
+                        text: data.message || `Pesanan #${orderNumber} berhasil ditandai sebagai Selesai (Delivered).`,
+                        confirmButtonColor: '#4f46e5'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    alert(data.message || `Pesanan #${orderNumber} berhasil ditandai sebagai Selesai (Delivered).`);
+                    window.location.reload();
+                }
+            } else {
+                const errMsg = data.message || 'Gagal menyelesaikan pesanan.';
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: errMsg,
+                        confirmButtonColor: '#4f46e5'
+                    });
+                } else {
+                    alert(errMsg);
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            const netErr = 'Terjadi gangguan jaringan saat menyelesaikan pesanan.';
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gangguan Koneksi',
+                    text: netErr,
+                    confirmButtonColor: '#4f46e5'
+                });
+            } else {
+                alert(netErr);
+            }
+        } finally {
+            if (topBtn) {
+                topBtn.disabled = false;
+                topBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">task_alt</span><span>Selesaikan Pesanan</span>';
+            }
+            if (sidebarBtn) {
+                sidebarBtn.disabled = false;
+                sidebarBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">task_alt</span><span>Selesaikan Pesanan (Tandai Diterima)</span>';
+            }
         }
-        return;
-    }
+    };
 
-    const btn = document.getElementById('quickStatusBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<div class="inline-block animate-spin w-3 h-3 border-2 border-primary border-t-transparent rounded-full mr-1"></div>';
-
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
-
-    try {
-        const response = await fetch('/orders/{{ $order->id }}/update-status', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({
-                status: targetStatus
-            })
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'question',
+            title: 'Selesaikan Pesanan?',
+            text: `Apakah barang pesanan #${orderNumber} sudah sampai dan diterima dengan baik oleh pelanggan? Status akan diubah menjadi Selesai (Delivered).`,
+            showCancelButton: true,
+            confirmButtonColor: '#4f46e5',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Selesaikan Pesanan',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                doComplete();
+            }
         });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-            if (typeof showToast === 'function') {
-                showToast('success', data.message || 'Status pesanan berhasil diperbarui.');
-            }
-            setTimeout(() => window.location.reload(), 600);
-        } else {
-            if (typeof showToast === 'function') {
-                showToast('error', data.message || 'Gagal memperbarui status pesanan.');
-            } else if (typeof showErrorPopup === 'function') {
-                showErrorPopup(data.message || 'Gagal memperbarui status pesanan.');
-            }
-        }
-    } catch (err) {
-        console.error(err);
-        if (typeof showToast === 'function') {
-            showToast('error', 'Terjadi gangguan sistem saat memperbarui status.');
-        } else if (typeof showErrorPopup === 'function') {
-            showErrorPopup('Terjadi gangguan sistem saat memperbarui status.');
-        }
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<span class="material-symbols-outlined text-[14px]">save</span><span>Ubah</span>';
+    } else if (confirm(`Apakah barang pesanan #${orderNumber} sudah sampai dan diterima oleh pelanggan? Status akan diubah menjadi Selesai (Delivered).`)) {
+        doComplete();
     }
 }
 

@@ -31,6 +31,10 @@ class ProfileController extends Controller
             return redirect()->route('login');
         }
 
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
+
         $validated = $request->validate([
             'name'  => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:user_admin,email,' . $admin->id . ',id',

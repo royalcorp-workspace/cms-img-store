@@ -1,17 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Admin Users')
+@section('title', 'Manajemen Pengguna')
 
 @section('content')
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
     <div>
-        <h1 class="font-headline-xl text-headline-xl text-on-surface">Manajemen Pengguna Admin</h1>
-        <p class="text-body-md text-on-surface-variant">Kelola akun administrator CMS beserta penetapan hak akses role masing-masing.</p>
+        <h1 class="font-headline-xl text-headline-xl text-on-surface">Manajemen Pengguna</h1>
+        <p class="text-body-md text-on-surface-variant">Kelola akun pengguna CMS beserta penetapan hak akses role masing-masing.</p>
     </div>
     @can('users.store')
         <button type="button" onclick="openCreateModal()" class="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-headline-md text-headline-md hover:opacity-90 transition-all active:scale-95 shadow-sm">
             <span class="material-symbols-outlined text-[20px]">person_add</span>
-            Tambah Admin Baru
+            Tambah Pengguna Baru
         </button>
     @endcan
 </div>
@@ -45,7 +45,7 @@
 <div class="bg-white rounded-xl shadow-subtle border border-surface-container overflow-hidden">
     <div class="p-6 border-b border-surface-container flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface-container-low/30">
         <div>
-            <h3 class="font-headline-md text-headline-md text-on-surface">Daftar Akun Admin</h3>
+            <h3 class="font-headline-md text-headline-md text-on-surface">Daftar Akun Pengguna</h3>
             <p class="text-body-sm text-on-surface-variant">Akun internal yang memiliki akses login ke CMS.</p>
         </div>
         <form method="GET" action="{{ route('users.index') }}" class="flex items-center gap-2 w-full sm:w-auto">
@@ -161,7 +161,7 @@
         <div class="p-5 border-b border-surface-container flex items-center justify-between bg-surface-container-low">
             <h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary">person_add</span>
-                Tambah Pengguna Admin
+                Tambah Pengguna Baru
             </h3>
             <button type="button" onclick="closeCreateModal()" class="text-on-surface-variant hover:text-on-surface">
                 <span class="material-symbols-outlined">close</span>
@@ -196,7 +196,7 @@
             </div>
             <div class="flex items-center justify-end gap-2 pt-4 border-t border-surface-container">
                 <button type="button" onclick="closeCreateModal()" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container">Batal</button>
-                <button type="submit" class="px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90">Simpan Admin</button>
+                <button type="submit" class="px-5 py-2 bg-primary text-white rounded-lg font-label-md hover:opacity-90">Simpan Pengguna</button>
             </div>
         </form>
     </div>
@@ -208,7 +208,7 @@
         <div class="p-5 border-b border-surface-container flex items-center justify-between bg-surface-container-low">
             <h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary">edit</span>
-                Edit Pengguna Admin
+                Edit Pengguna
             </h3>
             <button type="button" onclick="closeEditModal()" class="text-on-surface-variant hover:text-on-surface">
                 <span class="material-symbols-outlined">close</span>

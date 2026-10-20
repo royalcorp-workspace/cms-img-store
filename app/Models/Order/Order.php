@@ -212,10 +212,21 @@ class Order extends Model
 
                 if ($model->wasChanged('jde_push_status')) {
                     $statusLabel = \App\Models\Reff::getShow('JdePushStatus', $model->jde_push_status, (string) $model->jde_push_status);
-                    $note = 'Status push JDE diubah ke ' . $statusLabel . ($model->jde_push_date ? ' (Tanggal: ' . $model->jde_push_date . ')' : '');
-                    if ((int)$model->jde_push_status === self::JDE_STATUS_FAILED && !empty($model->getJdeErrorMessage())) {
-                        $note .= ' - ' . \Illuminate\Support\Str::limit((string) $model->getJdeErrorMessage(), 250);
+                    $pushTimestamp = !empty($model->meta['jde_pushed_at'])
+                        ? \Carbon\Carbon::parse($model->meta['jde_pushed_at'])
+                        : ($model->updated_at ?? now());
+
+                    if ((int) $model->jde_push_status === self::JDE_STATUS_SUCCESS) {
+                        $note = 'Status push JDE diubah ke ' . $statusLabel . ' (Tanggal: ' . $pushTimestamp->format('d/m/Y') . ', Waktu: ' . $pushTimestamp->format('H:i:s') . ')';
+                    } elseif ((int) $model->jde_push_status === self::JDE_STATUS_FAILED) {
+                        $note = 'Status push JDE diubah ke ' . $statusLabel . ' (Waktu: ' . $pushTimestamp->format('d/m/Y H:i:s') . ')';
+                        if (!empty($model->getJdeErrorMessage())) {
+                            $note .= ' - ' . \Illuminate\Support\Str::limit((string) $model->getJdeErrorMessage(), 250);
+                        }
+                    } else {
+                        $note = 'Status push JDE diubah ke ' . $statusLabel;
                     }
+
                     \App\Models\Order\OrderLog::create([
                         'order_id' => $model->id,
                         'action' => 'jde_push_status_changed',

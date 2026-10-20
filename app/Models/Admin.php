@@ -66,6 +66,11 @@ class Admin extends Authenticatable
         return $this->password_hash;
     }
 
+    public function setEmailAttribute($value): void
+    {
+        $this->attributes['email'] = !empty($value) ? strtolower(trim($value)) : $value;
+    }
+
     public function setPasswordAttribute($value)
     {
         if (!empty($value)) {

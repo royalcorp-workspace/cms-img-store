@@ -1,19 +1,19 @@
 @extends('layouts.app')
 
-@section('title', 'Profil Pengguna Admin')
+@section('title', 'Profil Pengguna')
 
 @section('content')
     @php
         $authUser = $admin ?? auth('admin')->user();
-        $nameParts = explode(' ', trim($authUser->name ?? 'Admin'));
-        $initials = strtoupper(substr($nameParts[0] ?? 'A', 0, 1) . substr($nameParts[1] ?? '', 0, 1));
-        if (empty(trim($initials))) $initials = 'AD';
+        $nameParts = explode(' ', trim($authUser->name ?? 'User'));
+        $initials = strtoupper(substr($nameParts[0] ?? 'U', 0, 1) . substr($nameParts[1] ?? '', 0, 1));
+        if (empty(trim($initials))) $initials = 'US';
     @endphp
 
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-            <h1 class="font-headline-lg text-headline-lg text-on-surface font-bold">Profil Admin</h1>
-            <p class="text-body-md text-on-surface-variant mt-1">Kelola data profil, informasi hak akses role, dan keamanan kata sandi akun admin.</p>
+            <h1 class="font-headline-lg text-headline-lg text-on-surface font-bold">Profil Pengguna</h1>
+            <p class="text-body-md text-on-surface-variant mt-1">Kelola data profil, informasi hak akses role, dan keamanan kata sandi akun pengguna.</p>
         </div>
     </div>
 
