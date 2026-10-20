@@ -7,7 +7,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
                 <h1 class="font-headline-lg text-headline-lg text-on-surface">Dashboard</h1>
-                <p class="text-body-md text-on-surface-variant mt-1">Welcome back, Admin User</p>
+                <p class="text-body-md text-on-surface-variant mt-1">Selamat datang kembali, {{ auth()->user()?->name ?? auth('admin')->user()?->name ?? 'User' }}</p>
             </div>
             <div class="flex items-center gap-3">
                 <form method="GET" class="flex items-center gap-2">

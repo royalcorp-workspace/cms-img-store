@@ -164,12 +164,22 @@ class OrderController extends Controller
         $newStatus = (int) $validated['status'];
         $oldStatus = (int) $order->status;
 
-        // Cegah perubahan status jika order sudah Shipped atau Delivered
-        if (in_array($oldStatus, [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED])) {
+        // 1. Jika pesanan sudah Delivered (5), sudah final dan terkunci permanen
+        if ($oldStatus === Order::STATUS_DELIVERED) {
             return response()->json([
                 'success' => false,
-                'message' => 'Status pesanan ' . $order->statusLabel() . ' sudah terkunci dan tidak dapat diubah lagi.',
+                'message' => 'Pesanan sudah berstatus Selesai (Delivered) dan tidak dapat diubah lagi.',
             ], 422);
+        }
+
+        // 2. Jika pesanan sedang Shipped (4), hanya boleh diselesaikan ke Delivered (5)
+        if ($oldStatus === Order::STATUS_SHIPPED) {
+            if ($newStatus !== Order::STATUS_DELIVERED) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pesanan dalam status Dikirim (Shipped) hanya dapat diubah ke Selesai (Delivered).',
+                ], 422);
+            }
         }
 
         $meta = $order->meta ?? [];

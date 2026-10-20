@@ -148,7 +148,7 @@
                 </div>
             @endif
             <div class="sidebar-bottom-text overflow-hidden">
-                <p class="font-label-md text-label-md text-sidebar-active truncate">{{ $admin?->name ?? 'Admin User' }}</p>
+                <p class="font-label-md text-label-md text-sidebar-active truncate">{{ $admin?->name ?? 'User' }}</p>
                 <p class="text-[10px] font-label-sm text-sidebar-text uppercase truncate">
                     {{ $admin?->roles->first()?->name ?? 'Administrator' }}
                 </p>

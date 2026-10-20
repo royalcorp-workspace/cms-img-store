@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +21,10 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
+
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
@@ -29,7 +34,15 @@ class LoginController extends Controller
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        $credentials = $request->only('email', 'password');
+        $email = $request->input('email');
+        $admin = Admin::whereRaw('LOWER(email) = ?', [$email])
+            ->where('deleted', false)
+            ->first();
+
+        $credentials = [
+            'email' => $admin ? $admin->email : $email,
+            'password' => $request->input('password'),
+        ];
 
         if (Auth::guard('admin')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
