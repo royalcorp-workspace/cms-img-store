@@ -2,6 +2,8 @@
 
 namespace App\Models\Promo;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class VoucherUsage extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'voucher_usages';

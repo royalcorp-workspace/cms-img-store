@@ -2,12 +2,16 @@
 
 namespace App\Models\Store;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StoreChannelGroup extends Model
 {
+    use HasSchemaTable;
+
     protected $table = 'store_channel_group';
 
     protected $keyType = 'string';

@@ -2,12 +2,16 @@
 
 namespace App\Models\Promo;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Product\Product;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PriceProductSettingItem extends Model
 {
+    use HasSchemaTable;
+
     protected $table = 'price_product_setting_items';
     protected $primaryKey = 'price_product_setting_id';
     public $incrementing = false;

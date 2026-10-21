@@ -2,10 +2,14 @@
 
 namespace App\Models\Auth;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Model;
 
 class LoginAttempt extends Model
 {
+    use HasSchemaTable;
+
     protected $table = 'login_attempts';
 
     protected $fillable = [

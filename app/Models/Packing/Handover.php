@@ -2,6 +2,8 @@
 
 namespace App\Models\Packing;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Order\Order;
 use App\Models\Shipping\Courier;
 use App\Models\Warehouse\Warehouse;
@@ -12,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Handover extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'hand_overs';

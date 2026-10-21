@@ -2,6 +2,8 @@
 
 namespace App\Models\Inventory;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
 use App\Models\Store\StoreChannel;
@@ -12,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockCard extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'stock_cards';

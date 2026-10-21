@@ -2,10 +2,14 @@
 
 namespace App\Models\Auth;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Model;
 
 class ActivityLog extends Model
 {
+    use HasSchemaTable;
+
     protected $table = 'activity_logs';
 
     protected $fillable = [

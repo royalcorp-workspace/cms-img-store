@@ -2,12 +2,16 @@
 
 namespace App\Models\Product;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Brand extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'brands';

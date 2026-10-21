@@ -2,6 +2,8 @@
 
 namespace App\Models\Packing;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Order\OrderItem;
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
@@ -11,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HandoverItem extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'hand_overs_items';

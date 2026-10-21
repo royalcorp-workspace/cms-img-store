@@ -2,6 +2,8 @@
 
 namespace App\Models\Shipping;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Shipping\ShippingAddress;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Courier extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'couriers';

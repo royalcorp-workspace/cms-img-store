@@ -2,6 +2,8 @@
 
 namespace App\Models\Promo;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -12,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class PriceProductSetting extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'price_product_settings';

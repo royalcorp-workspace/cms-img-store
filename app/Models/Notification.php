@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'notifications';

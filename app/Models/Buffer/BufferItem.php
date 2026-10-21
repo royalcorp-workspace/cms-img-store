@@ -2,6 +2,8 @@
 
 namespace App\Models\Buffer;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -10,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BufferItem extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'buffer_items';

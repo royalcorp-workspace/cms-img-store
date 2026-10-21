@@ -2,12 +2,16 @@
 
 namespace App\Models\Store;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StoreGroup extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'store_group';

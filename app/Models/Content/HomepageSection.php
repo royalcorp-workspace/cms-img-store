@@ -2,11 +2,15 @@
 
 namespace App\Models\Content;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class HomepageSection extends Model
 {
+    use HasSchemaTable;
+
     protected $table = 'homepage_sections';
     protected $keyType = 'string';
     public $incrementing = false;

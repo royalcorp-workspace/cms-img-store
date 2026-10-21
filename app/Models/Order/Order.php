@@ -2,6 +2,8 @@
 
 namespace App\Models\Order;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Customer\Customer;
 use App\Models\Order\OrderItem;
 use App\Models\Payment;
@@ -13,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'orders';

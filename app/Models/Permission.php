@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
 class Permission extends Model
 {
+    use HasSchemaTable;
+
     protected $table = 'permissions';
 
     protected $keyType = 'string';

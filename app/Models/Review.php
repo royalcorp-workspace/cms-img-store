@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Review extends Model
 {
+    use HasSchemaTable;
+
     protected $table = 'reviews';
 
     protected $fillable = [
