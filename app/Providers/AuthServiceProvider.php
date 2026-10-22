@@ -26,12 +26,13 @@ class AuthServiceProvider extends ServiceProvider
             }
         }
 
-        if (! Schema::hasTable('permissions')) {
+        $permTable = (new \App\Models\Permission)->getTable();
+        if (! Schema::hasTable($permTable)) {
             return;
         }
 
-        $query = DB::table('permissions');
-        if (Schema::hasColumn('permissions', 'is_active')) {
+        $query = DB::table($permTable);
+        if (Schema::hasColumn($permTable, 'is_active')) {
             $query->where('is_active', true);
         }
         $permissions = $query->get();
