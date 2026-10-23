@@ -42,7 +42,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         view()->composer('layouts.partials.sidebar', function ($view) {
-            if (Schema::hasTable('menus')) {
+            $menuTable = (new Menu)->getTable();
+            if (Schema::hasTable($menuTable)) {
                 $view->with('menus', Menu::with(['childs.childs'])
                     ->parents()
                     ->where('is_active', true)

@@ -2,11 +2,15 @@
 
 namespace App\Models\Order;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Settlement extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'settlements';

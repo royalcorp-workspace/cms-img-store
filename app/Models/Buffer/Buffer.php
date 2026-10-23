@@ -2,6 +2,8 @@
 
 namespace App\Models\Buffer;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Customer\Customer;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Buffer extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'buffers';

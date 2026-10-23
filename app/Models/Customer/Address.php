@@ -2,6 +2,8 @@
 
 namespace App\Models\Customer;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Location\City;
@@ -10,6 +12,8 @@ use App\Models\User;
 
 class Address extends Model
 {
+    use HasSchemaTable;
+
     protected $table = 'addresses';
 
     protected $keyType = 'string';

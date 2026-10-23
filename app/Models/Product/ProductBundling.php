@@ -2,12 +2,16 @@
 
 namespace App\Models\Product;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductBundling extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'products_bundling';

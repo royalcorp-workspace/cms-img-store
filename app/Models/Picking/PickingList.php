@@ -2,6 +2,8 @@
 
 namespace App\Models\Picking;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Order\Order;
 use App\Models\User;
 use App\Models\Warehouse\Warehouse;
@@ -12,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PickingList extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $fillable = ['order_id', 'warehouse_id', 'picker_id', 'status', 'priority', 'notes'];

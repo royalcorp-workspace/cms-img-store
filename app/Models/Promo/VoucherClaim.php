@@ -2,11 +2,15 @@
 
 namespace App\Models\Promo;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class VoucherClaim extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'voucher_claims';

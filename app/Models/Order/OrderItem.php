@@ -2,6 +2,8 @@
 
 namespace App\Models\Order;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Order\Order;
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
@@ -11,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'order_items';

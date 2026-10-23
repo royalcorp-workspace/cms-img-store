@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Traits\HasRoles;
@@ -9,6 +11,8 @@ use Illuminate\Support\Str;
 
 class Admin extends Authenticatable
 {
+    use HasSchemaTable;
+
     use Notifiable, HasRoles;
 
     protected $table = 'user_admin';

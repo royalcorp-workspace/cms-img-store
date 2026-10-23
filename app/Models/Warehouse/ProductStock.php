@@ -2,6 +2,8 @@
 
 namespace App\Models\Warehouse;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -10,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductStock extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $fillable = ['product_id', 'product_variant_id', 'warehouse_location_id', 'quantity', 'reserved_quantity'];

@@ -2,6 +2,8 @@
 
 namespace App\Models\Packing;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Order\Order;
 use App\Models\Shipping\Courier;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -10,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Delivery extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $fillable = [

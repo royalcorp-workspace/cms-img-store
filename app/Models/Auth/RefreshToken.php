@@ -2,10 +2,14 @@
 
 namespace App\Models\Auth;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Model;
 
 class RefreshToken extends Model
 {
+    use HasSchemaTable;
+
     protected $table = 'refresh_tokens';
 
     protected $fillable = [

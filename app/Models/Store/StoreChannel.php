@@ -2,6 +2,8 @@
 
 namespace App\Models\Store;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +13,8 @@ use App\Models\Store\StoreChannelStock;
 
 class StoreChannel extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'store_channel';

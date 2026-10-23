@@ -2,6 +2,8 @@
 
 namespace App\Models\Promo;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
 use App\Models\Store\Store;
@@ -11,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StorePricing extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'price_product_setting_store';

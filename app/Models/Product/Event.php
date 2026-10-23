@@ -2,6 +2,8 @@
 
 namespace App\Models\Product;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -10,6 +12,8 @@ use App\Models\Promo\PriceProductSetting;
 
 class Event extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'events';

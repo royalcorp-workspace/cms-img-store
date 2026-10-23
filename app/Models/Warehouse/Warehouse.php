@@ -2,12 +2,16 @@
 
 namespace App\Models\Warehouse;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Warehouse extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $fillable = ['code', 'name', 'address', 'city', 'status'];

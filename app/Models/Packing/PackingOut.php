@@ -2,6 +2,8 @@
 
 namespace App\Models\Packing;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Order\Order;
 use App\Models\User;
 use App\Models\Warehouse\Warehouse;
@@ -12,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PackingOut extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $fillable = ['packing_slip_id', 'warehouse_id', 'packer_id', 'status', 'notes'];

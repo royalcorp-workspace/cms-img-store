@@ -2,6 +2,8 @@
 
 namespace App\Models\Inventory;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
 use App\Models\Store\Store;
@@ -13,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Inventory extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'inventories';

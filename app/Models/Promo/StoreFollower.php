@@ -2,11 +2,15 @@
 
 namespace App\Models\Promo;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class StoreFollower extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'store_followers';

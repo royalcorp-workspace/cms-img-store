@@ -2,11 +2,15 @@
 
 namespace App\Models\Content;
 
+use App\Traits\HasSchemaTable;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class BannerImage extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $table = 'banner_images';

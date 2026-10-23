@@ -2,6 +2,8 @@
 
 namespace App\Models\Packing;
 
+use App\Traits\HasSchemaTable;
+
 use App\Models\Order\OrderItem;
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
@@ -12,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PackingSlipItem extends Model
 {
+    use HasSchemaTable;
+
     use HasUuids;
 
     protected $fillable = ['packing_slip_id', 'order_item_id', 'product_id', 'product_variant_id', 'warehouse_location_id', 'quantity_ordered', 'quantity_packed', 'box_number'];
