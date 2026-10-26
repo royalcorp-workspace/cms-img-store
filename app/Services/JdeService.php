@@ -199,14 +199,19 @@ class JdeService
             $logPayload['password'] = '********';
         }
 
-        $endpoint = config('services.jde.endpoint', env('JDE_ENDPOINT'));
+        $host = config('services.jde.host', env('JDE_HOST'));
+        $endpoint = config('services.jde.endpoint');
+        if (empty($endpoint) && !empty($host)) {
+            $endpoint = rtrim($host, '/') . '/' . ltrim(config('services.jde.endpoint_push_order', '/jderest/v3/orchestrator/ORCH_POS_INSERT_V1'), '/');
+        }
+
         $timeout = (int) config('services.jde.timeout', 30);
         $meta = $order->meta ?? [];
         $retryCount = (int) ($meta['jde_push_retry_count'] ?? 0);
 
         if (empty($endpoint)) {
             $order->jde_push_status = Order::JDE_STATUS_FAILED;
-            $meta['jde_push_error'] = 'JDE_ENDPOINT not configured in environment';
+            $meta['jde_push_error'] = 'JDE_HOST not configured in environment';
             $meta['jde_push_failed_at'] = now()->toDateTimeString();
             $order->meta = $meta;
             $order->saveQuietly();
@@ -214,12 +219,12 @@ class JdeService
             $this->logJde('warning', 'Push Order Aborted', [
                 'order_number' => $order->order_number,
                 'order_id' => $order->id,
-                'reason' => 'JDE_ENDPOINT not configured in .env',
+                'reason' => 'JDE_HOST not configured in .env',
             ]);
 
             return [
                 'success' => false,
-                'message' => 'Konfigurasi JDE_ENDPOINT belum diset pada environment (.env).',
+                'message' => 'Konfigurasi JDE_HOST belum diset pada environment (.env).',
                 'jde_push_status' => Order::JDE_STATUS_FAILED,
             ];
         }

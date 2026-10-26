@@ -28,4 +28,5 @@ Route::middleware(['auth:admin', 'admin', 'permission'])->group(function () {
     require __DIR__ . '/web/shipping.php';
     require __DIR__ . '/web/customer.php';
     require __DIR__ . '/web/chat.php';
+    require __DIR__ . '/web/jde.php';
 });

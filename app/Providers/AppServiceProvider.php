@@ -58,7 +58,7 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen('eloquent.creating: *', function ($eventName, array $data) {
             $model = $data[0] ?? null;
             if ($model instanceof \Illuminate\Database\Eloquent\Model) {
-                $username = \App\Traits\HasAuditUser::resolveCurrentUsername();
+                $username = (new class { use \App\Traits\HasAuditUser; })::resolveCurrentUsername();
                 if (in_array('creator', $model->getFillable()) && empty($model->creator)) {
                     $model->creator = $username;
                 }
@@ -79,7 +79,7 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen('eloquent.updating: *', function ($eventName, array $data) {
             $model = $data[0] ?? null;
             if ($model instanceof \Illuminate\Database\Eloquent\Model) {
-                $username = \App\Traits\HasAuditUser::resolveCurrentUsername();
+                $username = (new class { use \App\Traits\HasAuditUser; })::resolveCurrentUsername();
                 if (in_array('editor', $model->getFillable())) {
                     $model->editor = $username;
                 }

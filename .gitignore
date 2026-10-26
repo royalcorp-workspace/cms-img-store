@@ -20,6 +20,7 @@
 /storage/pail
 /storage/log
 /storage/framework
+/storage/data
 /vendor
 Homestead.json
 Homestead.yaml

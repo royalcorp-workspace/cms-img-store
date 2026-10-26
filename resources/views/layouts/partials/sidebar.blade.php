@@ -27,6 +27,10 @@
                 'store-management' => ['store-groups.*', 'stores.*', 'store-tiers.*', 'store-channels.*', 'store-channel-stocks.*'],
                 'shipping & payment' => ['couriers.*', 'payment-methods.*', 'shipping-addresses.*'],
                 'shipping-payment' => ['couriers.*', 'payment-methods.*', 'shipping-addresses.*'],
+                'master data jde' => ['admin.jde.*'],
+                'tarik jde' => ['admin.jde.*'],
+                'integrasi oracle jde erp' => ['admin.jde.*'],
+                'integrasi jde' => ['admin.jde.*'],
                 'content' => ['content.*'],
                 'system' => ['roles.*', 'permissions.*', 'users.*', 'profile.*'],
             ];

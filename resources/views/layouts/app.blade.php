@@ -128,6 +128,7 @@
         }
     </script>
     <style>
+        [x-cloak] { display: none !important; }
         :root {
             --color-sidebar-bg: #110c08;
             --color-surface-gray: #f7f6f3;
@@ -869,9 +870,10 @@
     </script>
     @stack('scripts')
 
-    <!-- Popup Alert Helper Functions & Handlers -->
+    <!-- Popup Alert Helper Functions & Handlers (Proper Royal CMS UI) -->
     <script>
         window.showSuccessPopup = function(message, title = 'Berhasil!') {
+            if (typeof Swal === 'undefined') return Promise.resolve({ isConfirmed: true });
             return Swal.fire({
                 icon: 'success',
                 title: title,
@@ -881,13 +883,16 @@
                 timer: 3500,
                 timerProgressBar: true,
                 customClass: {
-                    popup: 'rounded-2xl shadow-xl border border-outline-variant/30',
-                    confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs'
+                    popup: 'rounded-2xl shadow-2xl border border-outline-variant/30 bg-surface text-on-surface p-6',
+                    title: 'font-headline-sm font-bold text-on-surface',
+                    htmlContainer: 'text-sm text-on-surface-variant mt-2',
+                    confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs bg-primary text-white shadow-sm hover:opacity-90 transition-all'
                 }
             });
         };
 
         window.showWarningPopup = function(message, title = 'Peringatan') {
+            if (typeof Swal === 'undefined') return Promise.resolve({ isConfirmed: true });
             return Swal.fire({
                 icon: 'warning',
                 title: title,
@@ -895,13 +900,16 @@
                 confirmButtonText: 'Mengerti',
                 confirmButtonColor: '#d97706',
                 customClass: {
-                    popup: 'rounded-2xl shadow-xl border border-outline-variant/30',
-                    confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs'
+                    popup: 'rounded-2xl shadow-2xl border border-outline-variant/30 bg-surface text-on-surface p-6',
+                    title: 'font-headline-sm font-bold text-on-surface',
+                    htmlContainer: 'text-sm text-on-surface-variant mt-2',
+                    confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs bg-warning text-white shadow-sm hover:opacity-90 transition-all'
                 }
             });
         };
 
         window.showErrorPopup = function(message, title = 'Terjadi Kesalahan!') {
+            if (typeof Swal === 'undefined') return Promise.resolve({ isConfirmed: true });
             return Swal.fire({
                 icon: 'error',
                 title: title,
@@ -909,13 +917,47 @@
                 confirmButtonText: 'Tutup',
                 confirmButtonColor: '#dc2626',
                 customClass: {
-                    popup: 'rounded-2xl shadow-xl border border-outline-variant/30',
-                    confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs'
+                    popup: 'rounded-2xl shadow-2xl border border-outline-variant/30 bg-surface text-on-surface p-6',
+                    title: 'font-headline-sm font-bold text-on-surface',
+                    htmlContainer: 'text-sm text-on-surface-variant mt-2',
+                    confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs bg-danger text-white shadow-sm hover:opacity-90 transition-all'
                 }
             });
         };
 
-        // Intercept native browser alert() and route to styled template popup
+        window.showConfirmDialog = function(options = {}) {
+            if (typeof Swal === 'undefined') {
+                return Promise.resolve({ isConfirmed: true });
+            }
+
+            const defaults = {
+                title: 'Konfirmasi Tindakan',
+                text: 'Apakah Anda yakin ingin melanjutkan tindakan ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Lanjutkan',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#1e3a8a',
+                cancelButtonColor: '#6b7280',
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    popup: 'rounded-2xl shadow-2xl border border-outline-variant/30 bg-surface text-on-surface p-6',
+                    title: 'font-headline-sm font-bold text-on-surface',
+                    htmlContainer: 'text-sm text-on-surface-variant mt-2',
+                    confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs bg-primary text-white shadow-sm hover:opacity-90 transition-all',
+                    cancelButton: 'px-4 py-2.5 rounded-xl font-bold text-xs border border-outline-variant text-on-surface hover:bg-surface-variant transition-all'
+                }
+            };
+
+            const config = typeof options === 'string'
+                ? Object.assign({}, defaults, { text: options })
+                : Object.assign({}, defaults, options);
+
+            return Swal.fire(config);
+        };
+
+        // Intercept native browser alert() across 1 CMS and route to styled template popup
         window.alert = function(message) {
             if (typeof window.showWarningPopup === 'function') {
                 window.showWarningPopup(message, 'Pemberitahuan');
@@ -931,6 +973,68 @@
                 });
             }
         };
+
+        // Intercept native confirm() calls for all forms across 1 CMS
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.dataset.confirmed) {
+                return;
+            }
+
+            const onsubmitAttr = form.getAttribute('onsubmit');
+            if (onsubmitAttr && onsubmitAttr.includes('confirm(')) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+
+                const match = onsubmitAttr.match(/confirm\s*\(\s*(['"])(.*?)\1\s*\)/);
+                const confirmMsg = match && match[2] ? match[2] : 'Apakah Anda yakin ingin melanjutkan tindakan ini?';
+
+                window.showConfirmDialog({
+                    title: 'Konfirmasi',
+                    text: confirmMsg,
+                    icon: 'warning',
+                    confirmButtonText: 'Ya, Lanjutkan',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.dataset.confirmed = 'true';
+                        form.removeAttribute('onsubmit');
+                        form.submit();
+                    }
+                });
+            }
+        }, true);
+
+        // Intercept native confirm() calls for buttons/links across 1 CMS
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('button[onclick*="confirm("], a[onclick*="confirm("], input[type="submit"][onclick*="confirm("]');
+            if (!btn || btn.dataset.confirmed) {
+                return;
+            }
+
+            const onclickAttr = btn.getAttribute('onclick');
+            if (onclickAttr && onclickAttr.includes('confirm(')) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+
+                const match = onclickAttr.match(/confirm\s*\(\s*(['"])(.*?)\1\s*\)/);
+                const confirmMsg = match && match[2] ? match[2] : 'Apakah Anda yakin ingin melanjutkan tindakan ini?';
+
+                window.showConfirmDialog({
+                    title: 'Konfirmasi',
+                    text: confirmMsg,
+                    icon: 'warning',
+                    confirmButtonText: 'Ya, Lanjutkan',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        btn.dataset.confirmed = 'true';
+                        btn.removeAttribute('onclick');
+                        btn.click();
+                    }
+                });
+            }
+        }, true);
     </script>
 
     <!-- Toast Container -->
