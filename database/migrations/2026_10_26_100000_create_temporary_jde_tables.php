@@ -12,10 +12,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::transaction(function () {
+        $hasFinishGoods = DB::selectOne("SELECT 1 FROM information_schema.schemata WHERE schema_name = 'finish_goods'") !== null;
+        $hasStore = DB::selectOne("SELECT 1 FROM information_schema.schemata WHERE schema_name = 'store'") !== null;
+
+        $tableItemMasters = $hasFinishGoods ? 'finish_goods.temporary_jde_item_masters' : 'temporary_jde_item_masters';
+        $tableBasePrices = $hasFinishGoods ? 'finish_goods.temporary_jde_base_prices' : 'temporary_jde_base_prices';
+        $tableBranches = $hasStore ? 'store.temporary_jde_branches' : 'temporary_jde_branches';
+        $tableCustomers = $hasStore ? 'store.temporary_jde_customers' : 'temporary_jde_customers';
+
+        DB::transaction(function () use ($tableItemMasters, $tableBasePrices, $tableBranches, $tableCustomers) {
             // 1. Tabel finish_goods.temporary_jde_item_masters
-            if (!Schema::hasTable('finish_goods.temporary_jde_item_masters')) {
-                Schema::create('finish_goods.temporary_jde_item_masters', function (Blueprint $table) {
+            if (!Schema::hasTable($tableItemMasters)) {
+                Schema::create($tableItemMasters, function (Blueprint $table) {
                     $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
 
                     // Field Asli Oracle JDE (POS_V59POSA1 / F4101 / F4102)
@@ -57,12 +65,12 @@ return new class extends Migration
                 });
 
                 // Index GIN untuk kolom segments JSONB
-                DB::statement('CREATE INDEX IF NOT EXISTS idx_temp_jde_item_segments ON finish_goods.temporary_jde_item_masters USING GIN (segments);');
+                DB::statement("CREATE INDEX IF NOT EXISTS idx_temp_jde_item_segments ON {$tableItemMasters} USING GIN (segments);");
             }
 
             // 2. Tabel finish_goods.temporary_jde_base_prices
-            if (!Schema::hasTable('finish_goods.temporary_jde_base_prices')) {
-                Schema::create('finish_goods.temporary_jde_base_prices', function (Blueprint $table) {
+            if (!Schema::hasTable($tableBasePrices)) {
+                Schema::create($tableBasePrices, function (Blueprint $table) {
                     $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
 
                     // Field Asli Oracle JDE (POS_F4106)
@@ -99,8 +107,8 @@ return new class extends Migration
             }
 
             // 3. Tabel store.temporary_jde_branches
-            if (!Schema::hasTable('store.temporary_jde_branches')) {
-                Schema::create('store.temporary_jde_branches', function (Blueprint $table) {
+            if (!Schema::hasTable($tableBranches)) {
+                Schema::create($tableBranches, function (Blueprint $table) {
                     $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
 
                     // Field Asli Oracle JDE (POS_V59POSB1 / F0006)
@@ -127,8 +135,8 @@ return new class extends Migration
             }
 
             // 4. Tabel store.temporary_jde_customers
-            if (!Schema::hasTable('store.temporary_jde_customers')) {
-                Schema::create('store.temporary_jde_customers', function (Blueprint $table) {
+            if (!Schema::hasTable($tableCustomers)) {
+                Schema::create($tableCustomers, function (Blueprint $table) {
                     $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
 
                     // Field Asli Oracle JDE (POS_V55AR19 / F0101 / F03012)
@@ -169,11 +177,19 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::transaction(function () {
-            Schema::dropIfExists('finish_goods.temporary_jde_item_masters');
-            Schema::dropIfExists('finish_goods.temporary_jde_base_prices');
-            Schema::dropIfExists('store.temporary_jde_branches');
-            Schema::dropIfExists('store.temporary_jde_customers');
+        $hasFinishGoods = DB::selectOne("SELECT 1 FROM information_schema.schemata WHERE schema_name = 'finish_goods'") !== null;
+        $hasStore = DB::selectOne("SELECT 1 FROM information_schema.schemata WHERE schema_name = 'store'") !== null;
+
+        $tableItemMasters = $hasFinishGoods ? 'finish_goods.temporary_jde_item_masters' : 'temporary_jde_item_masters';
+        $tableBasePrices = $hasFinishGoods ? 'finish_goods.temporary_jde_base_prices' : 'temporary_jde_base_prices';
+        $tableBranches = $hasStore ? 'store.temporary_jde_branches' : 'temporary_jde_branches';
+        $tableCustomers = $hasStore ? 'store.temporary_jde_customers' : 'temporary_jde_customers';
+
+        DB::transaction(function () use ($tableItemMasters, $tableBasePrices, $tableBranches, $tableCustomers) {
+            Schema::dropIfExists($tableItemMasters);
+            Schema::dropIfExists($tableBasePrices);
+            Schema::dropIfExists($tableBranches);
+            Schema::dropIfExists($tableCustomers);
         });
     }
 };

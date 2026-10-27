@@ -71,6 +71,11 @@ trait HasSchemaTable
     {
         $table = parent::getTable();
 
+        // If multi-schema is explicitly disabled in .env (e.g. dev environment with restricted DB permissions)
+        if (!env('DB_MULTI_SCHEMA', true)) {
+            return str_contains($table, '.') ? explode('.', $table)[1] : $table;
+        }
+
         // Only prefix with schema if database driver is PostgreSQL
         try {
             $driver = $this->getConnection()->getDriverName();
@@ -131,6 +136,10 @@ trait HasSchemaTable
      */
     public static function withSchema(string $tableName, ?string $schema = null): string
     {
+        if (!env('DB_MULTI_SCHEMA', true)) {
+            return str_contains($tableName, '.') ? explode('.', $tableName)[1] : $tableName;
+        }
+
         $schema = $schema ?? static::getDatabaseSchema();
 
         if (!empty($schema) && !str_contains($tableName, '.')) {

@@ -161,8 +161,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (DB::getDriverName() !== 'pgsql') {
+        if (DB::getDriverName() !== 'pgsql' || !env('DB_MULTI_SCHEMA', true)) {
             return;
+        }
+
+        // Check if database user has privilege to create schemas or if schemas already exist
+        $hasCreatePrivilege = false;
+        try {
+            $hasCreatePrivilege = (bool) (DB::selectOne(
+                "SELECT has_database_privilege(current_user, current_database(), 'CREATE') as can_create"
+            )?->can_create ?? false);
+        } catch (\Throwable $e) {
+            $hasCreatePrivilege = false;
         }
 
         $allSchemas = array_keys($this->domainSchemas);
@@ -176,12 +186,25 @@ return new class extends Migration
             );
 
             if (!$schemaExists) {
-                DB::statement("CREATE SCHEMA IF NOT EXISTS \"{$schema}\"");
+                if (!$hasCreatePrivilege) {
+                    \Illuminate\Support\Facades\Log::warning("Skipping schema creation for {$schema}: DB user lacks CREATE privilege on database.");
+                    continue;
+                }
+
+                try {
+                    DB::statement("CREATE SCHEMA IF NOT EXISTS \"{$schema}\"");
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Cannot create schema {$schema}: " . $e->getMessage());
+                }
             }
         }
 
         // 2. Set search_path for current connection and alter database default
-        DB::statement("SET search_path TO {$searchPathList}");
+        try {
+            DB::statement("SET search_path TO {$searchPathList}");
+        } catch (\Throwable $e) {
+            // Silently continue
+        }
 
         try {
             $dbName = config('database.connections.pgsql.database');
@@ -194,6 +217,15 @@ return new class extends Migration
 
         // 3. Move each table from 'public' to its designated domain schema
         foreach ($this->domainSchemas as $targetSchema => $tables) {
+            $targetSchemaExists = DB::selectOne(
+                "SELECT 1 FROM information_schema.schemata WHERE schema_name = ?",
+                [$targetSchema]
+            );
+
+            if (!$targetSchemaExists) {
+                continue;
+            }
+
             foreach ($tables as $table) {
                 $exists = DB::selectOne(
                     "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ?",
@@ -201,7 +233,11 @@ return new class extends Migration
                 );
 
                 if ($exists) {
-                    DB::statement("ALTER TABLE \"public\".\"{$table}\" SET SCHEMA \"{$targetSchema}\"");
+                    try {
+                        DB::statement("ALTER TABLE \"public\".\"{$table}\" SET SCHEMA \"{$targetSchema}\"");
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning("Cannot move table {$table} to {$targetSchema}: " . $e->getMessage());
+                    }
                 }
             }
         }
