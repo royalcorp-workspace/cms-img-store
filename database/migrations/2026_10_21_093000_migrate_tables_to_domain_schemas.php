@@ -165,7 +165,18 @@ return new class extends Migration
 
         // 1. Create all domain schemas if they do not exist
         foreach ($allSchemas as $schema) {
-            DB::statement("CREATE SCHEMA IF NOT EXISTS \"{$schema}\"");
+            $schemaExists = DB::selectOne(
+                "SELECT 1 FROM information_schema.schemata WHERE schema_name = ?",
+                [$schema]
+            );
+
+            if (!$schemaExists) {
+                try {
+                    DB::statement("CREATE SCHEMA IF NOT EXISTS \"{$schema}\"");
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Skipped CREATE SCHEMA {$schema} due to DB permissions: " . $e->getMessage());
+                }
+            }
         }
 
         // 2. Set search_path for current connection and alter database default
@@ -182,6 +193,16 @@ return new class extends Migration
 
         // 3. Move each table from 'public' to its designated domain schema
         foreach ($this->domainSchemas as $targetSchema => $tables) {
+            $targetSchemaExists = DB::selectOne(
+                "SELECT 1 FROM information_schema.schemata WHERE schema_name = ?",
+                [$targetSchema]
+            );
+
+            if (!$targetSchemaExists) {
+                \Illuminate\Support\Facades\Log::warning("Skipping schema move for {$targetSchema} because schema does not exist.");
+                continue;
+            }
+
             foreach ($tables as $table) {
                 $exists = DB::selectOne(
                     "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ?",
@@ -189,7 +210,11 @@ return new class extends Migration
                 );
 
                 if ($exists) {
-                    DB::statement("ALTER TABLE \"public\".\"{$table}\" SET SCHEMA \"{$targetSchema}\"");
+                    try {
+                        DB::statement("ALTER TABLE \"public\".\"{$table}\" SET SCHEMA \"{$targetSchema}\"");
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning("Cannot move table {$table} to {$targetSchema}: " . $e->getMessage());
+                    }
                 }
             }
         }
@@ -206,6 +231,15 @@ return new class extends Migration
 
         // Move all tables back from domain schemas to 'public'
         foreach ($this->domainSchemas as $sourceSchema => $tables) {
+            $sourceSchemaExists = DB::selectOne(
+                "SELECT 1 FROM information_schema.schemata WHERE schema_name = ?",
+                [$sourceSchema]
+            );
+
+            if (!$sourceSchemaExists) {
+                continue;
+            }
+
             foreach ($tables as $table) {
                 $exists = DB::selectOne(
                     "SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ?",
@@ -213,7 +247,11 @@ return new class extends Migration
                 );
 
                 if ($exists) {
-                    DB::statement("ALTER TABLE \"{$sourceSchema}\".\"{$table}\" SET SCHEMA \"public\"");
+                    try {
+                        DB::statement("ALTER TABLE \"{$sourceSchema}\".\"{$table}\" SET SCHEMA \"public\"");
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning("Cannot move table {$table} back to public: " . $e->getMessage());
+                    }
                 }
             }
         }
