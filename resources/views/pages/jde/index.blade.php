@@ -64,112 +64,138 @@
 
     @include('layouts.partials.jde-submenu')
 
-    <!-- Metric Cards Overview (Fase 1: Fokus Item Master) -->
+    <!-- Metric Cards Overview (Fokus Domain Item Master) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Item Masters Card -->
-        <div class="p-5 rounded-2xl bg-surface border border-outline/30 shadow-sm flex flex-col justify-between">
+        <!-- Card 1: Total Item Masters -->
+        <div class="p-5 rounded-2xl bg-white border border-outline-variant shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
-                <span class="text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Item Master</span>
-                <span class="p-2 rounded-lg bg-primary/10 text-primary material-symbols-outlined text-xl">bed</span>
-            </div>
-            <div class="mt-4">
-                <div class="text-3xl font-extrabold text-on-surface">{{ number_format($stats['item_masters_total']) }}</div>
-                <div class="text-xs text-on-surface-variant mt-1.5 flex items-center gap-1.5 flex-wrap">
-                    <span class="inline-flex items-center gap-1 text-primary font-medium">
-                        <span class="inline-block w-2 h-2 rounded-full bg-primary"></span>
-                        <span>{{ number_format($stats['item_masters_branded'] ?? 0) }} ber-brand</span>
-                    </span>
-                    <span class="text-outline">·</span>
-                    <span class="inline-flex items-center gap-1 text-on-surface-variant">
-                        <span class="inline-block w-2 h-2 rounded-full bg-warning"></span>
-                        <span>{{ number_format($stats['item_masters_pending']) }} belum disalin</span>
-                    </span>
+                <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Total Item JDE</span>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[22px]">inventory_2</span>
                 </div>
             </div>
-            <div class="mt-4 pt-3 border-t border-outline/20 flex items-center justify-between">
-                <button @click="triggerPull('item_master')" :disabled="isLoading" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">refresh</span> Tarik Item Master
+            <div class="mt-3">
+                <div class="text-3xl font-extrabold text-on-surface tracking-tight">{{ number_format($stats['item_masters_total']) }}</div>
+                <p class="text-xs text-on-surface-variant mt-1 flex items-center gap-1.5 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Tersimpan di temporary data</span>
+                </p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-outline-variant/60 flex items-center justify-between text-xs">
+                <button @click="triggerPull('item_master')" :disabled="isLoading" class="font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-[15px]" :class="{ 'animate-spin': isLoading }">refresh</span> Tarik JDE
                 </button>
-                <span class="text-[11px] text-on-surface-variant">{{ $stats['last_sync_item'] ? \Carbon\Carbon::parse($stats['last_sync_item'])->diffForHumans() : 'Belum ditarik' }}</span>
+                <span class="text-[11px] text-on-surface-variant font-medium">{{ $stats['last_sync_item'] ? \Carbon\Carbon::parse($stats['last_sync_item'])->diffForHumans() : 'Belum ditarik' }}</span>
             </div>
         </div>
 
-        {{-- Sementara di-hide / di-komen sesuai kebutuhan fase 1 (Hanya Item Master yang Aktif) --}}
-        {{--
-        <!-- Base Prices Card -->
-        <div class="p-5 rounded-2xl bg-surface border border-outline/30 shadow-sm flex flex-col justify-between opacity-50">
+        <!-- Card 2: Koleksi Kasur Ber-Brand -->
+        <div class="p-5 rounded-2xl bg-white border border-outline-variant shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
-                <span class="text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Base Price</span>
-                <span class="p-2 rounded-lg bg-success/10 text-success material-symbols-outlined text-xl">payments</span>
+                <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Kasur Ber-Brand</span>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[22px]">workspace_premium</span>
+                </div>
             </div>
-            <div class="mt-4">
-                <div class="text-3xl font-extrabold text-on-surface">{{ number_format($stats['base_prices_total']) }}</div>
-                <div class="text-xs text-on-surface-variant mt-1">Daftar harga dasar per cabang</div>
+            <div class="mt-3">
+                <div class="text-3xl font-extrabold text-amber-600 dark:text-amber-400 tracking-tight">{{ number_format($stats['item_masters_branded'] ?? 0) }}</div>
+                <p class="text-xs text-on-surface-variant mt-1 font-medium truncate">
+                    Elite, Lady Americana, Serenity, Royal
+                </p>
             </div>
-            <div class="mt-4 pt-3 border-t border-outline/20 flex items-center justify-between">
-                <button @click="triggerPull('base_price')" :disabled="isLoading" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">refresh</span> Tarik Base Price
-                </button>
-                <span class="text-[11px] text-on-surface-variant">{{ $stats['last_sync_price'] ? \Carbon\Carbon::parse($stats['last_sync_price'])->diffForHumans() : 'Belum ditarik' }}</span>
+            <div class="mt-4 pt-3 border-t border-outline-variant/60 flex items-center justify-between text-xs">
+                <span class="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px]">verified</span> Prioritas Katalog
+                </span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
+                    {{ round((($stats['item_masters_branded'] ?? 0) / max($stats['item_masters_total'], 1)) * 100) }}%
+                </span>
             </div>
         </div>
 
-        <!-- Branch Plants Card -->
-        <div class="p-5 rounded-2xl bg-surface border border-outline/30 shadow-sm flex flex-col justify-between opacity-50">
+        <!-- Card 3: Item Non-Brand / Part -->
+        <div class="p-5 rounded-2xl bg-white border border-outline-variant shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
-                <span class="text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Cabang JDE</span>
-                <span class="p-2 rounded-lg bg-info/10 text-info material-symbols-outlined text-xl">factory</span>
+                <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Item Non-Brand</span>
+                <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[22px]">extension</span>
+                </div>
             </div>
-            <div class="mt-4">
-                <div class="text-3xl font-extrabold text-on-surface">{{ number_format($stats['branches_total']) }}</div>
-                <div class="text-xs text-on-surface-variant mt-1">Daftar cabang regional pabrik</div>
+            <div class="mt-3">
+                <div class="text-3xl font-extrabold text-on-surface tracking-tight">{{ number_format(max(0, $stats['item_masters_total'] - ($stats['item_masters_branded'] ?? 0))) }}</div>
+                <p class="text-xs text-on-surface-variant mt-1 font-medium">
+                    Busa lembaran, komponen & aksesoris
+                </p>
             </div>
-            <div class="mt-4 pt-3 border-t border-outline/20 flex items-center justify-between">
-                <button @click="triggerPull('branch')" :disabled="isLoading" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">refresh</span> Tarik Cabang
-                </button>
-                <span class="text-[11px] text-on-surface-variant">{{ $stats['last_sync_branch'] ? \Carbon\Carbon::parse($stats['last_sync_branch'])->diffForHumans() : 'Belum ditarik' }}</span>
+            <div class="mt-4 pt-3 border-t border-outline-variant/60 flex items-center justify-between text-xs text-on-surface-variant">
+                <span>Data Pendukung</span>
+                <span class="text-[11px] font-medium text-on-surface-variant">Arsip JDE</span>
             </div>
         </div>
 
-        <!-- Customers Card -->
-        <div class="p-5 rounded-2xl bg-surface border border-outline/30 shadow-sm flex flex-col justify-between opacity-50">
+        <!-- Card 4: Status Sinkronisasi Katalog -->
+        <div class="p-5 rounded-2xl bg-white border border-outline-variant shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
-                <span class="text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Toko Retail</span>
-                <span class="p-2 rounded-lg bg-purple-500/10 text-purple-600 material-symbols-outlined text-xl">store</span>
+                <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Status Katalog</span>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[22px]">sync_saved_locally</span>
+                </div>
             </div>
-            <div class="mt-4">
-                <div class="text-3xl font-extrabold text-on-surface">{{ number_format($stats['customers_total']) }}</div>
-                <div class="text-xs text-on-surface-variant mt-1">Daftar mitra toko retail</div>
+            <div class="mt-3">
+                <div class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">{{ number_format($stats['item_masters_pending']) }}</div>
+                <p class="text-xs text-on-surface-variant mt-1 flex items-center gap-1.5 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span>Menunggu disalin ke katalog</span>
+                </p>
             </div>
-            <div class="mt-4 pt-3 border-t border-outline/20 flex items-center justify-between">
-                <button @click="triggerPull('customer')" :disabled="isLoading" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">refresh</span> Tarik Toko
-                </button>
-                <span class="text-[11px] text-on-surface-variant">{{ $stats['last_sync_customer'] ? \Carbon\Carbon::parse($stats['last_sync_customer'])->diffForHumans() : 'Belum ditarik' }}</span>
+            <div class="mt-4 pt-3 border-t border-outline-variant/60 flex items-center justify-between text-xs text-on-surface-variant">
+                <span class="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px]">check_circle</span> Data Terisolasi
+                </span>
+                <span class="text-[11px]">Katalog Aman</span>
             </div>
         </div>
-        --}}
+    </div>
+
+    <!-- Quick Filter Brand Pills (UX Standard) -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+        <a href="{{ route('admin.jde.index', ['tab' => $tab, 'search' => $search]) }}" 
+           class="px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap {{ empty($brand) ? 'bg-primary text-white shadow-xs' : 'bg-white border border-outline-variant text-on-surface-variant hover:border-primary/40 hover:text-primary' }}">
+            Semua Data ({{ number_format($stats['item_masters_total']) }})
+        </a>
+        <a href="{{ route('admin.jde.index', ['tab' => $tab, 'brand' => 'has_brand', 'search' => $search]) }}" 
+           class="px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 {{ $brand === 'has_brand' ? 'bg-primary text-white shadow-xs' : 'bg-white border border-outline-variant text-on-surface-variant hover:border-primary/40 hover:text-primary' }}">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            ✨ Memiliki Brand ({{ number_format($stats['item_masters_branded'] ?? 0) }})
+        </a>
+        @foreach($brands ?? [] as $b)
+            <a href="{{ route('admin.jde.index', ['tab' => $tab, 'brand' => $b, 'search' => $search]) }}" 
+               class="px-3.5 py-2 rounded-xl font-semibold transition-all whitespace-nowrap {{ $brand === $b ? 'bg-primary text-white shadow-xs' : 'bg-white border border-outline-variant text-on-surface-variant hover:border-primary/40 hover:text-primary' }}">
+                {{ $b }}
+            </a>
+        @endforeach
     </div>
 
     <!-- Table Container & Search Bar -->
-    <div class="bg-surface rounded-2xl border border-outline/30 shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-outline/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="bg-white rounded-2xl border border-outline-variant shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-center gap-2.5">
-                <span class="material-symbols-outlined text-primary text-xl">bed</span>
-                <span class="font-headline-sm text-base font-bold text-on-surface">Data Item Master</span>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
-                    {{ number_format($stats['item_masters_total']) }} Data
-                </span>
+                <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[18px]">bed</span>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-on-surface leading-tight">Data Item Master Kasur</h3>
+                    <p class="text-[11px] text-on-surface-variant font-medium">Daftar item JDE siap ditinjau dan disinkronkan</p>
+                </div>
 
                 <!-- Info Icon Keterangan Data Temporary -->
-                <div class="relative inline-flex items-center" x-data="{ showTableInfo: false }" @click.away="showTableInfo = false">
+                <div class="relative inline-flex items-center ml-1" x-data="{ showTableInfo: false }" @click.away="showTableInfo = false">
                     <button 
                         type="button" 
                         @click="showTableInfo = !showTableInfo" 
                         @mouseenter="showTableInfo = true" 
                         @mouseleave="showTableInfo = false" 
-                        class="p-0.5 rounded-full text-on-surface-variant/60 hover:text-primary transition-colors focus:outline-none cursor-pointer" 
+                        class="p-1 rounded-full text-on-surface-variant/70 hover:text-primary transition-colors focus:outline-none cursor-pointer" 
                         title="Info Penyimpanan">
                         <span class="material-symbols-outlined text-[18px] align-middle">info</span>
                     </button>
@@ -182,8 +208,8 @@
                         x-transition:leave="transition ease-in duration-100"
                         x-transition:leave-start="opacity-100 translate-y-0"
                         x-transition:leave-end="opacity-0 translate-y-1"
-                        class="absolute left-0 top-full mt-1.5 w-72 p-3 bg-surface text-on-surface rounded-xl shadow-xl border border-outline/20 z-50 text-xs font-normal">
-                        <p class="font-semibold text-primary mb-1">Penyimpanan Sementara</p>
+                        class="absolute left-0 top-full mt-2 w-72 p-3 bg-surface text-on-surface rounded-xl shadow-xl border border-outline-variant z-50 text-xs font-normal">
+                        <p class="font-bold text-primary mb-1">Penyimpanan Sementara</p>
                         <p class="text-on-surface-variant leading-relaxed">
                             Data yang ditarik disimpan sementara di sini agar aman dan dapat ditinjau sebelum disalin ke katalog produk.
                         </p>
@@ -235,56 +261,111 @@
         <div class="overflow-x-auto">
             @if($tab === 'item_master')
                 <table class="w-full text-left text-sm">
-                    <thead class="bg-surface-variant/40 text-on-surface-variant text-xs uppercase font-semibold border-b border-outline/20">
+                    <thead>
                         <tr>
-                            <th class="px-4 py-3">Short Item</th>
-                            <th class="px-4 py-3">SKU (2nd Item No)</th>
-                            <th class="px-4 py-3">Deskripsi Kasur</th>
-                            <th class="px-4 py-3">Brand</th>
-                            <th class="px-4 py-3">Ukuran (Line 2)</th>
-                            <th class="px-4 py-3">Segments (JSON)</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3 text-right">Update JDE</th>
+                            <th class="px-5 py-3.5">Produk Kasur & SKU</th>
+                            <th class="px-5 py-3.5">Brand</th>
+                            <th class="px-5 py-3.5">Spesifikasi Ukuran</th>
+                            <th class="px-5 py-3.5">Status Katalog</th>
+                            <th class="px-5 py-3.5 text-right">Update JDE</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-outline/10 text-on-surface">
+                    <tbody class="divide-y divide-outline-variant text-on-surface">
                         @forelse($data as $row)
-                            <tr class="hover:bg-surface-variant/20 transition-colors">
-                                <td class="px-4 py-3 font-mono text-xs font-bold text-primary">{{ $row->short_item_no }}</td>
-                                <td class="px-4 py-3 font-mono text-xs font-semibold">{{ $row->second_item_number }}</td>
-                                <td class="px-4 py-3">
-                                    <div class="font-medium text-on-surface">{{ $row->description }}</div>
-                                    <div class="text-[11px] text-on-surface-variant">{{ $row->template }}</div>
+                            <tr class="hover:bg-primary/5 transition-colors">
+                                <!-- Col 1: Rich Product Cell -->
+                                <td class="px-5 py-3.5">
+                                    <div class="font-bold text-on-surface text-[14px] leading-snug">{{ $row->description }}</div>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="inline-flex items-center gap-1 font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/60" title="SKU / Second Item Number">
+                                            <span class="material-symbols-outlined text-[13px] text-primary">barcode</span>
+                                            {{ $row->second_item_number }}
+                                        </span>
+                                        <span class="text-[10px] font-mono text-on-surface-variant/80">#{{ $row->short_item_no }}</span>
+                                        @if($row->template)
+                                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium truncate max-w-[120px]">{{ $row->template }}</span>
+                                        @endif
+                                    </div>
                                 </td>
-                                <td class="px-4 py-3">
-                                    @if(!empty($row->sales_code1_desc) && $row->sales_code1_desc !== 'NON-BRAND')
-                                        <span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
-                                            {{ $row->sales_code1_desc }}
+
+                                <!-- Col 2: Brand Pill -->
+                                <td class="px-5 py-3.5 whitespace-nowrap">
+                                    @php
+                                        $bName = strtoupper(trim($row->sales_code1_desc ?? ''));
+                                    @endphp
+                                    @if($bName === 'ROYAL')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span> ROYAL
+                                        </span>
+                                    @elseif($bName === 'ELITE')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> ELITE
+                                        </span>
+                                    @elseif($bName === 'LADY')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> LADY
+                                        </span>
+                                    @elseif($bName === 'SERENITY')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-50 text-purple-800 border border-purple-200 shadow-2xs">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-purple-600"></span> SERENITY
+                                        </span>
+                                    @elseif(!empty($bName) && $bName !== 'NON-BRAND')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span> {{ $bName }}
                                         </span>
                                     @else
-                                        <span class="px-2 py-0.5 rounded text-[11px] font-medium text-on-surface-variant/60 bg-surface-variant/50">
+                                        <span class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 bg-slate-100">
                                             NON-BRAND
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 font-mono text-xs">{{ $row->description_line_2 ?: '-' }}</td>
-                                <td class="px-4 py-3">
-                                    <span class="text-[11px] font-mono bg-surface-variant px-2 py-1 rounded max-w-[200px] truncate inline-block" title="{{ json_encode($row->segments) }}">
-                                        {{ $row->segments['segment1'] ?? '' }}/{{ $row->segments['segment2'] ?? '' }}/{{ $row->segments['segment5'] ?? '' }}x{{ $row->segments['segment6'] ?? '' }}
-                                    </span>
+
+                                <!-- Col 3: Specifications & Size -->
+                                <td class="px-5 py-3.5">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        @if($row->description_line_2)
+                                            <span class="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200">
+                                                {{ $row->description_line_2 }}
+                                            </span>
+                                        @endif
+                                        @if(!empty($row->segments))
+                                            <span class="text-[11px] font-mono text-on-surface-variant bg-surface-container px-2 py-0.5 rounded border border-outline-variant/60" title="{{ json_encode($row->segments) }}">
+                                                {{ $row->segments['segment1'] ?? '' }}/{{ $row->segments['segment2'] ?? '' }}
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
-                                <td class="px-4 py-3">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase {{ $row->sync_status === 'PROCESSED' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning' }}">
-                                        {{ $row->sync_status }}
-                                    </span>
+
+                                <!-- Col 4: Status Indicator -->
+                                <td class="px-5 py-3.5 whitespace-nowrap">
+                                    @if($row->sync_status === 'PROCESSED')
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Di Katalog
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Belum Disalin
+                                        </span>
+                                    @endif
                                 </td>
-                                <td class="px-4 py-3 text-right text-xs text-on-surface-variant">
-                                    {{ $row->date_update ? $row->date_update->format('Y-m-d') : '-' }}
+
+                                <!-- Col 5: Update Date -->
+                                <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                                    <div class="text-xs font-medium text-on-surface">
+                                        {{ $row->date_update ? $row->date_update->format('d M Y') : '-' }}
+                                    </div>
+                                    <div class="text-[10px] text-on-surface-variant font-medium">
+                                        {{ $row->updated_at ? $row->updated_at->diffForHumans() : '' }}
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-4 py-8 text-center text-on-surface-variant">Belum ada data Item Master. Silakan klik tombol "Tarik Item Master" di atas.</td>
+                                <td colspan="5" class="px-5 py-12 text-center text-on-surface-variant">
+                                    <span class="material-symbols-outlined text-4xl text-outline-variant mb-2 block">inbox</span>
+                                    <p class="font-bold text-sm text-on-surface">Belum ada data Item Master.</p>
+                                    <p class="text-xs text-on-surface-variant mt-1">Silakan klik tombol "Tarik Item Master JDE" di kanan atas.</p>
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>

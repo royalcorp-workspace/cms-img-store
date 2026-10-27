@@ -233,8 +233,8 @@
                                 <div class="text-[11px] text-slate-600 mt-0.5 flex items-center gap-1.5 flex-wrap">
                                     <span class="font-semibold text-primary">{{ $variant?->variant_name ?? '-' }}</span>
                                     @if($variant?->sku)
-                                        <span class="font-mono text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded border border-outline-variant/30">
-                                            {{ $variant->sku }}
+                                        <span class="font-mono text-[10px] font-semibold text-slate-700 dark:text-amber-300 bg-slate-100 dark:bg-stone-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-stone-700 shadow-2xs">
+                                            SKU: {{ $variant->sku }}
                                         </span>
                                     @endif
                                 </div>

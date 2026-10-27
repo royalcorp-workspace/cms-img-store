@@ -2,11 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>@yield('title', 'Authentication') | IMG Admin</title>
+    <title>@yield('title', 'Login') | Royal Retail Hub</title>
     <link rel="icon" type="image/png" href="{{ asset('admin/assets/images/logo.png') }}">
     <link rel="shortcut icon" type="image/png" href="{{ asset('admin/assets/images/logo.png') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Admin Authentication" />
+    <meta name="description" content="Royal Retail Hub - Omnichannel Retail Platform" />
+
+    <script>
+        if (localStorage.getItem('admin-theme') === 'dark' || (!('admin-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
@@ -84,42 +92,42 @@
     </script>
     <style>
         :root {
-            --color-primary: #1c0e07;
+            --color-primary: #3FA2F6;
             --color-on-primary: #ffffff;
-            --color-background: #fcfbfa;
-            --color-on-background: #1e1e1e;
-            --color-surface: #fcfbfa;
-            --color-on-surface: #1e1e1e;
-            --color-surface-dim: #dfdeda;
+            --color-background: #f4f3f0;
+            --color-on-background: #292524;
+            --color-surface: #faf9f7;
+            --color-on-surface: #292524;
+            --color-surface-dim: #ded9d0;
             --color-surface-bright: #ffffff;
             --color-surface-container-lowest: #ffffff;
             --color-surface-container-low: #f7f6f3;
-            --color-surface-container: #f1efe9;
-            --color-surface-container-high: #eeece8;
-            --color-surface-container-highest: #e6e4e1;
-            --color-on-surface-variant: #5c4a3d;
-            --color-outline: #80756e;
-            --color-outline-variant: #dccfca;
-            --color-surface-gray: #f7f6f3;
+            --color-surface-container: #eae7e1;
+            --color-surface-container-high: #ded9d0;
+            --color-surface-container-highest: #cfc8bc;
+            --color-on-surface-variant: #78716c;
+            --color-outline: #a8a29e;
+            --color-outline-variant: #e5e2dc;
+            --color-surface-gray: #f4f3f0;
         }
         .dark {
-            --color-primary: #e2cbbe;
-            --color-on-primary: #2c2118;
-            --color-background: #151615;
-            --color-on-background: #f3f0ec;
-            --color-surface: #151615;
-            --color-on-surface: #f3f0ec;
-            --color-surface-dim: #100d0a;
-            --color-surface-bright: #242523;
-            --color-surface-container-lowest: #151615;
-            --color-surface-container-low: #20211f;
-            --color-surface-container: #2a2b29;
-            --color-surface-container-high: #343532;
-            --color-surface-container-highest: #3d3e3a;
-            --color-on-surface-variant: #bcaaa4;
-            --color-outline: #bcaaa4;
-            --color-outline-variant: #493e35;
-            --color-surface-gray: #151615;
+            --color-primary: #d97706;
+            --color-on-primary: #ffffff;
+            --color-background: #0c0a09;
+            --color-on-background: #f5f5f4;
+            --color-surface: #1c1917;
+            --color-on-surface: #f5f5f4;
+            --color-surface-dim: #0c0a09;
+            --color-surface-bright: #292524;
+            --color-surface-container-lowest: #1c1917;
+            --color-surface-container-low: #24211e;
+            --color-surface-container: #292524;
+            --color-surface-container-high: #383431;
+            --color-surface-container-highest: #44403c;
+            --color-on-surface-variant: #a8a29e;
+            --color-outline: #57534e;
+            --color-outline-variant: #383431;
+            --color-surface-gray: #0c0a09;
         }
         
         body {
@@ -130,29 +138,29 @@
         }
 
         input, select, textarea {
-            border-radius: 0.5rem !important;
+            border-radius: 0.625rem !important;
             border: 1px solid var(--color-outline-variant) !important;
-            padding: 0.625rem 0.875rem;
-            background-color: var(--color-surface-container-lowest) !important;
+            padding: 0.75rem 1rem;
+            background-color: var(--color-surface) !important;
             color: var(--color-on-surface) !important;
             transition: all 0.2s ease !important;
         }
         input:focus, select:focus, textarea:focus {
             outline: none !important;
-            border-color: var(--color-outline) !important;
-            box-shadow: 0 0 0 4px rgba(128, 117, 110, 0.15) !important;
+            border-color: #3FA2F6 !important;
+            box-shadow: 0 0 0 3px rgba(63, 162, 246, 0.2) !important;
         }
 
         .dark input,
         .dark select,
         .dark textarea {
-            background-color: var(--color-surface-container) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-            color: #fff !important;
+            background-color: #292524 !important;
+            border-color: #383431 !important;
+            color: #f5f5f4 !important;
         }
         .dark input:focus, .dark select:focus, .dark textarea:focus {
-            border-color: var(--color-primary) !important;
-            box-shadow: 0 0 0 4px rgba(226, 203, 190, 0.2) !important;
+            border-color: #fbbf24 !important;
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2) !important;
         }
 
         .material-symbols-outlined {

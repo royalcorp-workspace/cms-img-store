@@ -1,8 +1,13 @@
-<aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar-width bg-sidebar-bg flex flex-col py-6 z-50 transition-all duration-300">
-    <div class="px-6 mb-6 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <img alt="IMG Logo" class="h-8 w-auto object-contain sidebar-logo" src="{{ asset('admin/assets/images/logo.png') }}">
-            <span class="font-headline-xl text-headline-xl font-bold text-sidebar-active tracking-tight">IMG</span>
+<aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar-width bg-sidebar-bg flex flex-col py-5 z-50 transition-all duration-300">
+    <div class="px-5 mb-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 dark:from-amber-600 dark:to-orange-700 flex items-center justify-center shadow-lg p-1.5 border border-white/20 shrink-0">
+                <img alt="IMG Logo" class="h-full w-auto object-contain sidebar-logo" src="{{ asset('admin/assets/images/logo.png') }}">
+            </div>
+            <div class="sidebar-link-text overflow-hidden">
+                <span class="sidebar-brand-title font-bold text-white text-base tracking-tight block leading-tight" style="color: #ffffff !important;">Royal Retail Hub</span>
+                <span class="text-[10px] font-semibold text-amber-400 tracking-wider uppercase block">Omnichannel Retail Platform</span>
+            </div>
         </div>
     </div>
     <nav class="flex-1 min-h-0 overflow-y-auto sidebar-scroll">
@@ -139,21 +144,21 @@
             @endforeach
         </div>
     </nav>
-    <div class="mt-auto px-4 pt-4 border-t border-white/10 sidebar-bottom">
+    <div class="mt-auto px-4 pt-3.5 border-t border-white/10 sidebar-bottom">
         @php
             $admin = \Illuminate\Support\Facades\Auth::guard('admin')->user();
         @endphp
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
             @if($admin && !empty($admin->photo_url))
-                <img class="w-10 h-10 rounded-full object-cover border-2 border-primary-container shrink-0 sidebar-bottom-img" src="{{ $admin->photo_url }}" alt="{{ $admin?->name }}"/>
+                <img class="w-9 h-9 rounded-lg object-cover border border-white/20 shrink-0 sidebar-bottom-img" src="{{ $admin->photo_url }}" alt="{{ $admin?->name }}"/>
             @else
-                <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center border-2 border-primary-container shrink-0 sidebar-bottom-img">
-                    <span class="text-sidebar-active font-bold text-sm">{{ strtoupper(substr($admin?->name ?? 'A', 0, 1)) }}</span>
+                <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-blue-700 dark:from-amber-700 dark:to-stone-900 flex items-center justify-center border border-white/20 shrink-0 sidebar-bottom-img shadow-sm">
+                    <span class="text-white font-bold text-xs">{{ strtoupper(substr($admin?->name ?? 'A', 0, 1)) }}</span>
                 </div>
             @endif
             <div class="sidebar-bottom-text overflow-hidden">
-                <p class="font-label-md text-label-md text-sidebar-active truncate">{{ $admin?->name ?? 'User' }}</p>
-                <p class="text-[10px] font-label-sm text-sidebar-text uppercase truncate">
+                <p class="text-xs font-semibold text-white truncate" style="color: #ffffff !important;">{{ $admin?->name ?? 'User' }}</p>
+                <p class="text-[10px] font-medium text-amber-400 uppercase truncate">
                     {{ $admin?->roles->first()?->name ?? 'Administrator' }}
                 </p>
             </div>

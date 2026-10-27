@@ -21,26 +21,32 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
+        $loginInput = strtolower(trim((string) $request->input('email')));
         $request->merge([
-            'email' => strtolower(trim((string) $request->input('email'))),
+            'email' => $loginInput,
         ]);
 
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string',
             'password' => 'required|string',
         ], [
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid.',
+            'email.required' => 'Email atau username wajib diisi.',
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        $email = $request->input('email');
-        $admin = Admin::whereRaw('LOWER(email) = ?', [$email])
-            ->where('deleted', false)
+        $admin = Admin::where('deleted', false)
+            ->where(function ($query) use ($loginInput) {
+                $query->whereRaw('LOWER(email) = ?', [$loginInput])
+                      ->orWhereRaw('LOWER(name) = ?', [$loginInput])
+                      ->orWhereHas('user', function ($q) use ($loginInput) {
+                          $q->whereRaw('LOWER(username) = ?', [$loginInput])
+                            ->orWhereRaw('LOWER(email) = ?', [$loginInput]);
+                      });
+            })
             ->first();
 
         $credentials = [
-            'email' => $admin ? $admin->email : $email,
+            'email' => $admin ? $admin->email : $loginInput,
             'password' => $request->input('password'),
         ];
 
@@ -51,7 +57,7 @@ class LoginController extends Controller
         }
 
         throw ValidationException::withMessages([
-            'email' => 'Email atau password salah.',
+            'email' => 'Email/username atau password salah.',
         ]);
     }
 
