@@ -14,14 +14,14 @@ class PartitionSchemasCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'db:partition-schemas {--force : Force schema creation and table migration}';
+    protected $signature = 'db:partition-schemas {--force : Force schema creation and table migration} {--clean-only : Only remove duplicate tables from public schema}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Partition database tables into their respective domain schemas (PostgreSQL Multi-Schema)';
+    protected $description = 'Partition database tables into their respective domain schemas (PostgreSQL Multi-Schema) and clean public duplicates';
 
     /**
      * Map of domain schemas and their associated tables.
@@ -30,119 +30,175 @@ class PartitionSchemasCommand extends Command
      */
     protected array $domainSchemas = [
         'finish_goods' => [
-            'products',
-            'product_variants',
+            'brand_category_relations',
             'brands',
             'product_category',
             'product_colors',
             'product_images',
-            'product_tags',
+            'product_reviews',
+            'product_suggestions',
             'product_tag_relations',
-            'ref_product_categories',
+            'product_tags',
+            'product_variants',
+            'products',
             'products_bundling',
             'products_bundling_items',
+            'ref_product_categories',
             'reviews',
-            'product_suggestions',
-            'product_reviews',
-            'brand_category_relations',
-            'temporary_jde_item_masters',
             'temporary_jde_base_prices',
+            'temporary_jde_item_masters',
         ],
         'sales' => [
-            'orders',
+            'credit_memos',
+            'invoice_items',
+            'invoices',
             'order_items',
             'order_logs',
-            'settlements',
-            'payments',
+            'order_voids',
+            'orders',
             'payment_methods',
-            'invoices',
-            'invoice_items',
+            'payments',
+            'settlements',
             'void_orders',
-            'credit_memos',
         ],
         'promo' => [
-            'vouchers',
-            'voucher_products',
-            'voucher_brands',
-            'voucher_usages',
-            'voucher_claims',
-            'voucher_customers',
-            'price_product_settings',
-            'price_product_setting_items',
-            'events',
             'event_popups',
+            'events',
+            'price_product_setting_items',
+            'price_product_setting_store',
+            'price_product_setting_tier',
+            'price_product_setting_volume_tiers',
+            'price_product_settings',
+            'store_followers',
+            'voucher_brands',
+            'voucher_categories',
+            'voucher_claims',
+            'voucher_customer_groups',
+            'voucher_customers',
+            'voucher_products',
+            'voucher_usages',
+            'vouchers',
         ],
         'customer' => [
-            'customers',
-            'customer_groups',
-            'customer_group_relations',
+            'add_to_cart_items',
+            'add_to_carts',
             'addresses',
-            'shipping_addresses',
-            'shipping_address_rates',
+            'customer_group_members',
+            'customer_group_relations',
+            'customer_groups',
+            'customers',
             'wishlists',
         ],
         'shipping' => [
-            'couriers',
+            'cities',
+            'courier_category',
+            'courier_product',
             'courier_restrictions',
             'courier_rules',
+            'couriers',
             'deliveries',
+            'delivery_items',
             'delivery_logs',
-            'packing_outs',
-            'packing_slips',
-            'packing_slip_items',
-            'picking_lists',
-            'picking_list_items',
             'hand_overs',
             'hand_over_orders',
+            'hand_overs_items',
+            'packing_outs',
+            'packing_slip_items',
+            'packing_slips',
+            'picking_list_items',
+            'picking_lists',
             'provinces',
-            'cities',
+            'shipping_addresses',
+            'shipping_address_rates',
             'sub_districts',
             'villages',
         ],
         'inventory' => [
+            'branch_weekly_limits',
+            'buffer_items',
+            'buffers',
             'inventories',
-            'stock_cards',
-            'warehouses',
             'order_buffers',
             'order_buffer_items',
             'order_buffer_notes',
+            'product_stocks',
+            'stock_cards',
+            'warehouse_locations',
+            'warehouses',
         ],
         'store' => [
+            'branches',
             'store',
-            'store_channels',
+            'store_channel',
+            'store_channel_group',
+            'store_channel_groups',
             'store_channel_stocks',
-            'store_tiers',
+            'store_channels',
+            'store_group',
             'store_groups',
-            'store_followers',
+            'store_tier',
+            'store_tiers',
             'temporary_jde_branches',
             'temporary_jde_customers',
+            'tiers',
+            'trash_stores',
         ],
         'content' => [
-            'banners',
+            'about_us',
             'banner_images',
-            'homepage_sections',
-            'homepage_section_items',
-            'notifications',
+            'banners',
+            'blog_posts',
             'chats',
             'chat_messages',
+            'faqs',
+            'homepage_sections',
+            'homepage_section_items',
+            'how_to_returns',
+            'notifications',
+            'privacy_policies',
+            'terms_and_conditions',
+            'warranty_claims',
         ],
         'user_managements' => [
-            'users',
-            'user_admin',
-            'roles',
-            'permissions',
-            'role_permissions',
-            'user_roles',
-            'rbac_user_roles',
             'activity_logs',
-            'login_attempts',
-            'device_sessions',
             'api_keys',
-            'key_usage',
-            'password_resets',
+            'device_sessions',
             'email_verifications',
+            'key_permissions',
+            'key_usage',
+            'login_attempts',
+            'model_has_permissions',
+            'model_has_roles',
             'otps',
+            'password_resets',
+            'permissions',
+            'rbac_permissions',
+            'rbac_role_permissions',
+            'rbac_roles',
+            'rbac_user_roles',
+            'refresh_tokens',
+            'role_has_permissions',
+            'roles',
+            'user_admin',
+            'user_roles',
+            'users',
         ],
+    ];
+
+    /**
+     * System / framework tables that MUST stay in the public schema.
+     *
+     * @var list<string>
+     */
+    protected array $reservedPublicTables = [
+        'migrations',
+        'sessions',
+        'cache',
+        'cache_locks',
+        'jobs',
+        'failed_jobs',
+        'job_batches',
+        'personal_access_tokens',
     ];
 
     /**
@@ -174,7 +230,7 @@ class PartitionSchemasCommand extends Command
             $this->comment("  ALTER DATABASE {$currentDb} OWNER TO {$currentUser};");
             $this->newLine();
 
-            if (!$this->option('force') && !$this->confirm('Apakah Anda ingin mencoba melanjutkan? (Mungkin akan error permission)', false)) {
+            if (!$this->option('force') && !$this->confirm('Apakah Anda ingin mencoba melanjutkan?', false)) {
                 return self::FAILURE;
             }
         }
@@ -182,7 +238,7 @@ class PartitionSchemasCommand extends Command
         $allSchemas = array_keys($this->domainSchemas);
         $searchPathList = implode(', ', array_merge(['public'], $allSchemas));
 
-        // 1. Buat Schema
+        // 1. Buat Schema jika belum ada
         $this->info('1. Memeriksa dan Membuat Domain Schemas...');
         foreach ($allSchemas as $schema) {
             $exists = (bool) DB::selectOne("SELECT 1 FROM information_schema.schemata WHERE schema_name = ?", [$schema]);
@@ -216,13 +272,15 @@ class PartitionSchemasCommand extends Command
         }
         $this->newLine();
 
-        // 3. Pindahkan Tabel dari public ke Domain Schema
-        $this->info('3. Memindahkan Tabel ke Domain Schemas...');
+        // 3. Pindahkan Tabel dari public ke Domain Schema atau bersihkan duplikat
+        $this->info('3. Memproses Pemindahan Tabel & Pembersihan Duplikat di public...');
         $totalMoved = 0;
+        $totalCleaned = 0;
+
         foreach ($this->domainSchemas as $targetSchema => $tables) {
             $schemaReady = (bool) DB::selectOne("SELECT 1 FROM information_schema.schemata WHERE schema_name = ?", [$targetSchema]);
             if (!$schemaReady) {
-                $this->warn("   [!] Schema [{$targetSchema}] belum ada di database. Tabel tidak dapat dipindahkan.");
+                $this->warn("   [!] Schema [{$targetSchema}] belum ada di database. Dilewati.");
                 continue;
             }
 
@@ -233,19 +291,41 @@ class PartitionSchemasCommand extends Command
                 );
 
                 if ($existsInPublic) {
-                    try {
-                        DB::statement("ALTER TABLE \"public\".\"{$table}\" SET SCHEMA \"{$targetSchema}\"");
-                        $this->line("   - [public.{$table}] -> <info>[{$targetSchema}.{$table}]</info>");
-                        $totalMoved++;
-                    } catch (\Throwable $e) {
-                        $this->line("   - [public.{$table}]: <error>Gagal ({$e->getMessage()})</error>");
+                    $existsInTarget = (bool) DB::selectOne(
+                        "SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ?",
+                        [$targetSchema, $table]
+                    );
+
+                    if (!$existsInTarget) {
+                        // Tabel hanya ada di public -> Pindahkan ke domain schema
+                        try {
+                            DB::statement("ALTER TABLE \"public\".\"{$table}\" SET SCHEMA \"{$targetSchema}\"");
+                            $this->line("   - [public.{$table}] -> <info>[{$targetSchema}.{$table}] (MOVED)</info>");
+                            $totalMoved++;
+                        } catch (\Throwable $e) {
+                            $this->line("   - [public.{$table}]: <error>Gagal move ({$e->getMessage()})</error>");
+                        }
+                    } else {
+                        // Tabel SUDAH ADA di domain schema -> Hapus duplikat lama di public
+                        try {
+                            DB::statement("DROP TABLE \"public\".\"{$table}\" CASCADE");
+                            $this->line("   - [public.{$table}] -> <comment>Dihapus dari public (sudah ada di {$targetSchema}.{$table})</comment>");
+                            $totalCleaned++;
+                        } catch (\Throwable $e) {
+                            $this->line("   - [public.{$table}]: <error>Gagal hapus duplikat ({$e->getMessage()})</error>");
+                        }
                     }
                 }
             }
         }
 
         $this->newLine();
-        $this->info("SELESAI: Total {$totalMoved} tabel berhasil dipindahkan ke Domain Schema masing-masing.");
+        $this->info("===========================================================");
+        $this->info("SELESAI:");
+        $this->info("  - {$totalMoved} tabel berhasil dipindahkan ke Domain Schema.");
+        $this->info("  - {$totalCleaned} tabel duplikat berhasil dibersihkan dari schema public.");
+        $this->info("===========================================================");
+
         return self::SUCCESS;
     }
 }
