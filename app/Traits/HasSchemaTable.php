@@ -58,8 +58,10 @@ trait HasSchemaTable
         'App\Models\Permission' => 'user_managements',
         'App\Models\Auth\\' => 'user_managements',
 
-        // Reviews
+        // Reviews & References
         'App\Models\Review' => 'finish_goods',
+        'App\Models\Reff' => 'finish_goods',
+        'App\Models\Menu' => 'user_managements',
     ];
 
     /**
