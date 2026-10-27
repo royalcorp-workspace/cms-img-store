@@ -165,7 +165,18 @@ return new class extends Migration
 
         // 1. Create all domain schemas if they do not exist
         foreach ($allSchemas as $schema) {
-            DB::statement("CREATE SCHEMA IF NOT EXISTS \"{$schema}\"");
+            $schemaExists = DB::selectOne(
+                "SELECT 1 FROM information_schema.schemata WHERE schema_name = ?",
+                [$schema]
+            );
+
+            if (!$schemaExists) {
+                try {
+                    DB::statement("CREATE SCHEMA IF NOT EXISTS \"{$schema}\"");
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Skipped CREATE SCHEMA {$schema} due to DB permissions: " . $e->getMessage());
+                }
+            }
         }
 
         // 2. Set search_path for current connection and alter database default
