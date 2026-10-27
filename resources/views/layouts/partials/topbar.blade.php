@@ -2,28 +2,35 @@
     $admin = \Illuminate\Support\Facades\Auth::guard('admin')->user();
     $canReceiveNotification = $admin && ($admin->isSuperAdmin() || $admin->hasPermission('notifications.index'));
 @endphp
-<header class="h-16 px-gutter flex justify-between items-center sticky top-0 z-40 bg-surface border-b border-outline-variant transition-all duration-300">
+<header class="h-16 px-gutter flex justify-between items-center sticky top-0 z-40 bg-surface/95 backdrop-blur-md border-b border-outline-variant transition-all duration-300 shadow-xs">
     <div class="flex items-center gap-4">
+        <!-- Quick Search Pill Bar (UX Enhancement) -->
+        <div class="hidden sm:flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-surface-gray border border-outline-variant/70 text-xs text-on-surface-variant font-medium hover:border-primary/40 transition-colors shadow-2xs cursor-pointer">
+            <span class="material-symbols-outlined text-[17px] text-primary">search</span>
+            <span>Cari modul retail, katalog kasur, transaksi...</span>
+            <span class="ml-2 px-1.5 py-0.5 rounded bg-surface border border-outline-variant/70 text-[10px] font-mono text-on-surface-variant shadow-2xs font-semibold">Ctrl K</span>
+        </div>
+
         <div class="flex items-center gap-2">
             @if($canReceiveNotification)
                 <!-- Notifications Dropdown Container (Role-Gated) -->
                 <div class="relative" id="notificationDropdownContainer">
-                    <button id="notificationDropdownBtn" type="button" class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors relative flex items-center justify-center focus:outline-none" title="Notifikasi Stok & Sistem">
-                        <span class="material-symbols-outlined text-[24px]">notifications</span>
+                    <button id="notificationDropdownBtn" type="button" class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-xl transition-all relative flex items-center justify-center focus:outline-none" title="Notifikasi Stok & Sistem">
+                        <span class="material-symbols-outlined text-[22px]">notifications</span>
                         <!-- Dynamic Stock Alert Badge -->
-                        <span id="notificationBadge" class="hidden absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-600 text-white text-[10px] font-bold rounded-full px-1 flex items-center justify-center border-2 border-surface shadow-sm animate-pulse">0</span>
+                        <span id="notificationBadge" class="hidden absolute top-1.5 right-1.5 min-w-[16px] h-[16px] bg-red-600 text-white text-[9px] font-bold rounded-full px-1 flex items-center justify-center border-2 border-surface shadow-xs animate-pulse">0</span>
                     </button>
 
                     <!-- Notifications Dropdown Box -->
-                    <div id="notificationDropdownMenu" class="hidden absolute left-0 mt-2 w-80 sm:w-96 bg-surface rounded-2xl shadow-2xl border border-outline-variant/40 overflow-hidden z-50 transition-all duration-200">
+                    <div id="notificationDropdownMenu" class="hidden absolute left-0 mt-2 w-80 sm:w-96 bg-surface rounded-2xl shadow-2xl border border-outline-variant/60 overflow-hidden z-50 transition-all duration-200">
                         <!-- Dropdown Header -->
-                        <div class="px-4 py-3 bg-surface-container/60 border-b border-outline-variant/30 flex items-center justify-between">
+                        <div class="px-4 py-3 bg-surface-gray border-b border-outline-variant/40 flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined text-primary text-[20px]">crisis_alert</span>
                                 <span class="font-bold text-sm text-on-surface">Pemberitahuan Stok</span>
                                 <span id="notificationHeaderCount" class="text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-semibold px-2 py-0.5 rounded-full">0 Baru</span>
                             </div>
-                            <button type="button" id="markAllReadBtn" class="text-xs text-primary hover:underline font-medium cursor-pointer">
+                            <button type="button" id="markAllReadBtn" class="text-xs text-primary hover:underline font-semibold cursor-pointer">
                                 Tandai semua dibaca
                             </button>
                         </div>
@@ -37,7 +44,7 @@
                         </div>
 
                         <!-- Dropdown Footer -->
-                        <div class="px-4 py-2.5 bg-surface-container/30 border-t border-outline-variant/30 flex items-center justify-between text-xs text-on-surface-variant">
+                        <div class="px-4 py-2.5 bg-surface-gray/50 border-t border-outline-variant/40 flex items-center justify-between text-xs text-on-surface-variant">
                             <a href="{{ route('inventory.index') }}" class="font-semibold text-primary hover:underline flex items-center gap-1">
                                 <span>Buka Inventori</span>
                                 <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -50,47 +57,46 @@
                 </div>
             @endif
 
-            <button id="darkModeToggle" class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors" title="Toggle Dark Mode">
-                <span class="material-symbols-outlined">dark_mode</span>
+            <button id="darkModeToggle" class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-xl transition-all" title="Toggle Dark Mode">
+                <span class="material-symbols-outlined text-[22px]">dark_mode</span>
             </button>
         </div>
     </div>
-    <div class="flex items-center gap-4">
-        <div class="h-8 w-[1px] bg-outline-variant mx-2"></div>
+    <div class="flex items-center gap-3">
+        <div class="h-6 w-[1px] bg-outline-variant mx-1"></div>
         <div class="relative" id="profileDropdownContainer">
-            <button class="flex items-center gap-3 pl-2 group" id="profileDropdownBtn">
+            <button class="flex items-center gap-3 p-1.5 rounded-xl hover:bg-surface-gray transition-colors group" id="profileDropdownBtn">
                 <div class="text-right hidden sm:block">
-                    <p class="font-label-md text-[14px] leading-none text-on-surface group-hover:text-primary transition-colors">{{ $admin?->name ?? 'User' }}</p>
-                    <p class="text-label-sm text-on-surface-variant">{{ $admin?->email ?? 'user@example.com' }}</p>
+                    <p class="text-xs font-bold leading-tight text-on-surface group-hover:text-primary transition-colors">{{ $admin?->name ?? 'User' }}</p>
+                    <p class="text-[10px] font-medium text-on-surface-variant">{{ $admin?->email ?? 'admin@royal.co.id' }}</p>
                 </div>
-                <div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border-2 border-outline-variant group-hover:border-primary transition-colors">
-                    <span class="text-on-surface font-bold text-sm">{{ strtoupper(substr($admin?->name ?? 'U', 0, 1)) }}</span>
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-700 dark:from-amber-700 dark:to-stone-900 flex items-center justify-center text-white font-bold text-xs shadow-xs border border-white/20">
+                    {{ strtoupper(substr($admin?->name ?? 'U', 0, 1)) }}
                 </div>
                 <span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-colors">expand_more</span>
             </button>
-            <div id="profileDropdownMenu" class="hidden absolute right-0 top-full mt-1 border-0 shadow-lg rounded-lg overflow-hidden z-50" style="min-width: 200px; background-color: var(--color-surface-container-lowest);">
-                <div class="px-3 py-2 border-b border-outline-variant/30">
-                    <p class="text-body-md font-semibold" style="color: var(--color-on-surface);">{{ $admin?->name ?? 'User' }}</p>
-                    <p class="text-label-sm" style="color: var(--color-on-surface-variant);">{{ $admin?->email ?? 'user@example.com' }}</p>
+            <div id="profileDropdownMenu" class="hidden absolute right-0 top-full mt-2 border border-outline-variant/60 shadow-xl rounded-2xl overflow-hidden z-50 bg-surface" style="min-width: 220px;">
+                <div class="px-4 py-3 bg-surface-gray border-b border-outline-variant/30">
+                    <p class="text-xs font-bold text-on-surface">{{ $admin?->name ?? 'User' }}</p>
+                    <p class="text-[11px] text-on-surface-variant">{{ $admin?->email ?? 'admin@royal.co.id' }}</p>
                 </div>
-                <div class="py-1">
-                    <a href="{{ route('profile.show') }}" class="flex items-center px-3 py-2 text-body-md transition-colors" style="color: var(--color-on-surface);" onmouseover="this.style.backgroundColor='var(--color-surface-container-high)'" onmouseout="this.style.backgroundColor='transparent'">
-                        <span class="material-symbols-outlined text-[18px] mr-2 align-middle">person</span> Edit Profile
-                    </a>
-                    <a href="#" class="flex items-center px-3 py-2 text-body-md transition-colors" style="color: var(--color-on-surface);" onmouseover="this.style.backgroundColor='var(--color-surface-container-high)'" onmouseout="this.style.backgroundColor='transparent'">
-                        <span class="material-symbols-outlined text-[18px] mr-2 align-middle">settings</span> Settings
+                <div class="py-1.5">
+                    <a href="{{ route('profile.show') }}" class="flex items-center px-4 py-2 text-xs font-medium text-on-surface hover:bg-surface-container hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined text-[18px] mr-2.5">person</span> Edit Profil
                     </a>
                 </div>
                 <div class="border-t border-outline-variant/30"></div>
                 <div class="py-1">
                     <form method="POST" action="{{ route('logout') }}" class="m-0">
                         @csrf
-                        <button type="submit" class="w-full text-left flex items-center px-3 py-2 text-body-md transition-colors" style="color: #ef4444;" onmouseover="this.style.backgroundColor='#fef2f2'" onmouseout="this.style.backgroundColor='transparent'">
-                            <span class="material-symbols-outlined text-[18px] mr-2 align-middle">logout</span> Logout
+                        <button type="submit" class="w-full text-left flex items-center px-4 py-2 text-xs font-semibold text-danger hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer">
+                            <span class="material-symbols-outlined text-[18px] mr-2.5">logout</span> Logout
                         </button>
                     </form>
                 </div>
             </div>
+        </div>
+    </div>
         </div>
     </div>
 </header>

@@ -218,9 +218,9 @@
                 @endphp
                 <div class="product-inventory-group border-b border-outline-variant/30 last:border-b-0 bg-white" id="product-group-{{ $product->id }}">
                     <!-- Product Header Bar (Segregasi Produk) -->
-                    <div class="p-4 bg-slate-50/70 hover:bg-slate-100/70 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-l-primary">
+                    <div class="p-4 bg-stone-100/70 dark:bg-stone-900/90 hover:bg-stone-200/50 dark:hover:bg-stone-800/80 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-l-primary">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 min-w-[40px] max-w-[40px] min-h-[40px] max-h-[40px] rounded-lg bg-surface-container-low border border-outline-variant/30 overflow-hidden flex-shrink-0 shadow-2xs flex items-center justify-center">
+                            <div class="w-10 h-10 min-w-[40px] max-w-[40px] min-h-[40px] max-h-[40px] rounded-lg bg-surface-container-low dark:bg-stone-800 border border-outline-variant/30 overflow-hidden flex-shrink-0 shadow-2xs flex items-center justify-center">
                                 @if($pImg)
                                     <img src="{{ $pImg }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
                                 @else
@@ -229,9 +229,9 @@
                             </div>
                             <div>
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <h3 class="text-sm font-bold text-on-surface">{{ $product->name }}</h3>
+                                    <h3 class="text-sm font-bold text-slate-800 dark:text-stone-100">{{ $product->name }}</h3>
                                     @if($product->code)
-                                        <span class="text-[10px] font-mono font-bold bg-white text-on-surface-variant px-2 py-0.5 rounded border border-outline-variant/40">
+                                        <span class="text-[10px] font-mono font-bold bg-white dark:bg-stone-800 text-slate-700 dark:text-amber-300 px-2 py-0.5 rounded border border-slate-200 dark:border-stone-700 shadow-2xs">
                                             {{ $product->code }}
                                         </span>
                                     @endif
@@ -247,7 +247,7 @@
                                     @endif
                                 </div>
                                 <div class="text-xs text-on-surface-variant mt-1 flex items-center gap-2">
-                                    <span class="font-medium text-slate-600">{{ $totalProdVariants }} Varian</span>
+                                    <span class="font-medium text-slate-600 dark:text-stone-400">{{ $totalProdVariants }} Varian</span>
                                     <span>•</span>
                                     <span class="text-[11px]">Total Fisik: <strong class="text-on-surface prod-total-onstock">{{ number_format($totalProdOnStock) }}</strong> unit</span>
                                     <span>•</span>
@@ -262,7 +262,7 @@
                                 <span class="w-2 h-2 rounded-full {{ $totalProdAvailable > 0 ? 'bg-success' : 'bg-danger' }}"></span>
                                 <span>{{ $totalProdAvailable > 0 ? 'Tersedia (' . number_format($totalProdAvailable) . ' unit)' : 'Stok Habis' }}</span>
                             </span>
-                            <button type="button" onclick="toggleProductVariants('{{ $product->id }}')" class="p-1.5 hover:bg-white rounded-lg text-on-surface-variant hover:text-on-surface border border-outline-variant/30 transition-all" title="Buka / Tutup Varian">
+                            <button type="button" onclick="toggleProductVariants('{{ $product->id }}')" class="p-1.5 hover:bg-white dark:hover:bg-stone-800 rounded-lg text-on-surface-variant hover:text-on-surface border border-outline-variant/30 transition-all" title="Buka / Tutup Varian">
                                 <span class="material-symbols-outlined text-[20px] transition-transform duration-200" id="chevron-{{ $product->id }}">expand_less</span>
                             </button>
                         </div>
@@ -275,10 +275,10 @@
                                 <tr class="bg-surface-container-low/60 border-b border-outline-variant/20 text-on-surface-variant text-[11px] font-bold uppercase tracking-wider">
                                     <th class="py-2.5 px-4 min-w-[220px]">Varian & SKU</th>
                                     <th class="py-2.5 px-3 min-w-[150px]">Lokasi Gudang</th>
-                                    <th class="py-2.5 px-3 text-center min-w-[100px] bg-slate-100/70 text-slate-800">
+                                    <th class="py-2.5 px-3 text-center min-w-[100px] bg-slate-100/70 dark:bg-stone-800/60 text-slate-800 dark:text-stone-200">
                                         On Stock
                                     </th>
-                                    <th class="py-2.5 px-3 text-center min-w-[120px] bg-blue-50/70 text-blue-900 border-x border-blue-200/60">
+                                    <th class="py-2.5 px-3 text-center min-w-[120px] bg-blue-50/70 dark:bg-amber-950/30 text-blue-900 dark:text-amber-300 border-x border-blue-200/60 dark:border-amber-900/40">
                                         Incoming (Input Stok)
                                     </th>
                                     <th class="py-2.5 px-2.5 text-center min-w-[75px]">On Order</th>
@@ -310,14 +310,14 @@
                                             </div>
                                             <div class="mt-0.5 ml-5 flex items-center gap-2 flex-wrap">
                                                 @if($variant->sku)
-                                                    <span class="font-mono text-[10px] text-on-surface-variant bg-slate-100 px-1.5 py-0.5 rounded border border-outline-variant/20">
+                                                    <span class="font-mono text-[10px] font-semibold text-slate-700 dark:text-amber-300 bg-slate-100 dark:bg-stone-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-stone-700 shadow-2xs">
                                                         SKU: {{ $variant->sku }}
                                                     </span>
                                                 @endif
                                                 @if(!empty($variant->attributes) && is_array($variant->attributes))
                                                     @foreach($variant->attributes as $k => $vAttr)
                                                         @if(!in_array($k, ['width', 'length', 'height', 'weight', 'image', 'image_url', '_completeness_title']) && is_string($vAttr))
-                                                            <span class="text-[10px] text-slate-500">{{ $k }}: {{ $vAttr }}</span>
+                                                            <span class="text-[10px] text-slate-500 dark:text-stone-400">{{ $k }}: {{ $vAttr }}</span>
                                                         @endif
                                                     @endforeach
                                                 @endif
@@ -327,7 +327,7 @@
                                         <!-- Location & Channel -->
                                         <td class="py-3 px-3">
                                             <div class="text-xs font-semibold text-on-surface flex items-center gap-1">
-                                                <span class="material-symbols-outlined text-[14px] text-slate-500">warehouse</span>
+                                                <span class="material-symbols-outlined text-[14px] text-slate-500 dark:text-stone-400">warehouse</span>
                                                 <span>{{ $whName }}</span>
                                             </div>
                                             <div class="text-[10px] text-on-surface-variant mt-0.5 flex items-center gap-1">
@@ -337,17 +337,17 @@
                                         </td>
 
                                         <!-- On Stock: on stock + incoming terakhir - outgoing -->
-                                        <td class="py-2.5 px-3 text-center bg-slate-50/50">
+                                        <td class="py-2.5 px-3 text-center bg-slate-50/50 dark:bg-stone-900/40">
                                             <div class="inline-flex flex-col items-center">
                                                 <span id="onstock-display-{{ $variant->id }}" class="font-mono font-bold text-xs text-on-surface">
                                                     {{ number_format($onStockVal) }}
                                                 </span>
-                                                <span id="onstock-calc-{{ $variant->id }}" class="text-[10px] font-bold text-blue-600 hidden"></span>
+                                                <span id="onstock-calc-{{ $variant->id }}" class="text-[10px] font-bold text-blue-600 dark:text-amber-400 hidden"></span>
                                             </div>
                                         </td>
 
                                         <!-- DIRECT EDITABLE INCOMING (HANYA INCOMING YANG EDITABLE, NILAI TERAKHIR TAMPIL BUKAN 0) -->
-                                        <td class="py-2.5 px-3 text-center bg-blue-50/30 border-x border-blue-200/50">
+                                        <td class="py-2.5 px-3 text-center bg-blue-50/30 dark:bg-amber-950/20 border-x border-blue-200/50 dark:border-amber-900/40">
                                             <div class="inline-flex items-center justify-center">
                                                 <input 
                                                     type="number" 

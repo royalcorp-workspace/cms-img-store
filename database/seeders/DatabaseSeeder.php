@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             CourierSeeder::class,
             MattressProductSeeder::class,
             ContentSeeder::class,
+            JdeIntegrationMenuSeeder::class,
         ]);
     }
 }
