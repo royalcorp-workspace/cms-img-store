@@ -6,6 +6,11 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
+     * Disable transaction wrapping so that DDL and permission queries do not abort the transaction block.
+     */
+    public $withinTransaction = false;
+
+    /**
      * Map of domain schemas and their associated tables.
      *
      * @var array<string, list<string>>
