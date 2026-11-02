@@ -41,6 +41,15 @@ class PermissionMiddleware
             $permission = $request->route()?->getName();
         }
 
+        // Sub-route / AJAX helper aliases mapping ke parent permission
+        $routeAliases = [
+            'products.autocomplete'        => 'products.index',
+            'products.stores-autocomplete' => 'products.index',
+        ];
+        if (is_string($permission) && isset($routeAliases[$permission])) {
+            $permission = $routeAliases[$permission];
+        }
+
         // If route has no name (closure or unnamed route), allow request through
         if (empty($permission)) {
             return $next($request);

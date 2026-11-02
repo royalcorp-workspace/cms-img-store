@@ -36,47 +36,46 @@ class OrderController extends Controller
         $startDate = $request->query('start_date', now()->toDateString());
         $endDate = $request->query('end_date', now()->toDateString());
 
+        // Scope by store jika login sebagai Toko
+        $currentStore = session('current_store');
+        $applyStoreScope = function ($q) use ($currentStore) {
+            if ($currentStore && !empty($currentStore['id'])) {
+                $q->where(function ($sq) use ($currentStore) {
+                    $sq->where('store_id', $currentStore['id']);
+                    if (!empty($currentStore['address_number'])) {
+                        $sq->orWhere('address_number', (int) $currentStore['address_number']);
+                    }
+                });
+            }
+        };
+
+        $applyStoreScope($query);
+
         $query->whereDate('created_at', '>=', $startDate)
               ->whereDate('created_at', '<=', $endDate);
 
         $orders = $query->orderByDesc('created_at')->paginate(10)->appends($request->query());
 
+        $buildStatQuery = function ($status = null) use ($startDate, $endDate, $applyStoreScope) {
+            $q = Order::whereDate('created_at', '>=', $startDate)
+                      ->whereDate('created_at', '<=', $endDate);
+            if ($status !== null) {
+                $q->where('status', $status);
+            }
+            $applyStoreScope($q);
+            return $q->count();
+        };
+
         $stats = [
-            'total' => Order::whereDate('created_at', '>=', $startDate)
-                           ->whereDate('created_at', '<=', $endDate)
-                           ->count(),
-            Order::STATUS_DRAFT => Order::where('status', Order::STATUS_DRAFT)
-                ->whereDate('created_at', '>=', $startDate)
-                ->whereDate('created_at', '<=', $endDate)
-                ->count(),
-            Order::STATUS_PENDING_APPROVAL => Order::where('status', Order::STATUS_PENDING_APPROVAL)
-                ->whereDate('created_at', '>=', $startDate)
-                ->whereDate('created_at', '<=', $endDate)
-                ->count(),
-            Order::STATUS_CONFIRMED => Order::where('status', Order::STATUS_CONFIRMED)
-                ->whereDate('created_at', '>=', $startDate)
-                ->whereDate('created_at', '<=', $endDate)
-                ->count(),
-            Order::STATUS_PROCESSING => Order::where('status', Order::STATUS_PROCESSING)
-                ->whereDate('created_at', '>=', $startDate)
-                ->whereDate('created_at', '<=', $endDate)
-                ->count(),
-            Order::STATUS_SHIPPED => Order::where('status', Order::STATUS_SHIPPED)
-                ->whereDate('created_at', '>=', $startDate)
-                ->whereDate('created_at', '<=', $endDate)
-                ->count(),
-            Order::STATUS_DELIVERED => Order::where('status', Order::STATUS_DELIVERED)
-                ->whereDate('created_at', '>=', $startDate)
-                ->whereDate('created_at', '<=', $endDate)
-                ->count(),
-            Order::STATUS_CANCELLED => Order::where('status', Order::STATUS_CANCELLED)
-                ->whereDate('created_at', '>=', $startDate)
-                ->whereDate('created_at', '<=', $endDate)
-                ->count(),
-            Order::STATUS_RETURNED => Order::where('status', Order::STATUS_RETURNED)
-                ->whereDate('created_at', '>=', $startDate)
-                ->whereDate('created_at', '<=', $endDate)
-                ->count(),
+            'total'                        => $buildStatQuery(),
+            Order::STATUS_DRAFT            => $buildStatQuery(Order::STATUS_DRAFT),
+            Order::STATUS_PENDING_APPROVAL => $buildStatQuery(Order::STATUS_PENDING_APPROVAL),
+            Order::STATUS_CONFIRMED        => $buildStatQuery(Order::STATUS_CONFIRMED),
+            Order::STATUS_PROCESSING       => $buildStatQuery(Order::STATUS_PROCESSING),
+            Order::STATUS_SHIPPED          => $buildStatQuery(Order::STATUS_SHIPPED),
+            Order::STATUS_DELIVERED        => $buildStatQuery(Order::STATUS_DELIVERED),
+            Order::STATUS_CANCELLED        => $buildStatQuery(Order::STATUS_CANCELLED),
+            Order::STATUS_RETURNED         => $buildStatQuery(Order::STATUS_RETURNED),
         ];
 
         $couriers = \App\Models\Shipping\Courier::orderBy('name')->get();
@@ -428,6 +427,14 @@ class OrderController extends Controller
     {
         $order = Order::with(['customer', 'items.product', 'items.variant', 'courier', 'delivery', 'handover'])->findOrFail($id);
 
+        if (!$order->isOnlineRetail()) {
+            return response()->json([
+                'success' => false,
+                'is_warning' => true,
+                'message' => 'Layanan ekspedisi Biteship hanya tersedia untuk pesanan Online Retail. Pesanan toko fisik menggunakan armada toko atau resi surat jalan manual.',
+            ], 422);
+        }
+
         if ($order->isKurirToko() || ($order->courier && $order->courier->courier_type === 'toko') || strtolower((string)$order->courier?->code) === 'kurir_toko') {
             return response()->json([
                 'success' => false,
@@ -668,6 +675,14 @@ class OrderController extends Controller
                 'message' => 'Data pesanan tidak ditemukan.',
                 'data' => null,
             ], 200);
+        }
+
+        if (!$order->isOnlineRetail()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Layanan pelacakan ekspedisi Biteship hanya tersedia untuk pesanan Online Retail.',
+                'data' => null,
+            ], 422);
         }
 
         $resi = $order->resi;

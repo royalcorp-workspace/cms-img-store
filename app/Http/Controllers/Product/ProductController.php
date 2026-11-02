@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Product;
 use App\Http\Controllers\Controller;
 
 use App\Models\Product\Product;
+use App\Models\Product\StoreProduct;
 use App\Models\Product\Color;
 use App\Models\Product\Brand;
 use App\Models\Product\Category;
@@ -12,6 +13,9 @@ use App\Models\Product\Variant;
 use App\Models\Product\Tag;
 use App\Models\Product\ProductTag;
 use App\Models\Product\TagRelation;
+use App\Models\Promo\PriceProductSetting;
+use App\Models\Store\Store;
+use App\Models\Store\SalesStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -22,8 +26,277 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
+        $admin = Auth::guard('admin')->user();
+        $isPrivilegedUser = $admin && ($admin->isSuperAdmin() || $admin->user_type === 'admin' || $admin->user_type === 'sales' || 
+            (method_exists($admin, 'hasRole') && ($admin->hasRole('Admin') || $admin->hasRole('Sales Canvasser'))));
+
+        // Mode Tampilan: Untuk Sales & Admin, default langsung ke Online Store (Web IMG) kecuali ada request view=store atau store_id
+        $viewMode = $request->query('view', $isPrivilegedUser ? 'online' : 'store');
+        $explicitStoreId = $request->query('store_id');
+        $currentStore = session('current_store');
+
+        $isStoreView = false;
+        $availableStores = collect();
+
+        if ($isPrivilegedUser) {
+            // Siapkan daftar toko yang relevan untuk switch tampilan jika diinginkan
+            if ($admin->user_type === 'sales' || (method_exists($admin, 'hasRole') && $admin->hasRole('Sales Canvasser'))) {
+                $assignedIds = SalesStore::where('sales_user_id', $admin->id)->pluck('store_id');
+                $availableStores = Store::whereIn('id', $assignedIds)->where('deleted', false)->where('status', true)->orderBy('name')->get();
+            } else {
+                $availableStores = Store::where('deleted', false)->where('status', true)->orderBy('name')->take(50)->get();
+            }
+
+            if ($viewMode === 'store' || !empty($explicitStoreId)) {
+                $isStoreView = true;
+                if (!empty($explicitStoreId)) {
+                    $st = Store::find($explicitStoreId);
+                    if ($st) {
+                        $currentStore = [
+                            'id' => $st->id,
+                            'name' => $st->name,
+                            'address_number' => (int) $st->address_number,
+                            'code' => $st->code,
+                        ];
+                    }
+                } elseif (empty($currentStore) && $availableStores->isNotEmpty()) {
+                    $firstStore = $availableStores->first();
+                    $currentStore = [
+                        'id' => $firstStore->id,
+                        'name' => $firstStore->name,
+                        'address_number' => (int) $firstStore->address_number,
+                        'code' => $firstStore->code,
+                    ];
+                }
+            } else {
+                // Default: Langsung ke Online Store (Web Retail Catalog)
+                $isStoreView = false;
+            }
+        } else {
+            // Toko Partner / SPG: Selalu ke katalog toko mereka
+            $isStoreView = true;
+        }
+
+        if ($isStoreView && !empty($currentStore)) {
+            $query = StoreProduct::with(['variant.product.images'])->where('store_id', $currentStore['id']);
+
+            if ($request->filled('search')) {
+                $search = trim($request->search);
+                $query->where(function ($q) use ($search) {
+                    $q->where('item_name', 'ilike', "%{$search}%")
+                      ->orWhere('sku', 'ilike', "%{$search}%")
+                      ->orWhere('brand_name', 'ilike', "%{$search}%")
+                      ->orWhere('category_name', 'ilike', "%{$search}%");
+                });
+            }
+
+            if ($brandId = $request->query('brand_id')) {
+                $brandObj = Brand::find($brandId);
+                if ($brandObj) {
+                    $query->where('brand_name', 'ilike', "%{$brandObj->name}%");
+                }
+            }
+
+            if ($categoryId = $request->query('category_id')) {
+                $catObj = Category::find($categoryId);
+                if ($catObj) {
+                    $query->where('category_name', 'ilike', "%{$catObj->name}%");
+                }
+            }
+
+            if ($tagId = $request->query('tag_id')) {
+                $matchingSkus = Variant::whereHas('product.tags', function ($q) use ($tagId) {
+                    $q->where('product_tags.id', $tagId);
+                })->pluck('sku');
+                $query->whereIn('sku', $matchingSkus);
+            }
+
+            $products = $query->orderBy('display_order')->orderBy('item_name')->paginate(15)->appends($request->query());
+
+            // Resolusi Promo Toko Terisolasi:
+            // Promo B2B Dealer BUKAN promo global, melainkan spesifik per Toko, per Tier Toko, atau per Channel Group Toko.
+            $storeModel = Store::with('tier')->find($currentStore['id']);
+            $currentStore['tier_id'] = $storeModel?->tier_id;
+            $currentStore['tier_name'] = $storeModel?->tier?->name;
+
+            // 1. Prioritas Utama: Promo Eksklusif Toko Ini (scope_store_type = 2 atau pivot price_product_setting_store)
+            $activePromo = PriceProductSetting::withoutGlobalScope('active')
+                ->where('is_active', true)
+                ->where('deleted', false)
+                ->where(function ($q) {
+                    $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+                })
+                ->where(function ($q) {
+                    $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+                })
+                ->where(function ($q) use ($storeModel) {
+                    $q->where(function ($q2) use ($storeModel) {
+                        $q2->where('scope_store_type', 2)->where('scope_store_id', $storeModel?->id);
+                    })
+                    ->orWhereExists(function ($subQ) use ($storeModel) {
+                        $subQ->select(DB::raw(1))
+                             ->from('promo.price_product_setting_store')
+                             ->whereColumn('price_product_setting_store.price_product_setting_id', 'price_product_settings.id')
+                             ->where('price_product_setting_store.store_id', $storeModel?->id)
+                             ->where('price_product_setting_store.deleted', false);
+                    });
+                })
+                ->orderBy('sort_order')
+                ->first();
+
+            // 2. Prioritas Kedua: Promo Berdasarkan Tier Toko (scope_store_type = 1, misal Tier Platinum/Gold)
+            if (!$activePromo && $storeModel?->tier_id) {
+                $activePromo = PriceProductSetting::withoutGlobalScope('active')
+                    ->where('is_active', true)
+                    ->where('deleted', false)
+                    ->where(function ($q) {
+                        $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+                    })
+                    ->where(function ($q) {
+                        $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+                    })
+                    ->where('scope_store_type', 1)
+                    ->where('scope_store_id', $storeModel->tier_id)
+                    ->orderBy('sort_order')
+                    ->first();
+            }
+
+            // 3. Prioritas Ketiga: Promo Channel Group Toko (scope_store_type = 3)
+            if (!$activePromo && $storeModel?->store_group_id) {
+                $activePromo = PriceProductSetting::withoutGlobalScope('active')
+                    ->where('is_active', true)
+                    ->where('deleted', false)
+                    ->where(function ($q) {
+                        $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+                    })
+                    ->where(function ($q) {
+                        $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+                    })
+                    ->where('scope_store_type', 3)
+                    ->where('scope_store_id', $storeModel->store_group_id)
+                    ->orderBy('sort_order')
+                    ->first();
+            }
+
+            // Ambil daftar item yang masuk dalam promo jika promo ber-scope tertentu (scope = 2)
+            $promoItemVariantIds = collect();
+            $promoItemProductIds = collect();
+            if ($activePromo && (int)$activePromo->scope === 2) {
+                $promoItems = DB::table('promo.price_product_setting_items')
+                    ->where('price_product_setting_id', $activePromo->id)
+                    ->where('deleted', false)
+                    ->get();
+                $promoItemVariantIds = $promoItems->pluck('variant_id')->filter();
+                $promoItemProductIds = $promoItems->pluck('product_id')->filter();
+
+                // Periksa juga item di price_product_setting_store
+                $storePricingItems = DB::table('promo.price_product_setting_store')
+                    ->where('price_product_setting_id', $activePromo->id)
+                    ->where('store_id', $currentStore['id'])
+                    ->where('deleted', false)
+                    ->get();
+                $promoItemVariantIds = $promoItemVariantIds->merge($storePricingItems->pluck('variant_id')->filter());
+                $promoItemProductIds = $promoItemProductIds->merge($storePricingItems->pluck('product_id')->filter());
+            }
+
+            // Ambil semua StorePricing khusus toko ini
+            $storePricings = \App\Models\Promo\StorePricing::with('priceProductSetting')
+                ->where('store_id', $currentStore['id'])
+                ->where('deleted', false)
+                ->get();
+            $storePricingByVariant = $storePricings->whereNotNull('variant_id')->keyBy('variant_id');
+            $storePricingByProduct = $storePricings->whereNotNull('product_id')->keyBy('product_id');
+
+            foreach ($products as $prod) {
+                $sellingPrice = (float) ($prod->custom_retail_price > 0 
+                    ? $prod->custom_retail_price 
+                    : ($prod->suggested_retail_price > 0 ? $prod->suggested_retail_price : $prod->base_price));
+                $prod->selling_price = $sellingPrice;
+
+                $variantId = $prod->variant?->id;
+                $productId = $prod->variant?->product_id;
+
+                // 1. Cek apakah ada StorePricing spesifik (Rowset Adjustments) untuk produk/varian ini di toko ini
+                $specificStorePricing = ($variantId && $storePricingByVariant->has($variantId)) 
+                    ? $storePricingByVariant->get($variantId) 
+                    : (($productId && $storePricingByProduct->has($productId)) ? $storePricingByProduct->get($productId) : null);
+
+                if ($specificStorePricing) {
+                    $baseAdjPrice = $specificStorePricing->base_price > 0 ? $specificStorePricing->base_price : $sellingPrice;
+                    $finalAdjPrice = $specificStorePricing->final_price;
+                    $prod->selling_price = $baseAdjPrice;
+
+                    if ($finalAdjPrice < $baseAdjPrice) {
+                        $prod->active_promo = $specificStorePricing->priceProductSetting ?: $activePromo;
+                        $prod->promo_discount = round($baseAdjPrice - $finalAdjPrice, 2);
+                        $prod->promo_price = $finalAdjPrice;
+                    } else {
+                        // Jika final price sama dengan base price namun memiliki program promo terhubung yang aktif
+                        $linkedPromo = $specificStorePricing->priceProductSetting;
+                        $calculatedDiscount = 0;
+                        if ($linkedPromo && $linkedPromo->is_active && !$linkedPromo->deleted) {
+                            if ((int)$linkedPromo->discount_type === 1) {
+                                $calculatedDiscount = round($baseAdjPrice * ((float)$linkedPromo->discount_value / 100), 2);
+                            } elseif ((int)$linkedPromo->discount_type === 2) {
+                                $calculatedDiscount = min($baseAdjPrice, (float)$linkedPromo->discount_value);
+                            }
+                        }
+
+                        if ($calculatedDiscount > 0) {
+                            $prod->active_promo = $linkedPromo;
+                            $prod->promo_discount = $calculatedDiscount;
+                            $prod->promo_price = max(0, $baseAdjPrice - $calculatedDiscount);
+                        } else {
+                            $prod->active_promo = null;
+                            $prod->promo_discount = 0;
+                            $prod->promo_price = $finalAdjPrice;
+                        }
+                    }
+                    continue;
+                }
+
+                // 2. Evaluasi promo toko tingkat header ($activePromo)
+                $isEligibleForPromo = false;
+                if ($activePromo) {
+                    if ((int)$activePromo->scope === 1) {
+                        // Scope 1: Berlaku untuk seluruh produk di toko ini
+                        $isEligibleForPromo = true;
+                    } elseif ((int)$activePromo->scope === 2) {
+                        // Scope 2: Berlaku untuk produk / varian tertentu yang dipilih
+                        if (($variantId && $promoItemVariantIds->contains($variantId)) ||
+                            ($productId && $promoItemProductIds->contains($productId))) {
+                            $isEligibleForPromo = true;
+                        }
+                    }
+                }
+
+                if ($isEligibleForPromo) {
+                    $discount = 0;
+                    if ((int)$activePromo->discount_type === 1) {
+                        $discount = round($sellingPrice * ((float)$activePromo->discount_value / 100), 2);
+                    } elseif ((int)$activePromo->discount_type === 2) {
+                        $discount = min($sellingPrice, (float)$activePromo->discount_value);
+                    }
+                    $prod->active_promo = $activePromo;
+                    $prod->promo_discount = $discount;
+                    $prod->promo_price = max(0, $sellingPrice - $discount);
+                } else {
+                    $prod->active_promo = null;
+                    $prod->promo_discount = 0;
+                    $prod->promo_price = $sellingPrice;
+                }
+            }
+
+            $categories = Category::orderBy('name')->get();
+            $brands = Brand::orderBy('name')->get();
+            $tags = \App\Models\Product\ProductTag::where('deleted', false)->orderBy('name')->get();
+
+            return view('pages.products.index', compact('products', 'categories', 'brands', 'tags', 'isStoreView', 'currentStore', 'activePromo', 'isPrivilegedUser', 'availableStores', 'viewMode'));
+        }
+
+        // Web IMG products
         $query = Product::with(['category', 'brand', 'images', 'variants'])
-            ->where('is_bundle', false);
+            ->where('show_on_web', true);
 
         if ($request->filled('search')) {
             $search = trim($request->search);
@@ -79,7 +352,149 @@ class ProductController extends Controller
         $brands = Brand::orderBy('name')->get();
         $tags = \App\Models\Product\ProductTag::where('deleted', false)->orderBy('name')->get();
         
-        return view('pages.products.index', compact('products', 'categories', 'brands', 'tags'));
+        return view('pages.products.index', compact('products', 'categories', 'brands', 'tags', 'isStoreView', 'currentStore', 'isPrivilegedUser', 'availableStores', 'viewMode'));
+    }
+
+    public function autocomplete(Request $request)
+    {
+        $q = trim((string) $request->input('q', $request->input('search', '')));
+        $view = $request->input('view', 'online');
+        $storeId = $request->input('store_id');
+
+        if (strlen($q) < 1) {
+            return response()->json([]);
+        }
+
+        $results = [];
+
+        if ($view === 'store') {
+            $query = StoreProduct::query();
+            if (!empty($storeId)) {
+                $query->where('store_id', $storeId);
+            } elseif ($currentStore = session('current_store')) {
+                $query->where('store_id', $currentStore['id']);
+            }
+
+            $items = $query->where(function($sub) use ($q) {
+                $sub->where('item_name', 'ilike', "%{$q}%")
+                    ->orWhere('sku', 'ilike', "%{$q}%")
+                    ->orWhere('brand_name', 'ilike', "%{$q}%")
+                    ->orWhere('category_name', 'ilike', "%{$q}%");
+            })
+            ->orderBy('item_name')
+            ->limit(8)
+            ->get();
+
+            foreach ($items as $item) {
+                $price = (float) ($item->custom_retail_price > 0 ? $item->custom_retail_price : ($item->suggested_retail_price > 0 ? $item->suggested_retail_price : $item->base_price));
+                $results[] = [
+                    'id'               => $item->id,
+                    'sku'              => $item->sku,
+                    'name'             => $item->item_name,
+                    'brand'            => $item->brand_name ?? 'Royal',
+                    'category'         => $item->category_name ?? 'Kasur',
+                    'price_label'      => 'Rp ' . number_format($price, 0, ',', '.'),
+                    'is_floor_display' => (bool) $item->is_floor_display,
+                    'is_active_pos'    => (bool) $item->is_active_for_pos,
+                    'type'             => 'store',
+                ];
+            }
+        } else {
+            $items = Product::with(['brand', 'category', 'images'])
+                ->where('show_on_web', true)
+                ->where(function($sub) use ($q) {
+                    $sub->where('name', 'ilike', "%{$q}%")
+                        ->orWhere('slug', 'ilike', "%{$q}%")
+                        ->orWhere('code', 'ilike', "%{$q}%")
+                        ->orWhereHas('brand', function($b) use ($q) {
+                            $b->where('name', 'ilike', "%{$q}%");
+                        })
+                        ->orWhereHas('category', function($c) use ($q) {
+                            $c->where('name', 'ilike', "%{$q}%");
+                        });
+                })
+                ->orderBy('name')
+                ->limit(8)
+                ->get();
+
+            foreach ($items as $item) {
+                $img = $item->images->first()?->image_url;
+                $results[] = [
+                    'id'          => $item->id,
+                    'sku'         => $item->code ?? $item->sku ?? '-',
+                    'name'        => $item->name,
+                    'brand'       => $item->brand?->name ?? 'Royal',
+                    'category'    => $item->category?->name ?? 'Kasur Retail',
+                    'price_label' => 'Rp ' . number_format((float)$item->price, 0, ',', '.'),
+                    'image'       => $img,
+                    'type'        => 'online',
+                ];
+            }
+        }
+
+        return response()->json($results);
+    }
+
+    public function storesAutocomplete(Request $request)
+    {
+        $admin = Auth::guard('admin')->user();
+        if (!$admin) {
+            return response()->json([]);
+        }
+
+        $q = trim((string) $request->input('q', $request->input('search', '')));
+        $query = Store::with('tier')->where('deleted', false)->where('status', true);
+
+        // Scoping toko jika login sebagai Sales Canvasser
+        if ($admin->user_type === 'sales' || (method_exists($admin, 'hasRole') && $admin->hasRole('Sales Canvasser'))) {
+            $assignedIds = SalesStore::where('sales_user_id', $admin->id)->pluck('store_id');
+            $query->whereIn('id', $assignedIds);
+        }
+
+        if (strlen($q) > 0) {
+            $isNum = is_numeric($q);
+            $query->where(function ($sub) use ($q, $isNum) {
+                $sub->where('name', 'ilike', "%{$q}%")
+                    ->orWhere('code', 'ilike', "%{$q}%");
+                if ($isNum) {
+                    $sub->orWhere('address_number', (int) $q);
+                }
+            });
+        }
+
+        $stores = $query->orderBy('name')->limit(15)->get();
+
+        $list = [];
+        $webMatches = empty($q) || str_contains(strtolower('Web Official Store (Online Retail IMG Pusat)'), strtolower($q))
+            || str_contains(strtolower($q), 'web') || str_contains(strtolower($q), 'online') || str_contains(strtolower($q), 'pusat');
+
+        if ($webMatches) {
+            $list[] = [
+                'id'             => 'online',
+                'name'           => 'Web Official Store (Online Retail IMG Pusat)',
+                'address_number' => null,
+                'code'           => 'ONLINE_D2C',
+                'tier_name'      => 'D2C Retail',
+                'phone'          => 'Pusat',
+                'address'        => 'Katalog Publik E-Commerce Official',
+                'is_online'      => true,
+            ];
+        }
+
+        foreach ($stores as $st) {
+            $list[] = [
+                'id'             => $st->id,
+                'name'           => $st->name,
+                'address_number' => $st->address_number ? (int) $st->address_number : null,
+                'code'           => $st->code,
+                'tier_name'      => $st->tier?->name ?? 'Standard',
+                'phone'          => $st->phone ?? '-',
+                'address'        => $st->address ?? '',
+                'is_online'      => false,
+            ];
+        }
+
+        return response()->json($list);
     }
 
     public function create()

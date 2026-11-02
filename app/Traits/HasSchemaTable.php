@@ -50,9 +50,13 @@ trait HasSchemaTable
 
         // Content domain
         'App\Models\Content\\' => 'content',
+        'App\Models\Conversation' => 'content',
+        'App\Models\Message' => 'content',
+        'App\Models\Notification' => 'content',
 
         // User Management domain
         'App\Models\Admin' => 'user_managements',
+        'App\Models\StoreUser' => 'user_managements',
         'App\Models\User' => 'user_managements',
         'App\Models\Role' => 'user_managements',
         'App\Models\Permission' => 'user_managements',

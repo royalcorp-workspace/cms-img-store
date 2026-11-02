@@ -1,6 +1,8 @@
 @php
     $admin = \Illuminate\Support\Facades\Auth::guard('admin')->user();
     $canReceiveNotification = $admin && ($admin->isSuperAdmin() || $admin->hasPermission('notifications.index'));
+    $currentStore = session('current_store');
+    $currentChannel = session('current_channel');
 @endphp
 <header class="h-16 px-gutter flex justify-between items-center sticky top-0 z-40 bg-surface/95 backdrop-blur-md border-b border-outline-variant transition-all duration-300 shadow-xs">
     <div class="flex items-center gap-4">
@@ -63,6 +65,20 @@
         </div>
     </div>
     <div class="flex items-center gap-3">
+        @if($currentStore)
+            <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-xl bg-primary/10 border border-primary/20 text-xs text-on-surface shadow-2xs">
+                <span class="material-symbols-outlined text-[18px] text-primary">storefront</span>
+                <div class="flex flex-col text-left">
+                    <span class="font-bold text-[11px] text-on-surface leading-tight">{{ $currentStore['name'] }}</span>
+                    <span class="text-[10px] text-on-surface-variant font-mono">
+                        AN8: {{ $currentStore['address_number'] ?? '-' }}
+                        @if(!empty($currentChannel['name']))
+                            &bull; {{ $currentChannel['name'] }}
+                        @endif
+                    </span>
+                </div>
+            </div>
+        @endif
         <div class="h-6 w-[1px] bg-outline-variant mx-1"></div>
         <div class="relative" id="profileDropdownContainer">
             <button class="flex items-center gap-3 p-1.5 rounded-xl hover:bg-surface-gray transition-colors group" id="profileDropdownBtn">
@@ -80,6 +96,15 @@
                     <p class="text-xs font-bold text-on-surface">{{ $admin?->name ?? 'User' }}</p>
                     <p class="text-[11px] text-on-surface-variant">{{ $admin?->email ?? 'admin@royal.co.id' }}</p>
                 </div>
+                @if($currentStore)
+                    <div class="px-4 py-2 bg-primary/5 border-b border-outline-variant/30 text-xs">
+                        <p class="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">storefront</span> Toko Aktif
+                        </p>
+                        <p class="font-bold text-on-surface mt-0.5">{{ $currentStore['name'] }}</p>
+                        <p class="text-[10px] text-on-surface-variant font-mono">AN8: {{ $currentStore['address_number'] ?? '-' }} ({{ $currentChannel['name'] ?? 'Default' }})</p>
+                    </div>
+                @endif
                 <div class="py-1.5">
                     <a href="{{ route('profile.show') }}" class="flex items-center px-4 py-2 text-xs font-medium text-on-surface hover:bg-surface-container hover:text-primary transition-colors">
                         <span class="material-symbols-outlined text-[18px] mr-2.5">person</span> Edit Profil

@@ -5,8 +5,13 @@ use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Product\CategoryController;
 use App\Http\Controllers\Product\VoucherController;
 use App\Http\Controllers\Product\PriceProductSettingController;
+use App\Http\Controllers\Product\StoreProductController;
+
+Route::patch('/store-products/{id}', [StoreProductController::class, 'update'])->name('store-products.update');
 
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+Route::get('/products/autocomplete', [ProductController::class, 'autocomplete'])->name('products.autocomplete');
+Route::get('/products/stores-autocomplete', [ProductController::class, 'storesAutocomplete'])->name('products.stores-autocomplete');
 Route::get('/products/import', [ProductController::class, 'importForm'])->name('products.import.form');
 Route::post('/products/import', [ProductController::class, 'importStore'])->name('products.import.store');
 Route::get('/products/import/template', [ProductController::class, 'importTemplate'])->name('products.import.template');

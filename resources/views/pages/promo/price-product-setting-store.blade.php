@@ -36,16 +36,22 @@
     <form method="GET" class="flex flex-col sm:flex-row gap-3 justify-between mb-6">
         <div class="relative flex-1 max-w-md">
             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
-            <input name="search" value="{{ request('search') }}" type="text" placeholder="Search by store, product, or variant..." class="w-full pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none">
+            <input name="search" value="{{ request('search') }}" type="text" placeholder="Search by store, promo, product..." class="w-full pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none">
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
             <select name="store_id" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" onchange="this.form.submit()">
                 <option value="">All Stores</option>
                 @foreach($stores as $s)
                     <option value="{{ $s->id }}" {{ request('store_id') == $s->id ? 'selected' : '' }}>{{ $s->name }} ({{ $s->code }})</option>
                 @endforeach
             </select>
-            @if(request('search') || request('store_id'))
+            <select name="price_product_setting_id" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white select2-enable" onchange="this.form.submit()">
+                <option value="">All Promo Programs</option>
+                @foreach($priceSettings as $ps)
+                    <option value="{{ $ps->id }}" {{ request('price_product_setting_id') == $ps->id ? 'selected' : '' }}>{{ $ps->title }} ({{ $ps->code }})</option>
+                @endforeach
+            </select>
+            @if(request('search') || request('store_id') || request('price_product_setting_id'))
             <a href="{{ route('price-product-setting-store.index') }}" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md text-secondary hover:bg-surface-container transition-colors">Clear</a>
             @endif
         </div>
@@ -57,6 +63,7 @@
                 <thead>
                     <tr class="bg-surface-gray">
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Store</th>
+                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Promo Program</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Target</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Adjustments</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Base Price</th>
@@ -74,6 +81,17 @@
                     @endphp
                     <tr class="hover:bg-surface-container/30 transition-colors">
                         <td class="px-gutter py-4 font-body-md text-body-md text-on-surface font-semibold">{{ $pricing->store->name ?? '-' }}</td>
+                        <td class="px-gutter py-4">
+                            @if($pricing->priceProductSetting)
+                                <div class="font-bold text-xs text-rose-700">{{ $pricing->priceProductSetting->title }}</div>
+                                <div class="flex items-center gap-1.5 mt-0.5">
+                                    <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-rose-50 text-rose-800 border border-rose-200">{{ $pricing->priceProductSetting->code }}</span>
+                                    <span class="text-[10px] text-slate-500 font-semibold">{{ (int)$pricing->priceProductSetting->discount_type === 1 ? (float)$pricing->priceProductSetting->discount_value.'%' : 'Rp '.number_format((float)$pricing->priceProductSetting->discount_value, 0, ',', '.') }}</span>
+                                </div>
+                            @else
+                                <span class="text-xs text-slate-400 font-medium">-</span>
+                            @endif
+                        </td>
                         <td class="px-gutter py-4">
                             <div>
                                 <span class="font-body-md text-body-md text-on-surface">{{ $targetName }}</span>

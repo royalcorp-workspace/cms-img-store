@@ -19,6 +19,39 @@
 
     @include('layouts.partials.store-submenu')
 
+    @if(session('current_store'))
+        <div class="mb-5 p-4 rounded-xl bg-blue-50 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold">
+                    <span class="material-symbols-outlined text-[20px]">storefront</span>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-blue-950">Sesi Toko Aktif: {{ session('current_store.name') }}</h3>
+                    <p class="text-xs text-blue-800/80">Anda saat ini sedang mengelola produk dan order toko ini.</p>
+                </div>
+            </div>
+            <a href="{{ route('stores.clear-context') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-300 text-blue-700 hover:bg-blue-50 rounded-lg text-xs font-bold transition-all shadow-2xs">
+                <span class="material-symbols-outlined text-[16px]">logout</span>
+                <span>Tampilkan Semua Toko Binaan</span>
+            </a>
+        </div>
+    @elseif($isSales ?? false)
+        <div class="mb-5 p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold">
+                    <span class="material-symbols-outlined text-[20px]">badge</span>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-amber-950">Portal Sales Canvasser: {{ auth('admin')->user()->name }}</h3>
+                    <p class="text-xs text-amber-900/80">Menampilkan toko binaan Anda. Klik "Akses Toko" untuk mengelola produk dan cek harga promo toko terkait.</p>
+                </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-600 text-white">
+                {{ $stores->total() }} Toko Binaan
+            </span>
+        </div>
+    @endif
+
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
         <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between">
             <form method="GET" class="flex items-center gap-2">
@@ -72,12 +105,19 @@
                             </span>
                         </td>
                         <td class="px-gutter py-4">
-                            <div class="flex gap-2 justify-center">
-                                <a href="{{ route('stores.edit', $store->id) }}" class="text-on-surface-variant hover:text-primary" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
+                            <div class="flex items-center gap-2 justify-center">
+                                <form action="{{ route('stores.switch-context', $store->id) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold text-xs transition-colors border border-blue-200" title="Kelola katalog & order toko ini">
+                                        <span class="material-symbols-outlined text-[15px]">storefront</span>
+                                        <span>Kelola Toko</span>
+                                    </button>
+                                </form>
+                                <a href="{{ route('stores.edit', $store->id) }}" class="p-1 rounded text-on-surface-variant hover:text-primary hover:bg-slate-100" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></a>
                                 <form action="{{ route('stores.destroy', $store->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this store?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-on-surface-variant hover:text-danger" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                                    <button type="submit" class="p-1 rounded text-on-surface-variant hover:text-danger hover:bg-red-50" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
                                 </form>
                             </div>
                         </td>

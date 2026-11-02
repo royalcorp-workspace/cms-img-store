@@ -186,6 +186,7 @@ class PartitionSchemasCommand extends Command
             'refresh_tokens',
             'role_has_permissions',
             'roles',
+            'store_users',
             'user_admin',
             'user_roles',
             'users',

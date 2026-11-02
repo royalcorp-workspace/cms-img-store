@@ -43,14 +43,14 @@
             @endif
         </div>
 
-        @if($order->resi || $order->delivery_status)
+        @if($order->isOnlineRetail() && ($order->resi || $order->delivery_status))
             <button type="button" onclick='openResiModal(@json($resiModalData), "tracking")' class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all">
                 <span class="material-symbols-outlined text-[16px]">radar</span>
                 <span>Lacak Pengiriman</span>
             </button>
         @endif
 
-        @if(empty($resiModalData['is_kurir_toko']) && empty($resiModalData['has_biteship_resi']) && $order->status < \App\Models\Order\Order::STATUS_SHIPPED)
+        @if($order->isOnlineRetail() && empty($resiModalData['is_kurir_toko']) && empty($resiModalData['has_biteship_resi']) && $order->status < \App\Models\Order\Order::STATUS_SHIPPED)
             <button type="button" onclick='openResiModal(@json($resiModalData), "biteship")' class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all">
                 <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
                 <span>Get Resi Otomatis</span>
@@ -292,12 +292,12 @@
 
                     <!-- Action Buttons -->
                     @if($order->status < \App\Models\Order\Order::STATUS_SHIPPED)
-                        <div class="grid grid-cols-2 gap-2 pt-1">
-                            <button type="button" onclick='openResiModal(@json($resiModalData), "manual")' class="py-2 px-3 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
+                        <div class="{{ $order->isOnlineRetail() && empty($resiModalData['is_kurir_toko']) && empty($resiModalData['has_biteship_resi']) ? 'grid grid-cols-2 gap-2' : 'flex' }} pt-1">
+                            <button type="button" onclick='openResiModal(@json($resiModalData), "manual")' class="w-full py-2 px-3 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
                                 <span class="material-symbols-outlined text-[16px]">edit_document</span>
-                                <span>{{ $order->resi ? 'Ubah Resi' : 'Input Resi' }}</span>
+                                <span>{{ $order->resi ? 'Ubah Resi / Surat Jalan' : 'Input Resi / Surat Jalan' }}</span>
                             </button>
-                            @if(empty($resiModalData['is_kurir_toko']) && empty($resiModalData['has_biteship_resi']))
+                            @if($order->isOnlineRetail() && empty($resiModalData['is_kurir_toko']) && empty($resiModalData['has_biteship_resi']))
                                 <button type="button" onclick='openResiModal(@json($resiModalData), "biteship")' class="py-2 px-3 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
                                     <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
                                     <span>Get Resi Otomatis</span>
@@ -306,7 +306,7 @@
                         </div>
                     @endif
 
-                    @if($order->resi || $order->delivery_status)
+                    @if($order->isOnlineRetail() && ($order->resi || $order->delivery_status))
                         <button type="button" onclick='openResiModal(@json($resiModalData), "tracking")' class="w-full py-2 px-3 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
                             <span class="material-symbols-outlined text-[16px]">radar</span>
                             <span>Lacak Pesanan (Log Pengiriman)</span>
