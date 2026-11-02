@@ -930,24 +930,21 @@ class InventoryController extends Controller
 
         $stockBefore = (int) $inventory->on_stock;
         $outgoing = (int) $inventory->outgoing;
+        $oldIncoming = (int) $inventory->incoming;
 
         $incomingQty = (int) $validated['incoming'];
-        $inventory->incoming = $incomingQty;
+        $baseStock = max(0, $stockBefore - $oldIncoming);
 
-        // Logika bisnis:
-        // Misal on_stock 20 terus incoming datang 50, maka on_stock menjadi 70 (20 + 50)
-        // Dan kolom incoming tetap menyimpan 50 sebagai inputan terakhirnya.
-        $inventory->on_stock = max(0, $stockBefore + $incomingQty);
+        $inventory->incoming = $incomingQty;
+        $inventory->on_stock = max(0, $baseStock + $incomingQty);
 
         $stockAfter = (int) $inventory->on_stock;
         $inventory->editor = Auth::user()?->name ?? 'Admin';
         $inventory->save(); // saving hook calculates available = max(0, on_stock - on_order)
 
-        // Record stock card entry if there is incoming movement
-        $qtyIn = $incomingQty > 0 ? $incomingQty : 0;
-        $qtyOut = 0;
-
-        if ($incomingQty > 0) {
+        // Record stock card entry if there is net movement
+        $diff = $stockAfter - $stockBefore;
+        if ($diff > 0) {
             InventoryService::recordStockCard([
                 'inventory_id' => $inventory->id,
                 'product_id' => $productId,
@@ -957,11 +954,29 @@ class InventoryController extends Controller
                 'transaction_type' => 'incoming',
                 'reference_type' => 'table_edit',
                 'reference_number' => null,
-                'qty_in' => $incomingQty,
+                'qty_in' => $diff,
                 'qty_out' => 0,
                 'stock_before' => $stockBefore,
                 'stock_after' => $stockAfter,
-                'notes' => "Update incoming dari tabel inventory (Incoming: {$incomingQty}, Outgoing: {$outgoing})",
+                'notes' => "Update incoming dari tabel inventory (Incoming: {$incomingQty}, Net Masuk: {$diff}, Outgoing: {$outgoing})",
+                'creator' => Auth::user()?->name ?? 'Admin',
+            ]);
+        } elseif ($diff < 0) {
+            $qtyOut = abs($diff);
+            InventoryService::recordStockCard([
+                'inventory_id' => $inventory->id,
+                'product_id' => $productId,
+                'product_variant_id' => $variant->id,
+                'warehouse_id' => $inventory->warehouse_id,
+                'store_channel_id' => $inventory->store_channel_id,
+                'transaction_type' => 'adjustment',
+                'reference_type' => 'table_edit',
+                'reference_number' => null,
+                'qty_in' => 0,
+                'qty_out' => $qtyOut,
+                'stock_before' => $stockBefore,
+                'stock_after' => $stockAfter,
+                'notes' => "Koreksi incoming dari tabel inventory (Incoming: {$incomingQty}, Net Kurang: {$qtyOut}, Outgoing: {$outgoing})",
                 'creator' => Auth::user()?->name ?? 'Admin',
             ]);
         }
@@ -979,6 +994,8 @@ class InventoryController extends Controller
             'data' => [
                 'inventory_id' => $inventory->id,
                 'variant_id' => $variant->id,
+                'variant_name' => $variant->variant_name,
+                'base_stock' => $baseStock,
                 'on_stock' => $inventory->on_stock,
                 'available' => $inventory->available,
                 'on_order' => $inventory->on_order,

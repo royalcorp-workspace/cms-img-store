@@ -278,13 +278,14 @@
                                     <th class="py-2.5 px-3 text-center min-w-[100px] bg-slate-100/70 dark:bg-stone-800/60 text-slate-800 dark:text-stone-200">
                                         On Stock
                                     </th>
-                                    <th class="py-2.5 px-3 text-center min-w-[120px] bg-blue-50/70 dark:bg-amber-950/30 text-blue-900 dark:text-amber-300 border-x border-blue-200/60 dark:border-amber-900/40">
-                                        Incoming (Input Stok)
+                                    <th class="py-2.5 px-3 text-center min-w-[130px] bg-blue-50/70 dark:bg-amber-950/30 text-blue-900 dark:text-amber-300 border-x border-blue-200/60 dark:border-amber-900/40">
+                                        <div>Incoming (Input Stok)</div>
+                                        <div class="text-[9px] font-normal normal-case text-blue-600 dark:text-amber-400">Tersimpan Otomatis</div>
                                     </th>
                                     <th class="py-2.5 px-2.5 text-center min-w-[75px]">On Order</th>
                                     <th class="py-2.5 px-2.5 text-center min-w-[75px]">Outgoing</th>
                                     <th class="py-2.5 px-3 text-center min-w-[95px] bg-success/5 text-success">Available</th>
-                                    <th class="py-2.5 px-3 text-center min-w-[85px]">Aksi</th>
+                                    <th class="py-2.5 px-3 text-center min-w-[95px]">Status</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-outline-variant/15">
@@ -300,6 +301,7 @@
                                         $whName = $inventory?->warehouse?->name ?? ($defaultWarehouse?->name ?? 'Gudang Utama');
                                         $whCode = $inventory?->warehouse?->code ?? ($defaultWarehouse?->code ?? 'GD-JKT01');
                                         $chName = $inventory?->channel?->name ?? ($defaultChannel?->name ?? 'Web IMG');
+                                        $baseStockVal = max(0, $onStockVal - $incomingVal);
                                     @endphp
                                     <tr class="hover:bg-slate-50/70 transition-colors variant-row" id="variant-row-{{ $variant->id }}" data-variant-id="{{ $variant->id }}" data-product-id="{{ $product->id }}">
                                         <!-- Variant Name & SKU -->
@@ -336,19 +338,21 @@
                                             </div>
                                         </td>
 
-                                        <!-- On Stock: on stock + incoming terakhir - outgoing -->
+                                        <!-- On Stock: Base stock + incoming terakhir -->
                                         <td class="py-2.5 px-3 text-center bg-slate-50/50 dark:bg-stone-900/40">
                                             <div class="inline-flex flex-col items-center">
                                                 <span id="onstock-display-{{ $variant->id }}" class="font-mono font-bold text-xs text-on-surface">
                                                     {{ number_format($onStockVal) }}
                                                 </span>
-                                                <span id="onstock-calc-{{ $variant->id }}" class="text-[10px] font-bold text-blue-600 dark:text-amber-400 hidden"></span>
+                                                <span id="onstock-calc-{{ $variant->id }}" class="text-[10px] font-bold text-blue-600 dark:text-amber-400 {{ $incomingVal > 0 ? '' : 'hidden' }}">
+                                                    @if($incomingVal > 0) (+{{ $incomingVal }}) @endif
+                                                </span>
                                             </div>
                                         </td>
 
-                                        <!-- DIRECT EDITABLE INCOMING (HANYA INCOMING YANG EDITABLE, NILAI TERAKHIR TAMPIL BUKAN 0) -->
+                                        <!-- DIRECT EDITABLE INCOMING (AUTOSAVE ON BLUR/LEAVE) -->
                                         <td class="py-2.5 px-3 text-center bg-blue-50/30 dark:bg-amber-950/20 border-x border-blue-200/50 dark:border-amber-900/40">
-                                            <div class="inline-flex items-center justify-center">
+                                            <div class="inline-flex items-center justify-center relative">
                                                 <input 
                                                     type="number" 
                                                     min="0" 
@@ -358,14 +362,18 @@
                                                     id="incoming-input-{{ $variant->id }}"
                                                     data-variant-id="{{ $variant->id }}"
                                                     data-product-id="{{ $product->id }}"
+                                                    data-base-stock="{{ $baseStockVal }}"
                                                     data-initial-onstock="{{ $onStockVal }}"
                                                     data-initial-incoming="{{ $incomingVal }}"
                                                     data-outgoing="{{ $outgoingVal }}"
                                                     data-on-order="{{ $onOrderVal }}"
+                                                    data-warehouse-id="{{ $inventory?->warehouse_id ?? ($defaultWarehouse?->id ?? '') }}"
+                                                    data-channel-id="{{ $inventory?->store_channel_id ?? ($defaultChannel?->id ?? '') }}"
                                                     oninput="handleIncomingInput('{{ $variant->id }}')"
-                                                    onkeydown="if(event.key==='Enter') { event.preventDefault(); quickSaveIncoming('{{ $variant->id }}'); }"
+                                                    onblur="handleIncomingBlur('{{ $variant->id }}')"
+                                                    onkeydown="if(event.key==='Enter') { this.blur(); }"
                                                     class="incoming-edit-input w-20 px-2 py-1 text-center font-mono font-bold text-xs bg-white border border-blue-300 rounded-lg text-blue-950 focus:ring-2 focus:ring-blue-400/30 focus:border-blue-500 focus:outline-none shadow-2xs transition-all"
-                                                    title="Input incoming terakhir (tersimpan tidak 0). On Stock: on stock + incoming terakhir - outgoing"
+                                                    title="Input incoming. Tersimpan otomatis saat meninggalkan kolom (klik di luar atau Enter) jika ada perubahan."
                                                 >
                                             </div>
                                         </td>
@@ -391,18 +399,14 @@
                                             </span>
                                         </td>
 
-                                        <!-- Action: Quick Save Button -->
-                                        <td class="py-3 px-3 text-center">
-                                            <button 
-                                                type="button" 
-                                                id="btn-save-{{ $variant->id }}"
-                                                onclick="quickSaveIncoming('{{ $variant->id }}')" 
-                                                class="inline-flex items-center justify-center gap-1 px-2.5 py-1 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-all shadow-2xs"
-                                                title="Simpan nilai incoming terakhir"
-                                            >
-                                                <span class="material-symbols-outlined text-[15px]">save</span>
-                                                <span>Simpan</span>
-                                            </button>
+                                        <!-- Status Tersimpan Otomatis Column -->
+                                        <td class="py-3 px-3 text-center" id="action-cell-{{ $variant->id }}">
+                                            <div id="status-container-{{ $variant->id }}" class="inline-flex items-center justify-center min-h-[28px]">
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-stone-400">
+                                                    <span class="material-symbols-outlined text-[14px] text-success">check_circle</span>
+                                                    <span>Tersimpan</span>
+                                                </span>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -480,6 +484,52 @@
         }, 3000);
     }
 
+    // Auto-save on-blur controllers and status tracking
+    const activeControllers = {};
+    const isSaving = {};
+
+    window.renderStatus = function(variantId, state) {
+        const container = document.getElementById(`status-container-${variantId}`);
+        if (!container) return;
+
+        if (state === 'modified') {
+            container.innerHTML = `
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/60 shadow-2xs" title="Perubahan belum disimpan. Klik di luar kolom atau tekan Enter untuk menyimpan otomatis.">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span>Belum Disimpan</span>
+                </span>
+            `;
+        } else if (state === 'saving') {
+            container.innerHTML = `
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/30 shadow-2xs">
+                    <span class="material-symbols-outlined text-[13px] animate-spin">progress_activity</span>
+                    <span>Menyimpan...</span>
+                </span>
+            `;
+        } else if (state === 'saved') {
+            container.innerHTML = `
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-success/15 text-success border border-success/30 shadow-2xs">
+                    <span class="material-symbols-outlined text-[14px]">check</span>
+                    <span>Tersimpan</span>
+                </span>
+            `;
+        } else if (state === 'error') {
+            container.innerHTML = `
+                <button type="button" onclick="saveIncoming('${variantId}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 transition-all shadow-2xs" title="Gagal menyimpan. Klik untuk coba lagi.">
+                    <span class="material-symbols-outlined text-[13px]">refresh</span>
+                    <span>Coba Lagi</span>
+                </button>
+            `;
+        } else { // idle
+            container.innerHTML = `
+                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-stone-400">
+                    <span class="material-symbols-outlined text-[14px] text-success">check_circle</span>
+                    <span>Tersimpan</span>
+                </span>
+            `;
+        }
+    };
+
     window.handleIncomingInput = function(variantId) {
         const incInput = document.getElementById(`incoming-input-${variantId}`);
         const onstockDisplay = document.getElementById(`onstock-display-${variantId}`);
@@ -487,14 +537,13 @@
         const availBadge = document.getElementById(`available-badge-${variantId}`);
         if (!incInput) return;
 
-        const baseOnStock = parseInt(incInput.dataset.initialOnstock || '0');
+        const baseStock = parseInt(incInput.dataset.baseStock || '0');
         const onOrder = parseInt(incInput.dataset.onOrder || '0');
-
+        const initialIncoming = parseInt(incInput.dataset.initialIncoming || '0');
         const currentInc = parseInt(incInput.value) || 0;
 
-        // Logika bisnis: On Stock sekarang + incoming baru (misal on_stock 20 + incoming 50 = 70)
-        const newOnStock = Math.max(0, baseOnStock + currentInc);
-        // Available : on stock - on order
+        // Preview kalkulasi real-time saat mengetik
+        const newOnStock = Math.max(0, baseStock + currentInc);
         const newAvailable = Math.max(0, newOnStock - onOrder);
 
         if (onstockDisplay) {
@@ -521,7 +570,14 @@
 
         const productId = incInput.dataset.productId;
         updateProductTotals(productId);
-    }
+
+        // Beri indikasi visual jika ada perubahan terhadap nilai awal tersimpan
+        if (currentInc !== initialIncoming) {
+            renderStatus(variantId, 'modified');
+        } else {
+            renderStatus(variantId, 'idle');
+        }
+    };
 
     window.updateProductTotals = function(productId) {
         const prodGroup = document.getElementById(`product-group-${productId}`);
@@ -533,7 +589,7 @@
             const incInp = row.querySelector('.incoming-edit-input');
             if (!incInp) return;
 
-            const base = parseInt(incInp.dataset.initialOnstock || '0');
+            const base = parseInt(incInp.dataset.baseStock || incInp.dataset.initialOnstock || '0');
             const ord = parseInt(incInp.dataset.onOrder || '0');
 
             const curInc = parseInt(incInp.value) || 0;
@@ -548,30 +604,60 @@
         if (totAvailEl) totAvailEl.textContent = sumAvail.toLocaleString('id-ID');
     };
 
-    window.quickSaveIncoming = function(variantId) {
+    window.handleIncomingBlur = function(variantId) {
         const incInput = document.getElementById(`incoming-input-${variantId}`);
-        const btn = document.getElementById(`btn-save-${variantId}`);
-        const onstockDisplay = document.getElementById(`onstock-display-${variantId}`);
-        const onstockCalc = document.getElementById(`onstock-calc-${variantId}`);
-        const availBadge = document.getElementById(`available-badge-${variantId}`);
         if (!incInput) return;
 
-        const incomingVal = parseInt(incInput.value);
+        let incomingVal = parseInt(incInput.value);
+        const initialIncoming = parseInt(incInput.dataset.initialIncoming || '0');
 
         if (isNaN(incomingVal) || incomingVal < 0) {
             showInventoryToast('Jumlah incoming harus berupa angka minimal 0', false);
-            incInput.focus();
+            incInput.value = initialIncoming;
+            handleIncomingInput(variantId);
+            renderStatus(variantId, 'idle');
+            return;
+        }
+
+        // Pastikan hanya menyimpan jika ADA PERUBAHAN nilai
+        if (incomingVal === initialIncoming) {
+            renderStatus(variantId, 'idle');
+            return;
+        }
+
+        // Eksekusi penyimpanan otomatis saat keluar kolom
+        saveIncoming(variantId);
+    };
+
+    window.saveIncoming = function(variantId) {
+        if (isSaving[variantId]) return;
+
+        const incInput = document.getElementById(`incoming-input-${variantId}`);
+        if (!incInput) return;
+
+        const incomingVal = parseInt(incInput.value) || 0;
+        const initialIncoming = parseInt(incInput.dataset.initialIncoming || '0');
+
+        // Pengecekan redundansi perubahan
+        if (incomingVal === initialIncoming) {
+            renderStatus(variantId, 'idle');
             return;
         }
 
         const productId = incInput.dataset.productId;
+        const warehouseId = incInput.dataset.warehouseId || '{{ request('warehouse_id') }}' || null;
+        const channelId = incInput.dataset.channelId || '{{ request('store_channel_id') }}' || null;
 
-        // Loading state on button
-        if (btn) {
-            btn.disabled = true;
-            btn.classList.add('opacity-70');
-            btn.innerHTML = '<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>';
+        isSaving[variantId] = true;
+        renderStatus(variantId, 'saving');
+        incInput.classList.add('ring-2', 'ring-primary/40');
+
+        // Batalkan request sebelumnya jika masih berjalan
+        if (activeControllers[variantId]) {
+            activeControllers[variantId].abort();
         }
+        const controller = new AbortController();
+        activeControllers[variantId] = controller;
 
         fetch('{{ route('inventory.quick-update') }}', {
             method: 'POST',
@@ -580,54 +666,75 @@
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json'
             },
+            signal: controller.signal,
             body: JSON.stringify({
                 variant_id: variantId,
                 product_id: productId,
                 incoming: incomingVal,
-                warehouse_id: '{{ request('warehouse_id') }}' || null,
-                store_channel_id: '{{ request('store_channel_id') }}' || null
+                warehouse_id: warehouseId,
+                store_channel_id: channelId
             })
         })
         .then(res => res.json())
         .then(data => {
-            if (btn) {
-                btn.disabled = false;
-                btn.classList.remove('opacity-70');
-                btn.innerHTML = '<span class="material-symbols-outlined text-[15px]">check</span><span>Tersimpan</span>';
-                btn.classList.remove('bg-primary');
-                btn.classList.add('bg-success');
-                setTimeout(() => {
-                    btn.innerHTML = '<span class="material-symbols-outlined text-[15px]">save</span><span>Simpan</span>';
-                    btn.classList.remove('bg-success');
-                    btn.classList.add('bg-primary');
-                }, 2000);
-            }
-
+            isSaving[variantId] = false;
+            incInput.classList.remove('ring-2', 'ring-primary/40');
             if (data.success) {
-                // Update datasets and keep inputs showing current saved values (do not reset to empty/0)
+                // Perbarui dataset status nilai tersimpan
+                incInput.dataset.baseStock = data.data.base_stock;
                 incInput.dataset.initialOnstock = data.data.on_stock;
                 incInput.dataset.initialIncoming = data.data.incoming;
                 incInput.value = data.data.incoming;
 
+                const onstockDisplay = document.getElementById(`onstock-display-${variantId}`);
+                const onstockCalc = document.getElementById(`onstock-calc-${variantId}`);
+                const availBadge = document.getElementById(`available-badge-${variantId}`);
+
                 if (onstockDisplay) onstockDisplay.textContent = Number(data.data.on_stock).toLocaleString('id-ID');
-                if (onstockCalc) onstockCalc.classList.add('hidden');
-                if (availBadge) availBadge.textContent = Number(data.data.available).toLocaleString('id-ID');
+                if (onstockCalc) {
+                    if (data.data.incoming > 0) {
+                        onstockCalc.textContent = `(+${data.data.incoming})`;
+                        onstockCalc.classList.remove('hidden');
+                    } else {
+                        onstockCalc.classList.add('hidden');
+                    }
+                }
+                if (availBadge) {
+                    availBadge.textContent = Number(data.data.available).toLocaleString('id-ID');
+                    if (data.data.available > 0) {
+                        availBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-success/15 text-success border border-success/30';
+                    } else {
+                        availBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-danger/10 text-danger border border-danger/20';
+                    }
+                }
                 updateProductTotals(productId);
+
+                renderStatus(variantId, 'saved');
+                incInput.classList.add('border-emerald-500');
+                setTimeout(() => {
+                    incInput.classList.remove('border-emerald-500');
+                    renderStatus(variantId, 'idle');
+                }, 2500);
 
                 showInventoryToast(data.message || `Stok berhasil disimpan. On Stock sekarang: ${data.data.on_stock}`, true);
             } else {
+                renderStatus(variantId, 'error');
                 showInventoryToast(data.message || 'Gagal memperbarui stok', false);
             }
         })
         .catch(err => {
+            isSaving[variantId] = false;
+            if (err.name === 'AbortError') return;
             console.error(err);
-            if (btn) {
-                btn.disabled = false;
-                btn.classList.remove('opacity-70');
-                btn.innerHTML = '<span class="material-symbols-outlined text-[15px]">save</span><span>Simpan</span>';
-            }
+            incInput.classList.remove('ring-2', 'ring-primary/40');
+            renderStatus(variantId, 'error');
             showInventoryToast('Terjadi kesalahan saat menyimpan stok', false);
         });
-    }
+    };
+
+    // Alias untuk fallback jika diperlukan
+    window.quickSaveIncoming = function(variantId) {
+        handleIncomingBlur(variantId);
+    };
 </script>
 @endpush
