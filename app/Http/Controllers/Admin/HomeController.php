@@ -32,10 +32,12 @@ class HomeController extends Controller
         $startDate = now()->setDate($year, $monthNum, 1)->startOfDay();
         $endDate = $startDate->copy()->endOfMonth()->endOfDay();
 
-        // Tentukan Role Persona untuk Dashboard
+        // Tentukan Role Persona untuk Dashboard (Super Admin / Admin Pusat selalu prioritas utama)
         $roleType = 'admin';
         if ($user) {
-            if ($user->user_type === 'sales' || (method_exists($user, 'hasRole') && $user->hasRole('Sales Canvasser'))) {
+            if ($user->isSuperAdmin() || $user->user_type === 'admin' || (method_exists($user, 'hasRole') && ($user->hasRole('admin') || $user->hasRole('Admin') || $user->hasRole('Super Admin')))) {
+                $roleType = 'admin';
+            } elseif ($user->user_type === 'sales' || (method_exists($user, 'hasRole') && $user->hasRole('Sales Canvasser'))) {
                 $roleType = 'sales';
             } elseif ($user->user_type === 'store' || (method_exists($user, 'hasRole') && $user->hasRole('Store Partner')) || !empty($user->store_id)) {
                 $roleType = 'store';
