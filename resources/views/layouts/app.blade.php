@@ -284,22 +284,49 @@
             box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.15) !important;
         }
 
-        /* Checkbox styling */
+        /* High-Contrast Clear Checkbox Styling (Light & Dark Mode) */
         input[type="checkbox"] {
             padding: 0 !important;
-            width: 1.125rem !important;
-            height: 1.125rem !important;
+            width: 1.25rem !important;
+            height: 1.25rem !important;
             border-radius: 0.375rem !important;
-            border-color: var(--color-outline-variant) !important;
+            border: 2px solid #94a3b8 !important; /* Bold Slate-400 visible border before checked */
+            background-color: #ffffff !important;
             cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            appearance: none;
+            -webkit-appearance: none;
+            display: inline-grid;
+            place-content: center;
+        }
+        input[type="checkbox"]:hover {
+            border-color: #475569 !important; /* Darker Slate-600 on hover */
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+        }
+        input[type="checkbox"]:focus {
+            outline: none;
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            background-size: 80% !important;
         }
         .dark input[type="checkbox"] {
-            background-color: var(--color-surface-container) !important;
-            border-color: rgba(255, 255, 255, 0.15) !important;
+            background-color: #1e293b !important;
+            border: 2px solid #64748b !important;
+        }
+        .dark input[type="checkbox"]:hover {
+            border-color: #94a3b8 !important;
         }
         .dark input[type="checkbox"]:checked {
-            background-color: var(--color-primary) !important;
-            border-color: var(--color-primary) !important;
+            background-color: var(--color-primary, #2563eb) !important;
+            border-color: var(--color-primary, #2563eb) !important;
         }
 
         /* Smooth Non-Piercing Soft-White Card Design */
@@ -529,10 +556,21 @@
             color: #e7e5e4 !important;
             border-color: #383431 !important;
         }
+        .dark .text-slate-800,
+        .dark .text-slate-900 {
+            color: #f5f5f4 !important;
+        }
         .dark .text-slate-500,
         .dark .text-slate-600,
         .dark .text-slate-700 {
             color: #d6d3d1 !important;
+        }
+        .dark .border-slate-200,
+        .dark .border-slate-200\/80 {
+            border-color: #383431 !important;
+        }
+        .dark .border-slate-100 {
+            border-color: #292524 !important;
         }
 
         /* Dark Mode: Product Header Bar & Table Grouping */
@@ -586,6 +624,14 @@
         }
 
         /* Fix transparent checkmark & radio issue in light mode */
+        html:not(.dark) input[type="checkbox"]:not(:checked) {
+            border: 2px solid #94a3b8 !important; /* Bold visible Slate-400 border before checked */
+            background-color: #ffffff !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        html:not(.dark) input[type="checkbox"]:not(:checked):hover {
+            border-color: #475569 !important; /* Darker Slate-600 on hover */
+        }
         html:not(.dark) input[type="checkbox"]:checked {
             background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
             background-color: var(--color-primary) !important;

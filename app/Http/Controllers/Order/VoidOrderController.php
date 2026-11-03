@@ -13,6 +13,10 @@ class VoidOrderController extends Controller
 {
     public function index(Request $request)
     {
+        if (session('current_store')) {
+            abort(403, 'Fitur Void Orders hanya tersedia untuk Online Retail / Admin Pusat.');
+        }
+
         $query = VoidOrder::query();
 
         if ($request->filled('search')) {
@@ -29,6 +33,10 @@ class VoidOrderController extends Controller
     
     public function show(string $id)
     {
+        if (session('current_store')) {
+            abort(403, 'Fitur Void Orders hanya tersedia untuk Online Retail / Admin Pusat.');
+        }
+
         $voidOrder = VoidOrder::findOrFail($id);
         
         // Data format is already array due to model casts
@@ -40,6 +48,10 @@ class VoidOrderController extends Controller
 
     public function restore(Request $request)
     {
+        if (session('current_store')) {
+            abort(403, 'Fitur Void Orders hanya tersedia untuk Online Retail / Admin Pusat.');
+        }
+
         $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'exists:void_orders,id',

@@ -51,6 +51,16 @@
             </nav>
         </div>
         <div class="flex items-center gap-2">
+            @if($tab === 'item_master')
+                <button 
+                    type="button"
+                    @click="batchCopy()"
+                    :disabled="isLoading"
+                    class="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-label-md font-semibold flex items-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">bolt</span>
+                    <span>Salin Branded ke Katalog</span>
+                </button>
+            @endif
             <button 
                 type="button"
                 @click="triggerPull('item_master')"
@@ -262,17 +272,24 @@
             @if($tab === 'item_master')
                 <table class="w-full text-left text-sm">
                     <thead>
-                        <tr>
+                        <tr class="bg-surface-variant/30 text-on-surface-variant text-xs font-bold uppercase tracking-wider">
+                            <th class="w-10 px-4 py-3.5 text-center">
+                                <input type="checkbox" @change="toggleSelectAll($event)" :checked="isAllSelected" class="w-5 h-5 rounded-md border-2 border-slate-400 hover:border-blue-600 checked:bg-blue-600 checked:border-blue-600 text-blue-600 focus:ring-2 focus:ring-blue-500/40 bg-white transition-all cursor-pointer shadow-xs" title="Pilih Semua di Halaman Ini">
+                            </th>
                             <th class="px-5 py-3.5">Produk Kasur & SKU</th>
                             <th class="px-5 py-3.5">Brand</th>
                             <th class="px-5 py-3.5">Spesifikasi Ukuran</th>
                             <th class="px-5 py-3.5">Status Katalog</th>
-                            <th class="px-5 py-3.5 text-right">Update JDE</th>
+                            <th class="px-5 py-3.5">Update JDE</th>
+                            <th class="px-5 py-3.5 text-center">Aksi Salin</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-outline-variant text-on-surface">
                         @forelse($data as $row)
-                            <tr class="hover:bg-primary/5 transition-colors">
+                            <tr class="hover:bg-primary/5 transition-colors" :class="{ 'bg-blue-50/70 border-l-4 border-l-blue-600': selectedItemIds.includes('{{ $row->id }}') }">
+                                <td class="w-10 px-4 py-3.5 text-center">
+                                    <input type="checkbox" value="{{ $row->id }}" x-model="selectedItemIds" class="w-5 h-5 rounded-md border-2 border-slate-400 hover:border-blue-600 checked:bg-blue-600 checked:border-blue-600 text-blue-600 focus:ring-2 focus:ring-blue-500/40 bg-white transition-all cursor-pointer shadow-xs">
+                                </td>
                                 <!-- Col 1: Rich Product Cell -->
                                 <td class="px-5 py-3.5">
                                     <div class="font-bold text-on-surface text-[14px] leading-snug">{{ $row->description }}</div>
@@ -350,18 +367,52 @@
                                 </td>
 
                                 <!-- Col 5: Update Date -->
-                                <td class="px-5 py-3.5 text-right whitespace-nowrap">
-                                    <div class="text-xs font-medium text-on-surface">
+                                <td class="px-5 py-3.5 text-xs text-on-surface whitespace-nowrap">
+                                    <div class="font-medium text-on-surface">
                                         {{ $row->date_update ? $row->date_update->format('d M Y') : '-' }}
                                     </div>
                                     <div class="text-[10px] text-on-surface-variant font-medium">
                                         {{ $row->updated_at ? $row->updated_at->diffForHumans() : '' }}
                                     </div>
                                 </td>
+
+                                <!-- Col 6: Actions -->
+                                <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                                    @if($row->sync_status === 'PROCESSED')
+                                        <div class="flex items-center justify-center gap-2">
+                                            @if($row->processed_product_id)
+                                                <a href="{{ route('products.show', $row->processed_product_id) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" title="Lihat di Katalog Produk">
+                                                    <span class="material-symbols-outlined text-[14px]">visibility</span>
+                                                    <span>Lihat</span>
+                                                </a>
+                                            @else
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                                    <span class="material-symbols-outlined text-[14px]">check</span>
+                                                    <span>Tersalin</span>
+                                                </span>
+                                            @endif
+                                            <button 
+                                                type="button" 
+                                                @click="openSingleModal('{{ $row->id }}', '{{ addslashes($row->second_item_number) }}', '{{ addslashes($row->description) }}')" 
+                                                class="p-1 rounded-md text-on-surface-variant hover:text-primary hover:bg-surface-variant transition-colors" 
+                                                title="Salin Ulang / Ubah Distribusi">
+                                                <span class="material-symbols-outlined text-[16px]">refresh</span>
+                                            </button>
+                                        </div>
+                                    @else
+                                        <button 
+                                            type="button" 
+                                            @click="openSingleModal('{{ $row->id }}', '{{ addslashes($row->second_item_number) }}', '{{ addslashes($row->description) }}')" 
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary/90 shadow-2xs transition-all cursor-pointer">
+                                            <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                                            <span>Salin ke Produk</span>
+                                        </button>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-5 py-12 text-center text-on-surface-variant">
+                                <td colspan="7" class="px-5 py-12 text-center text-on-surface-variant">
                                     <span class="material-symbols-outlined text-4xl text-outline-variant mb-2 block">inbox</span>
                                     <p class="font-bold text-sm text-on-surface">Belum ada data Item Master.</p>
                                     <p class="text-xs text-on-surface-variant mt-1">Silakan klik tombol "Tarik Item Master JDE" di kanan atas.</p>
@@ -493,12 +544,300 @@
             </div>
         @endif
     </div>
+
+    <!-- Floating Bulk Selection Bar (Seperti display Price Product Setting) -->
+    <div x-show="selectedItemIds.length > 0" 
+         x-cloak 
+         class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white rounded-2xl px-6 py-3.5 shadow-2xl flex items-center gap-4 border border-slate-700 animate-slide-up">
+        <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                <span x-text="selectedItemIds.length"></span>
+            </span>
+            <span class="text-xs font-bold text-white"><span x-text="selectedItemIds.length"></span> Item Master JDE Dipilih</span>
+        </div>
+        <div class="h-4 w-[1px] bg-slate-700"></div>
+        <div class="flex items-center gap-2">
+            <button type="button" @click="selectedItemIds = []" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                Batal
+            </button>
+            <button type="button" @click="openBulkModal()" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">share_location</span>
+                <span>Salin & Distribusikan</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Distribusi Salin Katalog JDE -->
+    <div x-show="distributionModalOpen" 
+         x-cloak 
+         class="fixed inset-0 z-50 overflow-y-auto bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 relative my-8"
+             @click.away="distributionModalOpen = false">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shadow-2xs">
+                        <span class="material-symbols-outlined text-[24px]">share_location</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base">Salin ke Katalog & Distribusi Produk</h3>
+                        <p class="text-xs text-slate-500">Tentukan segmentasi channel dan toko tujuan produk ini</p>
+                    </div>
+                </div>
+                <button type="button" @click="distributionModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+
+            <div class="mt-4 space-y-4">
+                <!-- Info Item Terpilih -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Target Salin JDE</span>
+                        <span class="text-xs font-bold text-slate-800" x-text="itemsSummary"></span>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-100 text-blue-800 shrink-0">
+                        <span x-text="selectedItemIds.length"></span> Item
+                    </span>
+                </div>
+
+                <!-- Pilihan Channel / Segmentasi -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-2">1. Pilih Segmentasi Channel Katalog:</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between"
+                               :class="distributionTargetChannel === 'store_dealer' ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-600/20' : 'border-slate-200 hover:bg-slate-50'">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <input type="radio" value="store_dealer" x-model="distributionTargetChannel" class="text-blue-600 focus:ring-blue-500">
+                                <span class="font-bold text-xs text-slate-800">🏢 Toko Mebel / B2B Dealer</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 pl-5">Disimpan ke tabel <code>store_products</code> khusus transaksi kasir & showroom toko mitra.</p>
+                        </label>
+
+                        <label class="p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between"
+                               :class="distributionTargetChannel === 'web_retail' ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-600/20' : 'border-slate-200 hover:bg-slate-50'">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <input type="radio" value="web_retail" x-model="distributionTargetChannel" class="text-blue-600 focus:ring-blue-500">
+                                <span class="font-bold text-xs text-slate-800">🌐 Online Retail (Web IMG)</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 pl-5">Disimpan ke tabel <code>products</code> untuk e-commerce resmi publik D2C.</p>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Bagian Distribusi Toko (Hanya jika Toko Mebel) -->
+                <div x-show="distributionTargetChannel === 'store_dealer'" class="space-y-3 pt-2 border-t border-slate-100">
+                    <label class="block text-xs font-bold text-slate-700">2. Pilih Distribusi Toko Tujuan:</label>
+                    
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer">
+                            <input type="radio" value="all" x-model="distributionScope" class="text-blue-600 focus:ring-blue-500">
+                            <span>Distribusikan ke Semua Toko Binaan (Multi-Toko)</span>
+                        </label>
+
+                        <template x-if="currentStore">
+                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer">
+                                <input type="radio" value="current" x-model="distributionScope" class="text-blue-600 focus:ring-blue-500">
+                                <span>Hanya ke Toko Aktif Saat Ini: <strong class="text-blue-700" x-text="currentStore.name"></strong></span>
+                            </label>
+                        </template>
+
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer">
+                            <input type="radio" value="specific" x-model="distributionScope" class="text-blue-600 focus:ring-blue-500">
+                            <span>Pilih Toko Tertentu (Checklist Spesifik)</span>
+                        </label>
+                    </div>
+
+                    <!-- Checklist Toko Spesifik -->
+                    <div x-show="distributionScope === 'specific'" class="mt-2 p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">search</span>
+                            <input type="text" x-model="storeSearch" placeholder="Cari nama atau No. AN8 toko..." class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+
+                        <div class="max-h-40 overflow-y-auto divide-y divide-slate-100 pr-1">
+                            <template x-for="s in filteredStores" :key="s.id">
+                                <label class="flex items-center justify-between p-2 hover:bg-white rounded-lg cursor-pointer text-xs transition-colors">
+                                    <div class="flex items-center gap-2">
+                                        <input type="checkbox" :value="s.id" x-model="selectedStoreIds" class="w-4.5 h-4.5 rounded-md border-2 border-slate-400 checked:bg-blue-600 checked:border-blue-600 text-blue-600 focus:ring-2 focus:ring-blue-500/40 bg-white transition-all cursor-pointer">
+                                        <span class="font-bold text-slate-800" x-text="s.name"></span>
+                                    </div>
+                                    <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-200/60 text-slate-700" x-text="s.address_number ? 'AN8: ' + s.address_number : s.code"></span>
+                                </label>
+                            </template>
+                        </div>
+                        <div class="text-[11px] text-slate-500 pt-1 flex justify-between">
+                            <span><span x-text="selectedStoreIds.length"></span> toko dipilih</span>
+                            <button type="button" @click="selectedStoreIds = storesList.map(s => s.id)" class="text-blue-600 font-bold hover:underline">Pilih Semua</button>
+                        </div>
+                    </div>
+
+                    <!-- Pengaturan Display & Kasir -->
+                    <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white transition-colors cursor-pointer text-xs">
+                            <input type="checkbox" x-model="isFloorDisplay" class="w-5 h-5 rounded-md border-2 border-slate-400 checked:bg-blue-600 checked:border-blue-600 text-blue-600 focus:ring-2 focus:ring-blue-500/40 bg-white transition-all cursor-pointer">
+                            <div>
+                                <span class="font-bold text-slate-800 block">Pajang di Showroom</span>
+                                <span class="text-[10px] text-slate-500 block">Floor display aktif</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white transition-colors cursor-pointer text-xs">
+                            <input type="checkbox" x-model="isActiveForPos" class="w-5 h-5 rounded-md border-2 border-slate-400 checked:bg-blue-600 checked:border-blue-600 text-blue-600 focus:ring-2 focus:ring-blue-500/40 bg-white transition-all cursor-pointer">
+                            <div>
+                                <span class="font-bold text-slate-800 block">Aktif untuk POS Kasir</span>
+                                <span class="text-[10px] text-slate-500 block">Dapat ditransaksikan</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                    <button type="button" @click="distributionModalOpen = false" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors">
+                        Batal
+                    </button>
+                    <button type="button" @click="submitDistribution()" :disabled="isLoading" class="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-[16px]" :class="{ 'animate-spin': isLoading }">sync</span>
+                        <span x-text="isLoading ? 'Memproses Salin...' : 'Salin & Distribusikan (' + selectedItemIds.length + ')'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
 function jdeSyncHandler() {
     return {
         isLoading: false,
+        selectedItemIds: [],
+        availableRowIds: @json($tab === 'item_master' ? $data->pluck('id')->toArray() : []),
+        storesList: @json($availableStores ?? []),
+        currentStore: @json(session('current_store')),
+        distributionModalOpen: false,
+        distributionTargetChannel: 'store_dealer',
+        distributionScope: 'all',
+        selectedStoreIds: [],
+        isFloorDisplay: true,
+        isActiveForPos: true,
+        storeSearch: '',
+        itemsSummary: '',
+
+        get isAllSelected() {
+            return this.availableRowIds.length > 0 && this.selectedItemIds.length === this.availableRowIds.length;
+        },
+
+        toggleSelectAll(e) {
+            if (e.target.checked) {
+                this.selectedItemIds = [...this.availableRowIds];
+            } else {
+                this.selectedItemIds = [];
+            }
+        },
+
+        get filteredStores() {
+            if (!this.storeSearch) return this.storesList;
+            const q = this.storeSearch.toLowerCase();
+            return this.storesList.filter(s => 
+                (s.name && s.name.toLowerCase().includes(q)) || 
+                (s.address_number && String(s.address_number).includes(q)) ||
+                (s.code && s.code.toLowerCase().includes(q))
+            );
+        },
+
+        openSingleModal(id, sku, desc) {
+            this.selectedItemIds = [id];
+            this.itemsSummary = `${sku} - ${desc}`;
+            this.distributionModalOpen = true;
+        },
+
+        openBulkModal() {
+            if (this.selectedItemIds.length === 0) return;
+            this.itemsSummary = `${this.selectedItemIds.length} item JDE terpilih`;
+            this.distributionModalOpen = true;
+        },
+
+        batchCopy() {
+            if (this.selectedItemIds.length > 0) {
+                this.openBulkModal();
+            } else if (this.availableRowIds.length > 0) {
+                this.selectedItemIds = [...this.availableRowIds];
+                this.itemsSummary = `${this.selectedItemIds.length} item JDE terpilih (Halaman Ini)`;
+                this.distributionModalOpen = true;
+            } else {
+                this.itemsSummary = 'Semua Item JDE Ber-Brand';
+                this.distributionModalOpen = true;
+            }
+        },
+
+        async submitDistribution() {
+            if (this.selectedItemIds.length === 0) {
+                alert('Silakan pilih minimal 1 item JDE untuk disalin.');
+                return;
+            }
+
+            let storeIds = [];
+            if (this.distributionTargetChannel === 'store_dealer') {
+                if (this.distributionScope === 'current' && this.currentStore) {
+                    storeIds = [this.currentStore.id];
+                } else if (this.distributionScope === 'specific') {
+                    if (this.selectedStoreIds.length === 0) {
+                        alert('Silakan pilih minimal 1 toko tujuan distribusi.');
+                        return;
+                    }
+                    storeIds = this.selectedStoreIds;
+                }
+            }
+
+            this.isLoading = true;
+            try {
+                const response = await fetch("{{ route('admin.jde.item-master.copy-batch') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ids: this.selectedItemIds,
+                        target_channel: this.distributionTargetChannel,
+                        store_ids: storeIds,
+                        is_floor_display: this.isFloorDisplay,
+                        is_active_for_pos: this.isActiveForPos,
+                    })
+                });
+
+                const res = await response.json();
+                this.distributionModalOpen = false;
+
+                if (res.success) {
+                    if (typeof window.showSuccessPopup === 'function') {
+                        await window.showSuccessPopup(res.message);
+                    } else if (typeof Swal !== 'undefined') {
+                        await Swal.fire('Berhasil!', res.message, 'success');
+                    } else {
+                        alert(res.message);
+                    }
+                    window.location.reload();
+                } else {
+                    if (typeof window.showErrorPopup === 'function') {
+                        window.showErrorPopup(res.message, 'Gagal Menyalin');
+                    } else {
+                        alert(res.message);
+                    }
+                }
+            } catch (err) {
+                alert('Kesalahan jaringan: ' + err.message);
+            } finally {
+                this.isLoading = false;
+            }
+        },
 
         async triggerPull(type = 'item_master') {
             const confirmed = await window.showConfirmDialog({

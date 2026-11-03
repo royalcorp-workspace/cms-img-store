@@ -88,4 +88,19 @@ class Store extends Model
     {
         return $this->hasMany(\App\Models\Inventory\Inventory::class, 'store_id');
     }
+
+    public function salesStores(): HasMany
+    {
+        return $this->hasMany(SalesStore::class, 'store_id');
+    }
+
+    public function salesCanvassers()
+    {
+        return $this->belongsToMany(\App\Models\Admin::class, 'store.sales_stores', 'store_id', 'sales_user_id');
+    }
+
+    public function storeProducts(): HasMany
+    {
+        return $this->hasMany(\App\Models\Product\StoreProduct::class, 'store_id');
+    }
 }

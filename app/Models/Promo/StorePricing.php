@@ -56,6 +56,11 @@ class StorePricing extends Model
         return $this->belongsTo(Store::class, 'store_id');
     }
 
+    public function priceProductSetting(): BelongsTo
+    {
+        return $this->belongsTo(PriceProductSetting::class, 'price_product_setting_id')->withoutGlobalScope('active');
+    }
+
     public function getBasePriceAttribute(): float
     {
         if (!$this->adjustments || empty($this->adjustments)) {

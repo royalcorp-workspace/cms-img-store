@@ -132,6 +132,38 @@ class PriceProductSetting extends Model
         };
     }
 
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Store\Store::class, 'scope_store_id');
+    }
+
+    public function tier(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Store\StoreTier::class, 'scope_store_id');
+    }
+
+    public function channelGroup(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Store\StoreChannelGroup::class, 'scope_store_id');
+    }
+
+    public function storePricings(): HasMany
+    {
+        return $this->hasMany(StorePricing::class, 'price_product_setting_id');
+    }
+
+    public function scopeStoreTargetName(): ?string
+    {
+        if ((int)$this->scope_store_type === 1) {
+            return $this->tier?->name;
+        } elseif ((int)$this->scope_store_type === 2) {
+            return $this->store?->name;
+        } elseif ((int)$this->scope_store_type === 3) {
+            return $this->channelGroup?->name;
+        }
+        return 'Semua Store';
+    }
+
     public function scopeForStore($query, string $storeId)
     {
         return $query->where(function ($q) use ($storeId) {

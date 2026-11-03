@@ -83,8 +83,30 @@
                                     {{ strtoupper(substr($user->name, 0, 2)) }}
                                 </div>
                                 <div>
-                                    <strong class="font-bold text-on-surface block">{{ $user->name }}</strong>
-                                    <span class="text-xs text-on-surface-variant">ID: {{ substr($user->id, 0, 8) }}...</span>
+                                    <div class="flex items-center gap-2">
+                                        <strong class="font-bold text-on-surface block">{{ $user->name }}</strong>
+                                        @if($user->role_persona)
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider
+                                                {{ $user->role_persona === 'SALES_INTERNAL' ? 'bg-amber-100 text-amber-800 border border-amber-300' : '' }}
+                                                {{ $user->role_persona === 'OWNER_TOKO' ? 'bg-blue-100 text-blue-800 border border-blue-300' : '' }}
+                                                {{ $user->role_persona === 'SPG_TOKO' ? 'bg-purple-100 text-purple-800 border border-purple-300' : '' }}
+                                                {{ $user->role_persona === 'SPG_INTERNAL' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : '' }}
+                                            ">
+                                                {{ str_replace('_', ' ', $user->role_persona) }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="flex items-center gap-2 text-xs text-on-surface-variant mt-0.5">
+                                        <span class="font-mono">{{ $user->username ?: 'ID: '.substr($user->id, 0, 8) }}</span>
+                                        @if($user->effective_store)
+                                            <span>•</span>
+                                            <span class="font-semibold text-blue-700">Toko: {{ $user->effective_store->name }}</span>
+                                        @endif
+                                        @if($user->parent)
+                                            <span>•</span>
+                                            <span class="text-amber-700">Atasan: {{ $user->parent->name }}</span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </td>

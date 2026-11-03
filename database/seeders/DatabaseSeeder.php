@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             HomepageSectionSeeder::class,
             // DashboardSeeder::class,
             UserAdminSeeder::class,
+            StoreUserSeeder::class,
             LocationSeeder::class,
             PaymentMethodSeeder::class,
             CourierSeeder::class,

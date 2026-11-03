@@ -100,7 +100,8 @@
 
                         $storeScopeLabel = $setting->scopeStoreTypeLabel();
                         if ($setting->scope_store_type > 0 && $setting->scope_store_id) {
-                            $scopeLabel .= ' · ' . $storeScopeLabel;
+                            $targetName = $setting->scopeStoreTargetName();
+                            $scopeLabel .= ' · ' . $storeScopeLabel . ($targetName ? " ({$targetName})" : '');
                         }
 
                         $period = 'Ongoing';

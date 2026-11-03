@@ -584,6 +584,29 @@ class Order extends Model
             || (($this->meta['courier_type'] ?? '') === 'toko');
     }
 
+    public function isOnlineRetail(): bool
+    {
+        // 1. Jika tidak terikat ke store fisik manapun, berarti order dari official web store
+        if (empty($this->store_id)) {
+            return true;
+        }
+
+        // 2. Cek apakah tokonya adalah Official Store Online Retail
+        $store = $this->relationLoaded('store') ? $this->store : $this->store;
+        if ($store && in_array($store->code, ['ONLINE_RETAIL', 'WEB_IMG'], true)) {
+            return true;
+        }
+
+        // 3. Cek apakah kanalnya adalah Web IMG
+        $channel = $this->relationLoaded('storeChannel') ? $this->storeChannel : $this->storeChannel;
+        if ($channel && in_array($channel->code, ['WEB_IMG', 'ONLINE_RETAIL'], true)) {
+            return true;
+        }
+
+        // Selain di atas adalah pesanan Toko / Dealer B2B fisik
+        return false;
+    }
+
     public function voucher(): BelongsTo
     {
         return $this->belongsTo(Voucher::class, 'voucher_id', 'id');

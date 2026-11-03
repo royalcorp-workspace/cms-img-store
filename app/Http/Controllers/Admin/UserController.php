@@ -18,7 +18,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $search = $request->query('search');
-        $query = Admin::with('roles')->where('deleted', false)->orderBy('created_at', 'desc');
+        $query = Admin::with(['roles', 'store', 'ownedStore', 'parent'])->where('deleted', false)->orderBy('created_at', 'desc');
 
         if ($search) {
             $query->where(function ($q) use ($search) {

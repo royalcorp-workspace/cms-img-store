@@ -24,6 +24,9 @@ Route::put('/store-tiers/{id}', [StoreTierController::class, 'update'])->name('s
 Route::delete('/store-tiers/{id}', [StoreTierController::class, 'destroy'])->name('store-tiers.destroy');
 
 Route::get('/stores', [StoreController::class, 'index'])->name('stores.index');
+Route::get('/stores/clear-context', [StoreController::class, 'clearContext'])->name('stores.clear-context');
+Route::post('/stores/{id}/switch-context', [StoreController::class, 'switchContext'])->name('stores.switch-context');
+Route::match(['get', 'post'], '/stores/{id}/impersonate', [StoreController::class, 'switchContext'])->name('stores.impersonate');
 Route::get('/stores/create', [StoreController::class, 'create'])->name('stores.create');
 Route::post('/stores', [StoreController::class, 'store'])->name('stores.store');
 Route::get('/stores/{id}/edit', [StoreController::class, 'edit'])->name('stores.edit');

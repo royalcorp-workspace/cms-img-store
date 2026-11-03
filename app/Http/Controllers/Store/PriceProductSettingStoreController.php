@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Product\Product;
 use App\Models\Product\Variant;
+use App\Models\Promo\PriceProductSetting;
 use App\Models\Promo\StorePricing;
 use App\Models\Store\Store;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ class PriceProductSettingStoreController extends Controller
 {
     public function index(Request $request)
     {
-        $query = StorePricing::query()->with(['product', 'variant', 'store']);
+        $query = StorePricing::query()->with(['product', 'variant', 'store', 'priceProductSetting']);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -26,12 +27,19 @@ class PriceProductSettingStoreController extends Controller
                 })
                 ->orWhereHas('variant', function ($vq) use ($search) {
                     $vq->where('variant_name', 'ilike', "%{$search}%");
+                })
+                ->orWhereHas('priceProductSetting', function ($promq) use ($search) {
+                    $promq->where('title', 'ilike', "%{$search}%")->orWhere('code', 'ilike', "%{$search}%");
                 });
             });
         }
 
         if ($request->filled('store_id')) {
             $query->where('store_id', $request->query('store_id'));
+        }
+
+        if ($request->filled('price_product_setting_id')) {
+            $query->where('price_product_setting_id', $request->query('price_product_setting_id'));
         }
 
         if ($request->filled('product_id')) {
@@ -52,9 +60,10 @@ class PriceProductSettingStoreController extends Controller
 
         $products = Product::where('deleted', false)->orderBy('name')->get(['id', 'name']);
         $variants = Variant::orderBy('variant_name')->get(['id', 'variant_name', 'product_id']);
-        $stores = Store::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
+        $stores = Store::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code', 'tier_id', 'store_group_id']);
+        $priceSettings = PriceProductSetting::withoutGlobalScope('active')->where('deleted', false)->orderBy('title')->get(['id', 'title', 'code', 'discount_type', 'discount_value', 'scope_store_type', 'scope_store_id']);
 
-        return view('pages.promo.price-product-setting-store', compact('pricings', 'stats', 'products', 'variants', 'stores'));
+        return view('pages.promo.price-product-setting-store', compact('pricings', 'stats', 'products', 'variants', 'stores', 'priceSettings'));
     }
 
     public function create()
@@ -66,14 +75,29 @@ class PriceProductSettingStoreController extends Controller
             ->orderBy('name')
             ->get();
 
-        $stores = Store::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
+        $stores = Store::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code', 'tier_id', 'store_group_id']);
+        $priceSettings = PriceProductSetting::withoutGlobalScope('active')->where('deleted', false)->orderBy('title')->get(['id', 'title', 'code', 'discount_type', 'discount_value', 'scope_store_type', 'scope_store_id']);
 
-        return view('pages.promo.price-product-setting-store-create', compact('products', 'stores'));
+        $productsJson = $products->map(fn($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'base_price' => (float)$p->base_price,
+            'variants' => $p->variants->map(fn($v) => [
+                'id' => $v->id,
+                'name' => $v->variant_name ?? $v->sku,
+                'base_price' => (float)($v->sell_price > 0 ? $v->sell_price : ($v->base_price > 0 ? $v->base_price : $p->base_price)),
+            ]),
+        ])->keyBy('id');
+        $storesJson = $stores->keyBy('id');
+        $promosJson = $priceSettings->keyBy('id');
+
+        return view('pages.promo.price-product-setting-store-create', compact('products', 'stores', 'priceSettings', 'productsJson', 'storesJson', 'promosJson'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'price_product_setting_id' => 'required|uuid|exists:price_product_settings,id',
             'store_id' => 'required|string|exists:store,id',
             'product_id' => 'nullable|string|exists:products,id',
             'variant_id' => 'nullable|string|exists:product_variants,id',
@@ -102,9 +126,23 @@ class PriceProductSettingStoreController extends Controller
             ->orderBy('name')
             ->get();
 
-        $stores = Store::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code']);
+        $stores = Store::where('status', true)->where('deleted', false)->orderBy('name')->get(['id', 'name', 'code', 'tier_id', 'store_group_id']);
+        $priceSettings = PriceProductSetting::withoutGlobalScope('active')->where('deleted', false)->orderBy('title')->get(['id', 'title', 'code', 'discount_type', 'discount_value', 'scope_store_type', 'scope_store_id']);
 
-        return view('pages.promo.price-product-setting-store-edit', compact('pricing', 'products', 'stores'));
+        $productsJson = $products->map(fn($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'base_price' => (float)$p->base_price,
+            'variants' => $p->variants->map(fn($v) => [
+                'id' => $v->id,
+                'name' => $v->variant_name ?? $v->sku,
+                'base_price' => (float)($v->sell_price > 0 ? $v->sell_price : ($v->base_price > 0 ? $v->base_price : $p->base_price)),
+            ]),
+        ])->keyBy('id');
+        $storesJson = $stores->keyBy('id');
+        $promosJson = $priceSettings->keyBy('id');
+
+        return view('pages.promo.price-product-setting-store-edit', compact('pricing', 'products', 'stores', 'priceSettings', 'productsJson', 'storesJson', 'promosJson'));
     }
 
     public function update(Request $request, string $id)
@@ -112,6 +150,7 @@ class PriceProductSettingStoreController extends Controller
         $pricing = StorePricing::findOrFail($id);
 
         $validated = $request->validate([
+            'price_product_setting_id' => 'required|uuid|exists:price_product_settings,id',
             'store_id' => 'required|string|exists:store,id',
             'product_id' => 'nullable|string|exists:products,id',
             'variant_id' => 'nullable|string|exists:product_variants,id',
