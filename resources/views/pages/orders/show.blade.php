@@ -101,7 +101,22 @@
                 <!-- Nomor Order -->
                 <div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant/30 flex items-center justify-between">
                     <div>
-                        <span class="text-[10px] text-on-surface-variant font-semibold block uppercase">Nomor Pesanan</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-on-surface-variant font-semibold block uppercase">Nomor Pesanan</span>
+                            @if($order->source_platform === 'mobile')
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="Platform: Mobile App">
+                                    <span class="material-symbols-outlined text-[12px]">smartphone</span> Mobile
+                                </span>
+                            @elseif($order->source_platform === 'pos')
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200" title="Platform: POS Toko">
+                                    <span class="material-symbols-outlined text-[12px]">storefront</span> POS
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200" title="Platform: Web Store">
+                                    <span class="material-symbols-outlined text-[12px]">language</span> Web
+                                </span>
+                            @endif
+                        </div>
                         <div class="flex items-center gap-2 mt-0.5">
                             <span class="font-mono font-bold text-sm text-on-surface">#{{ $order->order_number }}</span>
                             <span id="order-copy-label" class="hidden text-[10px] font-medium text-on-surface bg-surface-container border border-outline-variant/60 px-1.5 py-0.5 rounded transition-all items-center gap-0.5">

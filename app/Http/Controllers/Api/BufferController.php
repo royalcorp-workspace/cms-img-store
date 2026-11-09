@@ -247,12 +247,19 @@ class BufferController extends ApiController
     private function recalculateBuffer(Buffer $buffer): void
     {
         $items = $buffer->items()->get();
-        $subtotal = $items->sum('total');
+        $subtotal = $items->sum(function ($item) {
+            $unitPrice = (float) ($item->unit_price ?? 0);
+            return $unitPrice > 0 ? ($unitPrice * (int) $item->quantity) : (float) $item->total;
+        });
         $discount = $items->sum(function ($item) {
-            return $item->discount_nominal + ($item->unit_price * $item->quantity * $item->discount_percent / 100);
+            if ((float) $item->discount_nominal > 0) {
+                return (float) $item->discount_nominal;
+            }
+            $itemTotal = (float) ($item->unit_price ?? 0) * (int) $item->quantity;
+            return $itemTotal > 0 ? ($itemTotal * (float) $item->discount_percent / 100) : 0;
         });
         $tax = 0;
-        $total = $subtotal - $discount + $tax;
+        $total = max(0, $subtotal - $discount) + $tax;
 
         $buffer->update([
             'subtotal' => $subtotal,
