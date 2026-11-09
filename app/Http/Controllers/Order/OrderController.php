@@ -16,25 +16,70 @@ class OrderController extends Controller
     {
         $query = Order::query()->with(['customer', 'courier', 'delivery.courier', 'handover.courier', 'paymentMethod']);
 
-        if ($search = $request->query('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('id', 'ilike', "%{$search}%")
+        if ($search = trim((string) $request->query('search'))) {
+            $cleanSearch = preg_replace('/[^a-zA-Z0-9]/', '', $search);
+            $query->where(function ($q) use ($search, $cleanSearch) {
+                $q->where('order_number', 'ilike', "%{$search}%");
+                if (!empty($cleanSearch)) {
+                    $q->orWhereRaw("REGEXP_REPLACE(order_number, '[^a-zA-Z0-9]', '', 'g') ILIKE ?", ["%{$cleanSearch}%"]);
+                }
+                $q->orWhereRaw("CAST(id AS TEXT) ILIKE ?", ["%{$search}%"])
                   ->orWhereHas('customer', function ($cq) use ($search) {
-                      $cq->where('name', 'ilike', "%{$search}%");
+                      $cq->where('name', 'ilike', "%{$search}%")
+                        ->orWhere('email', 'ilike', "%{$search}%")
+                        ->orWhere('phone', 'ilike', "%{$search}%");
                   });
             });
         }
 
         if ($request->has('status') && $request->query('status') !== '') {
             $query->where('status', $request->query('status'));
+        } else {
+            $query->where('status', '!=', Order::STATUS_DRAFT);
         }
 
         if ($request->has('payment_status')) {
             $query->where('payment_status', $request->query('payment_status'));
         }
 
-        $startDate = $request->query('start_date', now()->toDateString());
-        $endDate = $request->query('end_date', now()->toDateString());
+        $platform = $request->query('platform');
+        if (!empty($platform)) {
+            $platformLower = strtolower(trim($platform));
+            if ($platformLower === 'mobile') {
+                $query->where(function ($q) {
+                    $q->where('meta->>platform', 'mobile_app')
+                      ->orWhere('meta->>platform', 'mobile')
+                      ->orWhere('order_number', 'like', 'MOB-%')
+                      ->orWhere('order_number', 'like', 'ORD-260831-%');
+                });
+            } elseif ($platformLower === 'web') {
+                $query->where(function ($q) {
+                    $q->where('meta->>platform', 'website')
+                      ->orWhere('meta->>platform', 'web')
+                      ->orWhere('order_number', 'like', 'WEB-%')
+                      ->orWhere('order_number', 'like', 'ORD.%')
+                      ->orWhere(function ($sq) {
+                          $sq->whereNull('meta->>platform')
+                             ->where('order_number', 'not like', 'ORD-POS-%')
+                             ->where('order_number', 'not like', 'MOB-%')
+                             ->where('order_number', 'not like', 'ORD-260831-%')
+                             ->where(function ($ssq) {
+                                 $ssq->whereNull('creator')
+                                     ->orWhere('creator', 'not like', 'Store - %');
+                             });
+                      });
+                });
+            } elseif ($platformLower === 'pos') {
+                $query->where(function ($q) {
+                    $q->where('meta->>platform', 'pos')
+                      ->orWhere('order_number', 'like', 'ORD-POS-%')
+                      ->orWhere('creator', 'like', 'Store - %');
+                });
+            }
+        }
+
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
 
         // Scope by store jika login sebagai Toko
         $currentStore = session('current_store');
@@ -51,16 +96,27 @@ class OrderController extends Controller
 
         $applyStoreScope($query);
 
-        $query->whereDate('created_at', '>=', $startDate)
-              ->whereDate('created_at', '<=', $endDate);
+        if (!empty($startDate)) {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+        if (!empty($endDate)) {
+            $query->whereDate('created_at', '<=', $endDate);
+        }
 
         $orders = $query->orderByDesc('created_at')->paginate(10)->appends($request->query());
 
         $buildStatQuery = function ($status = null) use ($startDate, $endDate, $applyStoreScope) {
-            $q = Order::whereDate('created_at', '>=', $startDate)
-                      ->whereDate('created_at', '<=', $endDate);
+            $q = Order::query();
             if ($status !== null) {
                 $q->where('status', $status);
+            } else {
+                $q->where('status', '!=', Order::STATUS_DRAFT);
+            }
+            if (!empty($startDate)) {
+                $q->whereDate('created_at', '>=', $startDate);
+            }
+            if (!empty($endDate)) {
+                $q->whereDate('created_at', '<=', $endDate);
             }
             $applyStoreScope($q);
             return $q->count();
@@ -68,7 +124,6 @@ class OrderController extends Controller
 
         $stats = [
             'total'                        => $buildStatQuery(),
-            Order::STATUS_DRAFT            => $buildStatQuery(Order::STATUS_DRAFT),
             Order::STATUS_PENDING_APPROVAL => $buildStatQuery(Order::STATUS_PENDING_APPROVAL),
             Order::STATUS_CONFIRMED        => $buildStatQuery(Order::STATUS_CONFIRMED),
             Order::STATUS_PROCESSING       => $buildStatQuery(Order::STATUS_PROCESSING),
@@ -80,7 +135,7 @@ class OrderController extends Controller
 
         $couriers = \App\Models\Shipping\Courier::orderBy('name')->get();
 
-        return view('pages.orders.index', compact('orders', 'stats', 'startDate', 'endDate', 'couriers'));
+        return view('pages.orders.index', compact('orders', 'stats', 'startDate', 'endDate', 'couriers', 'platform'));
     }
 
     public function show(string $id)

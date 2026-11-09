@@ -18,17 +18,22 @@
 
     <div class="bg-white rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
         <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
                 <div class="relative">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
                         <span class="material-symbols-outlined text-[18px]">search</span>
                     </span>
-                    <input type="text" id="searchInput" placeholder="Search orders..." class="pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none w-64" value="{{ request('search') }}">
+                    <input type="text" id="searchInput" placeholder="Cari nomor order, customer..." class="pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none w-64" value="{{ request('search') }}">
                 </div>
+                <select id="platformFilter" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                    <option value="">All Platforms</option>
+                    <option value="web" {{ request('platform') === 'web' ? 'selected' : '' }}>Web</option>
+                    <option value="mobile" {{ request('platform') === 'mobile' ? 'selected' : '' }}>Mobile</option>
+                    <option value="pos" {{ request('platform') === 'pos' ? 'selected' : '' }}>POS</option>
+                </select>
                 <select id="statusFilter" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
                     <option value="">All Status</option>
-                    <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Draft</option>
-                    <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Pending Approval</option>
+                    <option value="1" {{ request('status') === '1' ? 'selected' : '' }} title="Menunggu Pembayaran">Ordered</option>
                     <option value="2" {{ request('status') === '2' ? 'selected' : '' }}>Confirmed</option>
                     <option value="3" {{ request('status') === '3' ? 'selected' : '' }}>Processing</option>
                     <option value="4" {{ request('status') === '4' ? 'selected' : '' }}>Shipped</option>
@@ -38,9 +43,15 @@
                 </select>
             </div>
             <div class="flex items-center gap-2">
-                <input type="date" id="startDate" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" value="{{ request('start_date', $startDate) }}">
+                <input type="date" id="startDate" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" value="{{ request('start_date') }}" title="Mulai Tanggal">
                 <span class="text-on-surface-variant">to</span>
-                <input type="date" id="endDate" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" value="{{ request('end_date', $endDate) }}">
+                <input type="date" id="endDate" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" value="{{ request('end_date') }}" title="Sampai Tanggal">
+                @if(request('start_date') || request('end_date') || request('search') || (request('status') !== null && request('status') !== '') || request('platform'))
+                    <button type="button" onclick="resetAllFilters()" class="px-2.5 py-2 text-xs font-medium text-danger hover:bg-danger/10 border border-danger/30 rounded-lg transition-colors flex items-center gap-1" title="Reset Semua Filter">
+                        <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                        Reset
+                    </button>
+                @endif
             </div>
         </div>
         <div class="overflow-x-auto">
@@ -48,6 +59,7 @@
                 <thead>
                     <tr class="bg-surface-gray">
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Order ID</th>
+                        <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Platform</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Date</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Customer</th>
                         <th class="px-gutter py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Payment</th>
@@ -65,6 +77,24 @@
                                 <a href="{{ route('orders.show', $order->id) }}" class="font-headline-md text-headline-md text-primary font-semibold hover:underline" title="Lihat Detail Pesanan">
                                     #{{ $order->order_number }}
                                 </a>
+                            </td>
+                            <td class="px-gutter py-4 text-center">
+                                @if($order->source_platform === 'mobile')
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200" title="Platform: Mobile App">
+                                        <span class="material-symbols-outlined text-[13px]">smartphone</span>
+                                        <span>Mobile</span>
+                                    </span>
+                                @elseif($order->source_platform === 'pos')
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200" title="Platform: POS Toko">
+                                        <span class="material-symbols-outlined text-[13px]">storefront</span>
+                                        <span>POS</span>
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200" title="Platform: Web Store">
+                                        <span class="material-symbols-outlined text-[13px]">language</span>
+                                        <span>Web</span>
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $order->created_at->format('d M Y') }}</td>
                             <td class="px-gutter py-4">
@@ -155,7 +185,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-gutter py-8 text-center text-on-surface-variant">No orders found</td>
+                            <td colspan="10" class="px-gutter py-8 text-center text-on-surface-variant">No orders found</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -171,13 +201,15 @@
 
     <script>
     function buildUrl() {
-        const search = document.getElementById('searchInput').value;
+        const search = document.getElementById('searchInput').value.trim();
+        const platform = document.getElementById('platformFilter').value;
         const status = document.getElementById('statusFilter').value;
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
 
         const params = new URLSearchParams();
         if (search) params.set('search', search);
+        if (platform) params.set('platform', platform);
         if (status !== '') params.set('status', status);
         if (startDate) params.set('start_date', startDate);
         if (endDate) params.set('end_date', endDate);
@@ -186,7 +218,26 @@
         return query ? '?' + query : window.location.pathname;
     }
 
+    function resetAllFilters() {
+        window.location.href = window.location.pathname;
+    }
+
+    let searchTimeout;
     document.getElementById('searchInput').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            window.location.href = buildUrl();
+        }, 500);
+    });
+
+    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            clearTimeout(searchTimeout);
+            window.location.href = buildUrl();
+        }
+    });
+
+    document.getElementById('platformFilter').addEventListener('change', function() {
         window.location.href = buildUrl();
     });
 
