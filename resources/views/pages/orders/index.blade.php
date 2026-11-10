@@ -109,7 +109,14 @@
                                     <span class="text-on-surface-variant">Guest</span>
                                 @endif
                             </td>
-                            <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">{{ $order->payment_method_name }}</td>
+                            <td class="px-gutter py-4 font-body-md text-body-md text-on-surface-variant">
+                                <div>{{ $order->payment_method_name }}</div>
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium {{ $order->payment_status_badge_class }}">
+                                        {{ $order->paymentStatusLabel() }}
+                                    </span>
+                                </div>
+                            </td>
                             <td class="px-gutter py-4 text-center">
                                 @php
                                     $statusClass = match($order->status) {

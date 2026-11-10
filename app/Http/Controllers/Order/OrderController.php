@@ -256,6 +256,10 @@ class OrderController extends Controller
             'editor' => auth()->user()->name ?? 'admin',
         ];
 
+        if ($newStatus >= Order::STATUS_PROCESSING && (int) $order->payment_status === Order::PAYMENT_UNPAID) {
+            $updateData['payment_status'] = Order::PAYMENT_PAID;
+        }
+
         if (!empty($validated['courier_id'])) {
             $updateData['courier_id'] = $validated['courier_id'];
         }

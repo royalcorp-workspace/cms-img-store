@@ -143,6 +143,9 @@ class Order extends Model
             if ($model->status === null || $model->status === self::STATUS_DRAFT || $model->status === 0) {
                 $model->status = self::STATUS_PENDING_APPROVAL;
             }
+            if ($model->payment_status === null) {
+                $model->payment_status = self::PAYMENT_UNPAID;
+            }
             if (empty($model->order_date)) {
                 $model->order_date = now()->format('Y-m-d');
             }
@@ -197,6 +200,13 @@ class Order extends Model
 
             if ((int) $model->jde_push_status === self::JDE_STATUS_SUCCESS && empty($model->jde_push_date)) {
                 $model->jde_push_date = now()->format('Y-m-d');
+            }
+
+            // Ketika status pesanan menjadi Processing (3) atau lebih, otomatis ubah payment_status menjadi Paid (1)
+            if ((int) $model->status >= self::STATUS_PROCESSING && (int) $model->status !== self::STATUS_CANCELLED) {
+                if ((int) $model->payment_status === self::PAYMENT_UNPAID) {
+                    $model->payment_status = self::PAYMENT_PAID;
+                }
             }
         });
 
@@ -771,9 +781,23 @@ class Order extends Model
 
     public function isPaymentPaid(): bool
     {
-        return (int) $this->payment_status === self::PAYMENT_PAID 
-            || (int) $this->payment_status === 2 
-            || (int) $this->status >= self::STATUS_CONFIRMED;
+        // Jika status masih Draft atau Ordered (Pending Approval), dan payment_status belum Paid
+        if (in_array((int) $this->status, [self::STATUS_DRAFT, self::STATUS_PENDING_APPROVAL], true) && (int) $this->payment_status !== self::PAYMENT_PAID) {
+            return false;
+        }
+
+        // Jika payment_status bukan Paid (misal Unpaid, Failed, Refunded) dan status belum mencapai Processing
+        if ((int) $this->payment_status !== self::PAYMENT_PAID && (int) $this->status < self::STATUS_PROCESSING) {
+            return false;
+        }
+
+        // Jika dibatalkan dan payment bukan Paid
+        if ((int) $this->status === self::STATUS_CANCELLED && (int) $this->payment_status !== self::PAYMENT_PAID) {
+            return false;
+        }
+
+        return (int) $this->payment_status === self::PAYMENT_PAID
+            || (int) $this->status >= self::STATUS_PROCESSING;
     }
 
     public static function paymentStatusLabels(): array
@@ -794,23 +818,28 @@ class Order extends Model
 
     public function paymentStatusLabel(): string
     {
-        // Toleransi perbedaan nilai payment_status antar modul (CMS: 1 = Paid, POS/Gateway: 2 = Paid)
-        if ((int) $this->payment_status === 2 && $this->isPaidOrStarted()) {
+        if ((int) $this->status === self::STATUS_PENDING_APPROVAL && (int) $this->payment_status === self::PAYMENT_UNPAID) {
+            return 'Unpaid';
+        }
+
+        if ($this->isPaymentPaid()) {
             return 'Paid';
         }
 
-        return \App\Models\Reff::getShow('PaymentStatus', $this->payment_status, self::paymentStatusLabels()[$this->payment_status] ?? 'Unknown');
+        return \App\Models\Reff::getShow('PaymentStatus', $this->payment_status, self::paymentStatusLabels()[$this->payment_status] ?? 'Unpaid');
     }
 
     public function getPaymentStatusBadgeClassAttribute(): string
     {
-        // Toleransi perbedaan nilai payment_status antar modul (CMS: 1 = Paid, POS/Gateway: 2 = Paid)
-        if ((int) $this->payment_status === 2 && $this->isPaidOrStarted()) {
+        if ((int) $this->status === self::STATUS_PENDING_APPROVAL && (int) $this->payment_status === self::PAYMENT_UNPAID) {
+            return 'bg-gray-100 text-gray-600';
+        }
+
+        if ($this->isPaymentPaid()) {
             return 'bg-success/10 text-success';
         }
 
-        return match ($this->payment_status) {
-            self::PAYMENT_UNPAID => 'bg-gray-100 text-gray-600',
+        return match ((int) $this->payment_status) {
             self::PAYMENT_PAID => 'bg-success/10 text-success',
             self::PAYMENT_FAILED => 'bg-danger/10 text-danger',
             self::PAYMENT_REFUNDED => 'bg-orange-100 text-orange-700',
