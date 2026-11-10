@@ -523,7 +523,7 @@
                     @if($order->isManualTransfer())
                         <form method="POST" action="{{ route('orders.verify-payment', $order->id) }}" class="pt-2 border-t border-outline-variant/40 space-y-2">
                             @csrf
-                            <input type="hidden" name="status" value="2">
+                            <input type="hidden" name="status" value="3">
                             <input type="hidden" name="payment_status" value="1">
                             <button type="submit" class="w-full py-2 px-4 bg-primary hover:opacity-90 text-white rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
                                 <span class="material-symbols-outlined text-[16px]">check_circle</span>
