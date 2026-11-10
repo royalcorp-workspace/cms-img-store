@@ -966,17 +966,17 @@ class Order extends Model
     public static function jdePushStatusLabels(): array
     {
         return [
-            self::JDE_STATUS_PENDING => 'Belum Di Push',
-            self::JDE_STATUS_PROCESSING => 'Dalam Antrian',
-            self::JDE_STATUS_SUCCESS => 'Sudah di Push',
-            self::JDE_STATUS_FAILED => 'Gagal di Push',
+            self::JDE_STATUS_PENDING => 'Pending',
+            self::JDE_STATUS_PROCESSING => 'Queued',
+            self::JDE_STATUS_SUCCESS => 'Success',
+            self::JDE_STATUS_FAILED => 'Failed',
         ];
     }
 
     public function jdePushStatusLabel(): string
     {
         return self::jdePushStatusLabels()[$this->jde_push_status] 
-            ?? \App\Models\Reff::getShow('JdePushStatus', $this->jde_push_status, 'Belum Di Push');
+            ?? 'Pending';
     }
 
     public function getJdePushStatusLabelAttribute(): string
