@@ -25,13 +25,23 @@
                     </span>
                     <input type="text" id="searchInput" placeholder="Cari nomor order, customer..." class="pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none w-64" value="{{ request('search') }}">
                 </div>
-                <select id="platformFilter" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
-                    <option value="">All Platforms</option>
-                    <option value="web" {{ request('platform') === 'web' ? 'selected' : '' }}>Web</option>
-                    <option value="mobile" {{ request('platform') === 'mobile' ? 'selected' : '' }}>Mobile</option>
-                    <option value="pos" {{ request('platform') === 'pos' ? 'selected' : '' }}>POS</option>
+                @if($canFilterPlatform && count($allowedPlatforms) > 0)
+                <select id="platformFilter" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white cursor-pointer">
+                    @if(count($allowedPlatforms) > 1)
+                        <option value="">All Platforms</option>
+                    @endif
+                    @if(in_array('web', $allowedPlatforms))
+                        <option value="web" {{ request('platform') === 'web' || count($allowedPlatforms) === 1 ? 'selected' : '' }}>Web</option>
+                    @endif
+                    @if(in_array('mobile', $allowedPlatforms))
+                        <option value="mobile" {{ request('platform') === 'mobile' || count($allowedPlatforms) === 1 ? 'selected' : '' }}>Mobile</option>
+                    @endif
+                    @if(in_array('pos', $allowedPlatforms))
+                        <option value="pos" {{ request('platform') === 'pos' || count($allowedPlatforms) === 1 ? 'selected' : '' }}>POS</option>
+                    @endif
                 </select>
-                <select id="statusFilter" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white">
+                @endif
+                <select id="statusFilter" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white cursor-pointer">
                     <option value="">All Status</option>
                     <option value="1" {{ request('status') === '1' ? 'selected' : '' }} title="Menunggu Pembayaran">Ordered</option>
                     <option value="2" {{ request('status') === '2' ? 'selected' : '' }}>Confirmed</option>
@@ -41,13 +51,20 @@
                     <option value="6" {{ request('status') === '6' ? 'selected' : '' }}>Cancelled</option>
                     <option value="7" {{ request('status') === '7' ? 'selected' : '' }}>Returned</option>
                 </select>
+                <select id="jdeStatusFilter" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white cursor-pointer">
+                    <option value="">All JDE Status</option>
+                    <option value="2" {{ request('jde_status') === '2' ? 'selected' : '' }}>Success</option>
+                    <option value="1" {{ request('jde_status') === '1' ? 'selected' : '' }}>Queued</option>
+                    <option value="3" {{ request('jde_status') === '3' ? 'selected' : '' }}>Failed</option>
+                    <option value="0" {{ request('jde_status') === '0' ? 'selected' : '' }}>Pending</option>
+                </select>
             </div>
             <div class="flex items-center gap-2">
-                <input type="date" id="startDate" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" value="{{ request('start_date') }}" title="Mulai Tanggal">
+                <input type="date" id="startDate" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white cursor-pointer" value="{{ request('start_date') }}" title="Mulai Tanggal">
                 <span class="text-on-surface-variant">to</span>
-                <input type="date" id="endDate" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white" value="{{ request('end_date') }}" title="Sampai Tanggal">
-                @if(request('start_date') || request('end_date') || request('search') || (request('status') !== null && request('status') !== '') || request('platform'))
-                    <button type="button" onclick="resetAllFilters()" class="px-2.5 py-2 text-xs font-medium text-danger hover:bg-danger/10 border border-danger/30 rounded-lg transition-colors flex items-center gap-1" title="Reset Semua Filter">
+                <input type="date" id="endDate" class="px-3 py-2 border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white cursor-pointer" value="{{ request('end_date') }}" title="Sampai Tanggal">
+                @if(request('start_date') || request('end_date') || request('search') || (request('status') !== null && request('status') !== '') || request('platform') || (request('jde_status') !== null && request('jde_status') !== ''))
+                    <button type="button" onclick="resetAllFilters()" class="px-2.5 py-2 text-xs font-medium text-danger hover:bg-danger/10 border border-danger/30 rounded-lg transition-colors flex items-center gap-1 cursor-pointer" title="Reset Semua Filter">
                         <span class="material-symbols-outlined text-[16px]">restart_alt</span>
                         Reset
                     </button>
@@ -154,29 +171,29 @@
                             </td>
                             <td class="px-gutter py-4 text-center">
                                 @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60" title="Terkirim ke JDE{{ $order->jde_push_date ? ' (' . $order->jde_push_date->format('d/m/Y') : '' }})">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-300" title="Pushed to JDE{{ $order->jde_push_date ? ' (' . $order->jde_push_date->format('d/m/Y') : '' }})">
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                        <span>Sudah di Push</span>
+                                        <span>Success</span>
                                     </span>
                                 @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60" title="Sedang diproses JDE">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-blue-800 border border-blue-300" title="Processing JDE queue">
                                         <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-                                        <span>Dalam Antrian</span>
+                                        <span>Queued</span>
                                     </span>
                                 @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-rose-700 border border-outline-variant/60" title="{{ $order->getJdeErrorMessage() ?? 'Gagal di Push' }}">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                        <span>Gagal di Push</span>
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs cursor-pointer hover:bg-rose-200 transition-colors" onclick="showJdeErrorModal('{{ $order->order_number }}', '{{ e(addslashes($order->getJdeErrorMessage() ?? 'Failed to push to JDE')) }}')" title="{{ $order->getJdeErrorMessage() ?? 'Failed to push to JDE' }} (Click to view error detail)">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
+                                        <span>Failed</span>
                                     </span>
                                 @elseif($order->isPaidOrStarted())
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-on-surface-variant border border-outline-variant/60" title="Antrean JDE">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-300" title="JDE Queue">
                                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                        <span>Dalam Antrian</span>
+                                        <span>Queued</span>
                                     </span>
                                 @else
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-on-surface-variant/70 border border-outline-variant/60">
                                         <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                                        <span>Belum Di Push</span>
+                                        <span>Pending</span>
                                     </span>
                                 @endif
                             </td>
@@ -209,8 +226,11 @@
     <script>
     function buildUrl() {
         const search = document.getElementById('searchInput').value.trim();
-        const platform = document.getElementById('platformFilter').value;
+        const platformElem = document.getElementById('platformFilter');
+        const platform = platformElem ? platformElem.value : '';
         const status = document.getElementById('statusFilter').value;
+        const jdeStatusElem = document.getElementById('jdeStatusFilter');
+        const jdeStatus = jdeStatusElem ? jdeStatusElem.value : '';
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
 
@@ -218,6 +238,7 @@
         if (search) params.set('search', search);
         if (platform) params.set('platform', platform);
         if (status !== '') params.set('status', status);
+        if (jdeStatus !== '') params.set('jde_status', jdeStatus);
         if (startDate) params.set('start_date', startDate);
         if (endDate) params.set('end_date', endDate);
 
@@ -227,6 +248,20 @@
 
     function resetAllFilters() {
         window.location.href = window.location.pathname;
+    }
+
+    function showJdeErrorModal(orderNumber, errorMessage) {
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Push JDE #' + orderNumber,
+                html: '<div class="text-left text-xs bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-lg max-h-60 overflow-y-auto font-mono whitespace-pre-wrap leading-relaxed">' + errorMessage + '</div>',
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#0B2044',
+            });
+        } else {
+            alert('Gagal Push JDE #' + orderNumber + ':\n' + errorMessage);
+        }
     }
 
     let searchTimeout;
@@ -244,9 +279,19 @@
         }
     });
 
-    document.getElementById('platformFilter').addEventListener('change', function() {
-        window.location.href = buildUrl();
-    });
+    const platformFilter = document.getElementById('platformFilter');
+    if (platformFilter) {
+        platformFilter.addEventListener('change', function() {
+            window.location.href = buildUrl();
+        });
+    }
+
+    const jdeStatusFilter = document.getElementById('jdeStatusFilter');
+    if (jdeStatusFilter) {
+        jdeStatusFilter.addEventListener('change', function() {
+            window.location.href = buildUrl();
+        });
+    }
 
     document.getElementById('statusFilter').addEventListener('change', function() {
         window.location.href = buildUrl();

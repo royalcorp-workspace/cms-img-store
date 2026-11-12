@@ -42,9 +42,69 @@ class OrderController extends Controller
             $query->where('payment_status', $request->query('payment_status'));
         }
 
-        $platform = $request->query('platform');
+        // Filter status push JDE
+        $jdeStatus = $request->query('jde_status');
+        if ($jdeStatus !== null && $jdeStatus !== '') {
+            $query->where('jde_push_status', (int) $jdeStatus);
+        }
+
+        // Hak akses dinamis granular untuk filter platform (Web, Mobile, POS)
+        // Membaca langsung permission yang secara eksplisit dicentang pada Role pengguna di Database
+        $user = auth()->user();
+        $allowedPlatforms = [];
+
+        if ($user) {
+            $roleIds = method_exists($user, 'roles') 
+                ? $user->roles()->where('is_active', true)->pluck('roles.id')->toArray() 
+                : [];
+
+            $assignedPlatformPerms = [];
+            if (!empty($roleIds)) {
+                $assignedPlatformPerms = \Illuminate\Support\Facades\DB::table('role_has_permissions')
+                    ->join('permissions', 'role_has_permissions.permission_id', '=', 'permissions.id')
+                    ->whereIn('role_has_permissions.role_id', $roleIds)
+                    ->where('permissions.name', 'like', 'orders.filter_platform%')
+                    ->where('permissions.is_active', true)
+                    ->pluck('permissions.name')
+                    ->toArray();
+            }
+
+            $userDirectPerms = \Illuminate\Support\Facades\DB::table('model_has_permissions')
+                ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
+                ->where('model_has_permissions.model_id', $user->id)
+                ->where('permissions.name', 'like', 'orders.filter_platform%')
+                ->where('permissions.is_active', true)
+                ->pluck('permissions.name')
+                ->toArray();
+
+            $allPerms = array_unique(array_merge($assignedPlatformPerms, $userDirectPerms));
+
+            if (in_array('orders.filter_platform.web', $allPerms)) {
+                $allowedPlatforms[] = 'web';
+            }
+            if (in_array('orders.filter_platform.mobile', $allPerms)) {
+                $allowedPlatforms[] = 'mobile';
+            }
+            if (in_array('orders.filter_platform.pos', $allPerms)) {
+                $allowedPlatforms[] = 'pos';
+            }
+
+            // Jika role memiliki permission umum 'orders.filter_platform' tanpa granular, berikan ketiga opsi
+            if (empty($allowedPlatforms) && in_array('orders.filter_platform', $allPerms)) {
+                $allowedPlatforms = ['web', 'mobile', 'pos'];
+            }
+        }
+
+        $canFilterPlatform = count($allowedPlatforms) > 0;
+        $requestedPlatform = $request->query('platform');
+        $platform = null;
+
+        if (!empty($requestedPlatform) && in_array(strtolower(trim($requestedPlatform)), $allowedPlatforms)) {
+            $platform = strtolower(trim($requestedPlatform));
+        }
+
         if (!empty($platform)) {
-            $platformLower = strtolower(trim($platform));
+            $platformLower = $platform;
             if ($platformLower === 'mobile') {
                 $query->where(function ($q) {
                     $q->where('meta->>platform', 'mobile_app')
@@ -135,7 +195,7 @@ class OrderController extends Controller
 
         $couriers = \App\Models\Shipping\Courier::orderBy('name')->get();
 
-        return view('pages.orders.index', compact('orders', 'stats', 'startDate', 'endDate', 'couriers', 'platform'));
+        return view('pages.orders.index', compact('orders', 'stats', 'startDate', 'endDate', 'couriers', 'platform', 'canFilterPlatform', 'allowedPlatforms', 'jdeStatus'));
     }
 
     public function show(string $id)
@@ -979,6 +1039,58 @@ class OrderController extends Controller
 
         $statusCode = $result['success'] ? 200 : 400;
         return response()->json($result, $statusCode);
+    }
+
+    /**
+     * Sesuaikan status integrasi JDE pesanan secara manual (Belum Di Push / Dalam Antrian / Sudah di Push / Gagal di Push).
+     */
+    public function updateJdeStatus(Request $request, string $id)
+    {
+        $order = Order::findOrFail($id);
+
+        $validated = $request->validate([
+            'jde_push_status' => 'required|integer|in:0,1,2,3',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $newStatus = (int) $validated['jde_push_status'];
+        $oldStatus = (int) $order->jde_push_status;
+        $actor = auth()->user()?->name ?? 'Admin';
+
+        $meta = $order->meta ?? [];
+        $meta['jde_push_manual_adjustment'] = [
+            'adjusted_by' => $actor,
+            'adjusted_at' => now()->toIso8601String(),
+            'old_status' => $oldStatus,
+            'new_status' => $newStatus,
+            'notes' => $validated['notes'] ?? null,
+        ];
+
+        if ($newStatus === Order::JDE_STATUS_PENDING) {
+            unset($meta['jde_push_error']);
+            unset($meta['jde_push_failed_at']);
+        } elseif ($newStatus === Order::JDE_STATUS_FAILED && !empty($validated['notes'])) {
+            $meta['jde_push_error'] = $validated['notes'];
+            $meta['jde_push_failed_at'] = now()->toIso8601String();
+        }
+
+        $updateData = [
+            'jde_push_status' => $newStatus,
+            'meta' => $meta,
+        ];
+
+        if ($newStatus === Order::JDE_STATUS_SUCCESS && !$order->jde_push_date) {
+            $updateData['jde_push_date'] = now();
+        }
+
+        $order->update($updateData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status JDE pesanan #' . $order->order_number . ' berhasil disesuaikan menjadi "' . $order->jdePushStatusLabel() . '".',
+            'jde_push_status' => $newStatus,
+            'jde_push_status_label' => $order->jdePushStatusLabel(),
+        ]);
     }
 
     /**

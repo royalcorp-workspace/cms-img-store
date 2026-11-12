@@ -21,14 +21,14 @@
         <!-- Integrasi JDE (Aktif untuk pesanan yang sudah bayar / dimulai) -->
         <div id="jdeTopActionContainer" class="{{ ($order->isPaidOrStarted() || (int)$order->jde_push_status > 0) ? 'inline-flex' : 'hidden' }} items-center gap-1.5">
             @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                <span class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-container text-on-surface rounded-lg text-xs font-medium border border-outline-variant/60" title="Pesanan sudah berhasil di-push ke JDE{{ $order->jde_push_date ? ' pada ' . $order->jde_push_date->format('d/m/Y') : '' }}">
+                <span class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-container text-on-surface rounded-lg text-xs font-medium border border-outline-variant/60" title="Order successfully pushed to JDE{{ $order->jde_push_date ? ' on ' . $order->jde_push_date->format('d/m/Y') : '' }}">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span>Sudah di Push</span>
+                    <span>Success</span>
                 </span>
             @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
-                <span class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-container text-on-surface rounded-lg text-xs font-medium border border-outline-variant/60" title="Sedang diproses oleh Queue Worker">
+                <span class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-container text-on-surface rounded-lg text-xs font-medium border border-outline-variant/60" title="Processing by Queue Worker">
                     <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-                    <span>Dalam Antrian</span>
+                    <span>Queued</span>
                 </span>
             @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
                 <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all" title="Gagal terkirim ke JDE. Klik untuk Retry manual.">
@@ -41,6 +41,10 @@
                     <span id="btnPushToJdeTopText">Push ke JDE</span>
                 </button>
             @endif
+            <button type="button" onclick="adjustJdeStatus('{{ $order->id }}', '{{ $order->order_number }}', {{ (int)$order->jde_push_status }})" class="inline-flex items-center gap-1 px-3 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-lg text-xs font-medium border border-outline-variant/60 transition-all" title="Sesuaikan Status JDE Manual">
+                <span class="material-symbols-outlined text-[16px]">tune</span>
+                <span>Sesuaikan JDE</span>
+            </button>
         </div>
 
         @if($order->isOnlineRetail() && ($order->resi || $order->delivery_status))
@@ -351,35 +355,35 @@
                             <div class="text-[11px] text-on-surface">
                                 <div class="font-medium text-on-surface" id="show-jde-status-title">
                                     @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                                        Sudah di Push
+                                        Success
                                     @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
-                                        Dalam Antrian
+                                        Queued
                                     @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                                        Gagal di Push
+                                        Failed
                                     @else
-                                        Belum Di Push
+                                        Pending
                                     @endif
                                 </div>
                                 <div class="text-[10px] text-on-surface-variant" id="show-jde-status-sub">
                                     @if($order->jde_push_date)
-                                        Terkirim pada {{ $order->jde_push_date->format('d M Y') }}
+                                        Pushed on {{ $order->jde_push_date->format('d M Y') }}
                                     @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                                        Percobaan gagal: {{ $order->meta['jde_push_retry_count'] ?? 1 }}x
+                                        Failed attempts: {{ $order->meta['jde_push_retry_count'] ?? 1 }}x
                                     @else
-                                        Queue worker otomatis memproses pesanan ini
+                                        Queue worker automatically processes this order
                                     @endif
                                 </div>
                             </div>
-                            <div id="jdeCardButtonContainer">
+                            <div id="jdeCardButtonContainer" class="flex items-center gap-1.5">
                                 @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container text-on-surface rounded-md text-[11px] font-medium border border-outline-variant/60">
                                         <span class="material-symbols-outlined text-[13px] text-emerald-600">check</span>
-                                        Sudah di Push
+                                        Success
                                     </span>
                                 @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container text-on-surface rounded-md text-[11px] font-medium border border-outline-variant/60">
                                         <span class="material-symbols-outlined text-[13px] text-blue-600 animate-spin">sync</span>
-                                        Dalam Antrian
+                                        Queued
                                     </span>
                                 @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
                                     <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3.5 py-1.5 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5">
@@ -392,6 +396,10 @@
                                         <span>Push JDE</span>
                                     </button>
                                 @endif
+                                <button type="button" onclick="adjustJdeStatus('{{ $order->id }}', '{{ $order->order_number }}', {{ (int)$order->jde_push_status }})" class="px-2.5 py-1.5 bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/60 rounded-lg text-xs font-medium transition-all flex items-center gap-1" title="Sesuaikan Status JDE Manual">
+                                    <span class="material-symbols-outlined text-[14px]">tune</span>
+                                    <span>Sesuaikan</span>
+                                </button>
                             </div>
                         </div>
 
@@ -1227,6 +1235,101 @@ async function confirmPushToJde(orderId, orderNumber) {
         });
     } else if (confirm(`Jalankan pengiriman manual/retry pesanan #${orderNumber} ke JDE sekarang?`)) {
         doPush();
+    }
+}
+
+async function adjustJdeStatus(orderId, orderNumber, currentStatus) {
+    const statusOptions = {
+        0: '0 - Pending',
+        1: '1 - Queued',
+        2: '2 - Success',
+        3: '3 - Failed'
+    };
+
+    let selectHtml = `<select id="swalAdjustJdeStatus" class="swal2-input" style="display:flex; width:80%; margin:10px auto;">`;
+    for (const [val, label] of Object.entries(statusOptions)) {
+        const selected = parseInt(val) === parseInt(currentStatus) ? 'selected' : '';
+        selectHtml += `<option value="${val}" ${selected}>${label}</option>`;
+    }
+    selectHtml += `</select>`;
+    selectHtml += `<textarea id="swalAdjustJdeNotes" class="swal2-textarea" placeholder="Catatan perubahan status JDE (opsional)" style="width:80%; margin:10px auto;"></textarea>`;
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Sesuaikan Status JDE',
+            html: `<p class="text-sm text-gray-600 mb-2">Pilih status JDE baru untuk pesanan <b>#${orderNumber}</b>:</p>${selectHtml}`,
+            showCancelButton: true,
+            confirmButtonColor: '#0B2044',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Simpan Status',
+            cancelButtonText: 'Batal',
+            preConfirm: () => {
+                const newStatus = document.getElementById('swalAdjustJdeStatus').value;
+                const notes = document.getElementById('swalAdjustJdeNotes').value;
+                return { newStatus, notes };
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+                try {
+                    const response = await fetch(`/orders/${orderId}/update-jde-status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            jde_push_status: result.value.newStatus,
+                            notes: result.value.notes
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Status Diperbarui',
+                            text: data.message,
+                            confirmButtonColor: '#0B2044'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Memperbarui',
+                            text: data.message || 'Gagal memperbarui status JDE.',
+                            confirmButtonColor: '#0B2044'
+                        });
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Terjadi kesalahan sistem saat menghubungi server.',
+                        confirmButtonColor: '#0B2044'
+                    });
+                }
+            }
+        });
+    } else {
+        const newStatus = prompt(`Pilih status JDE baru untuk #${orderNumber} (0: Belum Di Push, 1: Antrian, 2: Berhasil, 3: Gagal):`, currentStatus);
+        if (newStatus !== null) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+            fetch(`/orders/${orderId}/update-jde-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    jde_push_status: parseInt(newStatus)
+                })
+            }).then(() => window.location.reload());
+        }
     }
 }
 </script>

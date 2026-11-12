@@ -24,7 +24,7 @@ class Product extends Model
     protected static function boot(): void
     {
         parent::boot();
-        static::addGlobalScope('not-deleted', fn($q) => $q->where('products.deleted', false));
+        static::addGlobalScope('not-deleted', fn($q) => $q->where($q->getModel()->qualifyColumn('deleted'), false));
         
         static::creating(function ($product) {
             if (empty($product->slug)) {
@@ -253,7 +253,7 @@ class Product extends Model
     {
         return $this->belongsToMany(
             Product::class,
-            'product_suggestions',
+            static::withSchema('product_suggestions', 'finish_goods'),
             'product_id',
             'suggested_product_id'
         )->withPivot('sort_order')->orderByPivot('sort_order');
