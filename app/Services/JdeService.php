@@ -128,11 +128,15 @@ class JdeService
         }
 
         $cleanOrderNumber = ltrim((string) $order->order_number, '#');
-        $prefix = (string) config('services.jde.keterangan_prefix', env('JDE_KETERANGAN_PREFIX', 'WEB-IMG '));
-        if (str_ends_with($prefix, '-') || str_ends_with($prefix, '_')) {
-            $keterangan = $prefix . $cleanOrderNumber;
+        $prefix = (string) config('services.jde.keterangan_prefix', env('JDE_KETERANGAN_PREFIX', ''));
+        if (!empty(trim($prefix))) {
+            if (str_ends_with($prefix, '-') || str_ends_with($prefix, '_')) {
+                $keterangan = $prefix . $cleanOrderNumber;
+            } else {
+                $keterangan = rtrim($prefix) . ' ' . $cleanOrderNumber;
+            }
         } else {
-            $keterangan = rtrim($prefix) . ' ' . $cleanOrderNumber;
+            $keterangan = $cleanOrderNumber;
         }
 
         $orderLines = [];

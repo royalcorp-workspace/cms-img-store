@@ -71,7 +71,7 @@ return [
         'role' => env('JDE_ROLE', '*ALL'),
         'business_unit' => env('JDE_BUSINESS_UNIT', '18011'),
         'address_number' => env('JDE_ADDRESS_NUMBER') ? (int) env('JDE_ADDRESS_NUMBER') : 100228,
-        'keterangan_prefix' => env('JDE_KETERANGAN_PREFIX', 'WEB-IMG '),
+        'keterangan_prefix' => env('JDE_KETERANGAN_PREFIX', ''),
         'timeout' => (int) env('JDE_TIMEOUT', 120),
         'max_retries' => (int) env('JDE_MAX_RETRIES', 5),
         'retry_delay_minutes' => (int) env('JDE_RETRY_DELAY_MINUTES', 5),
