@@ -16,69 +16,49 @@
 @endphp
 
 <div class="space-y-4 pb-10">
-    <!-- Action Buttons (Diatas Sub Menu) -->
-    <div class="flex flex-wrap items-center justify-end gap-2.5">
-        <!-- Integrasi JDE (Aktif untuk pesanan yang sudah bayar / dimulai) -->
-        <div id="jdeTopActionContainer" class="{{ ($order->isPaidOrStarted() || (int)$order->jde_push_status > 0) ? 'inline-flex' : 'hidden' }} items-center gap-1.5">
-            @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                <span class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-container text-on-surface rounded-lg text-xs font-medium border border-outline-variant/60" title="Order successfully pushed to JDE{{ $order->jde_push_date ? ' on ' . $order->jde_push_date->format('d/m/Y') : '' }}">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span>Success</span>
-                </span>
-            @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
-                <span class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-container text-on-surface rounded-lg text-xs font-medium border border-outline-variant/60" title="Processing by Queue Worker">
-                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-                    <span>Queued</span>
-                </span>
-            @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all" title="Gagal terkirim ke JDE. Klik untuk Retry manual.">
-                    <span class="material-symbols-outlined text-[16px]">refresh</span>
-                    <span id="btnPushToJdeTopText">Retry JDE</span>
-                </button>
-            @else
-                <button type="button" id="btnPushToJdeTop" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all" title="Pengiriman otomatis ditangani Queue Worker. Klik untuk kirim manual sekarang.">
-                    <span class="material-symbols-outlined text-[16px]">cloud_upload</span>
-                    <span id="btnPushToJdeTopText">Push ke JDE</span>
-                </button>
-            @endif
-            <button type="button" onclick="adjustJdeStatus('{{ $order->id }}', '{{ $order->order_number }}', {{ (int)$order->jde_push_status }})" class="inline-flex items-center gap-1 px-3 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-lg text-xs font-medium border border-outline-variant/60 transition-all" title="Sesuaikan Status JDE Manual">
-                <span class="material-symbols-outlined text-[16px]">tune</span>
-                <span>Sesuaikan JDE</span>
-            </button>
+    <!-- Action Header Bar (Clean, Non-Redundant Navigation & Status) -->
+    <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-outline-variant/60 shadow-2xs">
+        <div class="flex items-center gap-3">
+            <a href="{{ route('orders.index') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-outline-variant bg-white text-on-surface hover:bg-surface-container rounded-lg text-xs font-semibold transition-all shadow-2xs">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Kembali</span>
+            </a>
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-on-surface">Pesanan #{{ $order->order_number }}</span>
+                @if($order->source_platform === 'mobile')
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="Platform: Mobile App">
+                        <span class="material-symbols-outlined text-[12px]">smartphone</span> Mobile
+                    </span>
+                @elseif($order->source_platform === 'pos')
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200" title="Platform: POS Toko">
+                        <span class="material-symbols-outlined text-[12px]">storefront</span> POS
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200" title="Platform: Web Store">
+                        <span class="material-symbols-outlined text-[12px]">language</span> Web
+                    </span>
+                @endif
+            </div>
         </div>
 
-        @if($order->isOnlineRetail() && ($order->resi || $order->delivery_status))
-            <button type="button" onclick='openResiModal(@json($resiModalData), "tracking")' class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all">
-                <span class="material-symbols-outlined text-[16px]">radar</span>
-                <span>Lacak Pengiriman</span>
-            </button>
-        @endif
+        <div class="flex items-center gap-2">
+            @if((int)$order->status === \App\Models\Order\Order::STATUS_SHIPPED)
+                <button type="button" id="btnCompleteOrderTop" onclick="confirmCompleteOrder('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all" title="Pesanan telah sampai dan diterima dengan baik oleh pelanggan">
+                    <span class="material-symbols-outlined text-[16px]">task_alt</span>
+                    <span>Selesaikan Pesanan</span>
+                </button>
+            @endif
 
-        @if($order->isOnlineRetail() && empty($resiModalData['is_kurir_toko']) && empty($resiModalData['has_biteship_resi']) && $order->status < \App\Models\Order\Order::STATUS_SHIPPED)
-            <button type="button" onclick='openResiModal(@json($resiModalData), "biteship")' class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all">
-                <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
-                <span>Get Resi Otomatis</span>
-            </button>
-        @endif
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-surface-container text-on-surface border border-outline-variant/60" title="Status Pesanan">
+                <span class="w-2 h-2 rounded-full {{ in_array((int)$order->status, [4, 5]) ? 'bg-emerald-500' : (in_array((int)$order->status, [6, 7]) ? 'bg-rose-500' : ((int)$order->status === 0 ? 'bg-slate-400' : 'bg-blue-500')) }}"></span>
+                <span>{{ $order->statusLabel() }}</span>
+            </span>
 
-        @if($order->status < \App\Models\Order\Order::STATUS_SHIPPED)
-            <button type="button" onclick='openResiModal(@json($resiModalData), "manual")' class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all">
-                <span class="material-symbols-outlined text-[16px]">edit_document</span>
-                <span id="show-header-resi-text">{{ $order->resi ? 'Ubah Resi' : 'Input Resi' }}</span>
-            </button>
-        @endif
-
-        @if((int)$order->status === \App\Models\Order\Order::STATUS_SHIPPED)
-            <button type="button" id="btnCompleteOrderTop" onclick="confirmCompleteOrder('{{ $order->id }}', '{{ $order->order_number }}')" class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all" title="Pesanan telah sampai dan diterima dengan baik oleh pelanggan">
-                <span class="material-symbols-outlined text-[16px]">task_alt</span>
-                <span>Selesaikan Pesanan</span>
-            </button>
-        @endif
-
-        <a href="{{ route('orders.index') }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-outline-variant bg-white text-on-surface hover:bg-surface-container rounded-lg text-xs font-semibold transition-all">
-            <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-            <span>Kembali</span>
-        </a>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-surface-container text-on-surface border border-outline-variant/60" title="Status Pembayaran">
+                <span class="w-2 h-2 rounded-full {{ $order->isPaymentPaid() ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
+                <span>{{ $order->paymentStatusLabel() }}</span>
+            </span>
+        </div>
     </div>
 
     @include('layouts.partials.sales-submenu')
@@ -213,15 +193,112 @@
                     @endif
                 </div>
 
-                @if($order->notes)
-                    <div class="p-2.5 bg-surface-container-low border border-outline-variant/40 rounded-lg text-xs text-on-surface">
-                        <span class="text-[10px] font-semibold uppercase block text-on-surface-variant">Catatan Order:</span>
-                        <p class="mt-0.5 italic text-on-surface">{{ $order->notes }}</p>
+                @php
+                    $customerOrderNote = $order->notes ?: ($order->meta['notes'] ?? ($order->meta['customer_notes'] ?? null));
+                @endphp
+                @if($customerOrderNote)
+                    <div class="p-2.5 bg-amber-50/70 border border-amber-200/80 rounded-lg text-xs text-amber-950">
+                        <span class="text-[10px] font-bold uppercase flex items-center gap-1 text-amber-800">
+                            <span class="material-symbols-outlined text-[13px] text-amber-600">sticky_note_2</span>
+                            Catatan Pembeli / Pesanan:
+                        </span>
+                        <p class="mt-0.5 italic leading-relaxed font-medium">"{{ $customerOrderNote }}"</p>
                     </div>
                 @endif
             </div>
 
-            <!-- Card: Kurir & Nomor Resi -->
+            <!-- Card: Pelanggan & Tujuan Pengiriman -->
+            <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs p-4 space-y-3">
+                <div class="flex items-center justify-between border-b border-outline-variant/40 pb-2.5">
+                    <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">person</span>
+                        Pelanggan & Tujuan
+                    </span>
+                    @if(!empty($shippingMeta['postal_code']))
+                        <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-surface-container text-on-surface border border-outline-variant/40">
+                            {{ $shippingMeta['postal_code'] }}
+                        </span>
+                    @endif
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <!-- Akun Pemesan -->
+                    <div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant/30 space-y-1">
+                        <span class="text-[10px] text-on-surface-variant uppercase font-semibold block">Akun Pemesan</span>
+                        <div class="font-bold text-on-surface text-xs flex items-center justify-between">
+                            <span>{{ $order->customer?->name ?? 'Tamu (Guest)' }}</span>
+                            @if($order->customer?->customer_code)
+                                <span class="font-mono text-[10px] font-normal text-on-surface-variant">{{ $order->customer->customer_code }}</span>
+                            @endif
+                        </div>
+                        @if($order->customer?->email)
+                            <div class="text-[11px] text-on-surface-variant flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[13px]">mail</span>
+                                <span>{{ $order->customer->email }}</span>
+                            </div>
+                        @endif
+                        @if($order->customer?->phone)
+                            <div class="text-[11px] text-on-surface-variant flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[13px]">call</span>
+                                <span class="font-mono">{{ $order->customer->phone }}</span>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Penerima Pengiriman -->
+                    <div class="space-y-2">
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant font-semibold block">Nama Penerima</span>
+                            <div class="font-bold text-on-surface text-sm">
+                                {{ $shippingMeta['recipient_name'] ?? ($order->customer?->name ?? 'Pelanggan') }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant font-semibold block">No. Telepon Penerima</span>
+                            <div class="flex items-center justify-between mt-0.5">
+                                <span class="font-mono font-medium text-on-surface">{{ $customerPhone ?? '-' }}</span>
+                                @if($waPhone)
+                                    <a href="https://wa.me/{{ $waPhone }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-surface-container border border-outline-variant text-on-surface rounded text-[11px] font-medium transition-colors">
+                                        <span class="material-symbols-outlined text-[13px] text-emerald-600">chat</span>
+                                        <span>WhatsApp</span>
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="pt-0.5">
+                            <span class="text-[10px] text-on-surface-variant font-semibold block">Alamat Lengkap</span>
+                            <p class="text-on-surface text-xs leading-relaxed mt-0.5 bg-surface-container-low p-2 rounded-lg border border-outline-variant/30">
+                                @if(!empty($shippingMeta['address']))
+                                    {{ $shippingMeta['address'] }}
+                                    @if(!empty($shippingMeta['sub_district'])), Kec. {{ $shippingMeta['sub_district'] }}@endif
+                                    @if(!empty($shippingMeta['city'])), {{ $shippingMeta['city'] }}@endif
+                                    @if(!empty($shippingMeta['province'])), {{ $shippingMeta['province'] }}@endif
+                                @elseif($order->customer && method_exists($order->customer, 'addresses') && $order->customer->addresses->isNotEmpty())
+                                    {{ $order->customer->addresses->first()->address }}
+                                @else
+                                    Alamat belum tercatat lengkap.
+                                @endif
+                            </p>
+                        </div>
+
+                        @if($customerOrderNote)
+                            <div class="pt-1.5">
+                                <span class="text-[10px] text-on-surface-variant font-semibold block mb-0.5 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[13px] text-amber-600">note</span>
+                                    Catatan Pembeli / Pengiriman
+                                </span>
+                                <div class="p-2.5 bg-amber-50/70 border border-amber-200/80 rounded-lg text-xs text-amber-950 font-medium italic leading-relaxed">
+                                    "{{ $customerOrderNote }}"
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Kurir & Logistik Pengiriman -->
             <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs p-4 space-y-3">
                 <div class="flex items-center justify-between border-b border-outline-variant/40 pb-2.5">
                     <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
@@ -338,157 +415,118 @@
                             <span>Detail Pengiriman & Log Ekspedisi</span>
                         </a>
                     @endif
-
-                    <!-- Integrasi JDE (Aktif untuk pesanan yang sudah bayar / dimulai) -->
-                    <div id="jdeCardSection" class="{{ ($order->isPaidOrStarted() || (int)$order->jde_push_status > 0) ? 'block' : 'hidden' }} pt-2 border-t border-outline-variant/40 space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] text-on-surface-variant font-semibold flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[14px] text-on-surface-variant">sync_alt</span>
-                                Integrasi JDE
-                            </span>
-                            <span id="show-jde-status-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
-                                <span class="w-1.5 h-1.5 rounded-full {{ (int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS ? 'bg-emerald-500' : ((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING ? 'bg-blue-500 animate-pulse' : ((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED ? 'bg-rose-500' : 'bg-amber-500')) }}"></span>
-                                <span>{{ $order->jdePushStatusLabel() }}</span>
-                            </span>
-                        </div>
-                        <div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant/40 flex items-center justify-between gap-2">
-                            <div class="text-[11px] text-on-surface">
-                                <div class="font-medium text-on-surface" id="show-jde-status-title">
-                                    @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                                        Success
-                                    @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
-                                        Queued
-                                    @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                                        Failed
-                                    @else
-                                        Pending
-                                    @endif
-                                </div>
-                                <div class="text-[10px] text-on-surface-variant" id="show-jde-status-sub">
-                                    @if($order->jde_push_date)
-                                        Pushed on {{ $order->jde_push_date->format('d M Y') }}
-                                    @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                                        Failed attempts: {{ $order->meta['jde_push_retry_count'] ?? 1 }}x
-                                    @else
-                                        Queue worker automatically processes this order
-                                    @endif
-                                </div>
-                            </div>
-                            <div id="jdeCardButtonContainer" class="flex items-center gap-1.5">
-                                @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container text-on-surface rounded-md text-[11px] font-medium border border-outline-variant/60">
-                                        <span class="material-symbols-outlined text-[13px] text-emerald-600">check</span>
-                                        Success
-                                    </span>
-                                @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container text-on-surface rounded-md text-[11px] font-medium border border-outline-variant/60">
-                                        <span class="material-symbols-outlined text-[13px] text-blue-600 animate-spin">sync</span>
-                                        Queued
-                                    </span>
-                                @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
-                                    <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3.5 py-1.5 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-[15px]">refresh</span>
-                                        <span>Retry</span>
-                                    </button>
-                                @else
-                                    <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3.5 py-1.5 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-[15px]">cloud_upload</span>
-                                        <span>Push JDE</span>
-                                    </button>
-                                @endif
-                                <button type="button" onclick="adjustJdeStatus('{{ $order->id }}', '{{ $order->order_number }}', {{ (int)$order->jde_push_status }})" class="px-2.5 py-1.5 bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/60 rounded-lg text-xs font-medium transition-all flex items-center gap-1" title="Sesuaikan Status JDE Manual">
-                                    <span class="material-symbols-outlined text-[14px]">tune</span>
-                                    <span>Sesuaikan</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED && !empty($order->getJdeErrorMessage()))
-                            <div class="p-2.5 bg-surface-container-low text-on-surface text-[11px] rounded-lg border border-rose-300/70 space-y-1">
-                                <div class="font-medium flex items-center gap-1 text-rose-700">
-                                    <span class="material-symbols-outlined text-[14px]">error</span>
-                                    <span>Penyebab Kegagalan JDE:</span>
-                                </div>
-                                <div class="text-[11px] font-medium leading-relaxed bg-white p-2 rounded border border-rose-200 text-rose-800">
-                                    {{ $order->getJdeErrorMessage() }}
-                                </div>
-                                <div class="text-[9px] text-on-surface-variant flex justify-between pt-0.5">
-                                    <span>Percobaan gagal: {{ $order->meta['jde_push_retry_count'] ?? 1 }}x</span>
-                                    <span>Waktu: {{ $order->meta['jde_push_failed_at'] ?? '-' }}</span>
-                                </div>
-                            </div>
-                        @endif
-
-                        <!-- Info Business Unit & Address Number -->
-                        <div class="grid grid-cols-2 gap-1.5 text-[11px] bg-surface-container-low p-2 rounded-lg border border-outline-variant/40">
-                            <div>
-                                <span class="text-[10px] text-on-surface-variant block font-medium">Business Unit (Store):</span>
-                                <span class="font-bold text-on-surface font-mono text-xs">{{ $order->business_unit ?? ($order->store?->code ?? ($order->storeChannel?->code ?? config('services.jde.business_unit', '18011'))) }}</span>
-                                @if($order->store || $order->storeChannel)
-                                    <span class="text-[10px] text-on-surface-variant block truncate" title="{{ $order->store?->name ?? $order->storeChannel?->name }}">{{ $order->store?->name ?? $order->storeChannel?->name }}</span>
-                                @endif
-                            </div>
-                            <div>
-                                <span class="text-[10px] text-on-surface-variant block font-medium">Address Number (Store):</span>
-                                <span class="font-bold text-on-surface font-mono text-xs">{{ $order->address_number ?? ($order->store?->address_number ?? ($order->storeChannel?->address_number ?? config('services.jde.address_number', 100228))) }}</span>
-                                @if($order->customer?->customer_code)
-                                    <span class="text-[10px] text-on-surface-variant block font-mono">Customer: {{ $order->customer->customer_code }}</span>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <!-- Card: Alamat Tujuan & Kontak Pelanggan -->
-            <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs p-4 space-y-3">
+            <!-- Card: Integrasi JDE (ERP) (Dedicated Card) -->
+            <div id="jdeCardSection" class="{{ ($order->isPaidOrStarted() || (int)$order->jde_push_status > 0) ? 'block' : 'hidden' }} bg-white rounded-xl border border-outline-variant/60 shadow-xs p-4 space-y-3">
                 <div class="flex items-center justify-between border-b border-outline-variant/40 pb-2.5">
                     <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">location_on</span>
-                        Alamat Pengiriman
+                        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">sync_alt</span>
+                        Integrasi JDE (ERP)
                     </span>
-                    @if(!empty($shippingMeta['postal_code']))
-                        <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-surface-container text-on-surface border border-outline-variant/40">
-                            {{ $shippingMeta['postal_code'] }}
-                        </span>
-                    @endif
+                    <span id="show-jde-status-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                        <span class="w-1.5 h-1.5 rounded-full {{ (int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS ? 'bg-emerald-500' : ((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING ? 'bg-blue-500 animate-pulse' : ((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED ? 'bg-rose-500' : 'bg-amber-500')) }}"></span>
+                        <span>{{ $order->jdePushStatusLabel() }}</span>
+                    </span>
                 </div>
 
-                <div class="space-y-2 text-xs">
-                    <div>
-                        <span class="text-[10px] text-on-surface-variant block">Nama Penerima</span>
-                        <div class="font-bold text-on-surface text-sm">
-                            {{ $shippingMeta['recipient_name'] ?? ($order->customer->name ?? 'Pelanggan') }}
+                <div class="space-y-2.5 text-xs">
+                    <div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant/40 flex items-center justify-between gap-2">
+                        <div class="text-[11px] text-on-surface">
+                            <div class="font-medium text-on-surface" id="show-jde-status-title">
+                                @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
+                                    Success
+                                @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
+                                    Queued
+                                @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
+                                    Failed
+                                @else
+                                    Pending
+                                @endif
+                            </div>
+                            <div class="text-[10px] text-on-surface-variant" id="show-jde-status-sub">
+                                @if($order->jde_push_date)
+                                    Pushed on {{ $order->jde_push_date->format('d M Y') }}
+                                @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
+                                    Failed attempts: {{ $order->meta['jde_push_retry_count'] ?? 1 }}x
+                                @else
+                                    Queue worker automatically processes this order
+                                @endif
+                            </div>
                         </div>
-                    </div>
-
-                    <div>
-                        <span class="text-[10px] text-on-surface-variant block">No. Telepon / HP</span>
-                        <div class="flex items-center justify-between mt-0.5">
-                            <span class="font-mono font-medium text-on-surface">{{ $customerPhone ?? '-' }}</span>
-                            @if($waPhone)
-                                <a href="https://wa.me/{{ $waPhone }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-surface-container border border-outline-variant text-on-surface rounded text-[11px] font-medium transition-colors">
-                                    <span class="material-symbols-outlined text-[13px] text-emerald-600">chat</span>
-                                    <span>WhatsApp</span>
-                                </a>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div class="pt-1">
-                        <span class="text-[10px] text-on-surface-variant block">Alamat Lengkap</span>
-                        <p class="text-on-surface text-xs leading-relaxed mt-0.5 bg-surface-container-low p-2 rounded-lg border border-outline-variant/30">
-                            @if(!empty($shippingMeta['address']))
-                                {{ $shippingMeta['address'] }}
-                                @if(!empty($shippingMeta['sub_district'])), {{ $shippingMeta['sub_district'] }}@endif
-                                @if(!empty($shippingMeta['city'])), {{ $shippingMeta['city'] }}@endif
-                                @if(!empty($shippingMeta['province'])), {{ $shippingMeta['province'] }}@endif
-                            @elseif($order->customer && method_exists($order->customer, 'addresses') && $order->customer->addresses->isNotEmpty())
-                                {{ $order->customer->addresses->first()->address }}
+                        <div id="jdeCardButtonContainer" class="flex items-center gap-1.5">
+                            @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS)
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container text-on-surface rounded-md text-[11px] font-medium border border-outline-variant/60">
+                                    <span class="material-symbols-outlined text-[13px] text-emerald-600">check</span>
+                                    Success
+                                </span>
+                            @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING)
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container text-on-surface rounded-md text-[11px] font-medium border border-outline-variant/60">
+                                    <span class="material-symbols-outlined text-[13px] text-blue-600 animate-spin">sync</span>
+                                    Queued
+                                </span>
+                            @elseif((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED)
+                                <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3.5 py-1.5 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[15px]">refresh</span>
+                                    <span>Retry</span>
+                                </button>
                             @else
-                                Alamat belum tercatat lengkap.
+                                <button type="button" id="btnPushToJdeCard" onclick="confirmPushToJde('{{ $order->id }}', '{{ $order->order_number }}')" class="px-3.5 py-1.5 bg-primary text-white hover:opacity-90 rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[15px]">cloud_upload</span>
+                                    <span>Push JDE</span>
+                                </button>
                             @endif
-                        </p>
+                            <button type="button" onclick="adjustJdeStatus('{{ $order->id }}', '{{ $order->order_number }}', {{ (int)$order->jde_push_status }})" class="px-2.5 py-1.5 bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/60 rounded-lg text-xs font-medium transition-all flex items-center gap-1" title="Sesuaikan Status JDE Manual">
+                                <span class="material-symbols-outlined text-[14px]">tune</span>
+                                <span>Sesuaikan</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED && !empty($order->getJdeErrorMessage()))
+                        <div class="p-2.5 bg-surface-container-low text-on-surface text-[11px] rounded-lg border border-rose-300/70 space-y-1">
+                            <div class="font-medium flex items-center gap-1 text-rose-700">
+                                <span class="material-symbols-outlined text-[14px]">error</span>
+                                <span>Penyebab Kegagalan JDE:</span>
+                            </div>
+                            <div class="text-[11px] font-medium leading-relaxed bg-white p-2 rounded border border-rose-200 text-rose-800">
+                                {{ $order->getJdeErrorMessage() }}
+                            </div>
+                            <div class="text-[9px] text-on-surface-variant flex justify-between pt-0.5">
+                                <span>Percobaan gagal: {{ $order->meta['jde_push_retry_count'] ?? 1 }}x</span>
+                                <span>Waktu: {{ $order->meta['jde_push_failed_at'] ?? '-' }}</span>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Info Business Unit & Address Number -->
+                    <div class="grid grid-cols-2 gap-1.5 text-[11px] bg-surface-container-low p-2 rounded-lg border border-outline-variant/40">
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block font-medium">Business Unit (Store):</span>
+                            <span class="font-bold text-on-surface font-mono text-xs">{{ $order->business_unit ?? ($order->store?->code ?? ($order->storeChannel?->code ?? config('services.jde.business_unit', '18011'))) }}</span>
+                            @if($order->store || $order->storeChannel)
+                                <span class="text-[10px] text-on-surface-variant block truncate" title="{{ $order->store?->name ?? $order->storeChannel?->name }}">{{ $order->store?->name ?? $order->storeChannel?->name }}</span>
+                            @endif
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block font-medium">Address Number (Store):</span>
+                            <span class="font-bold text-on-surface font-mono text-xs">{{ $order->address_number ?? ($order->store?->address_number ?? ($order->storeChannel?->address_number ?? config('services.jde.address_number', 100228))) }}</span>
+                            @if($order->customer?->customer_code)
+                                <span class="text-[10px] text-on-surface-variant block font-mono">Customer: {{ $order->customer->customer_code }}</span>
+                            @endif
+                        </div>
+                        <div class="col-span-2 pt-1.5 mt-1 border-t border-outline-variant/30 flex items-center justify-between text-[10px] text-on-surface-variant">
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
+                                <span>Harga Push JDE:</span>
+                            </span>
+                            @if(($order->is_ppn_active ?? true) && (float)($order->ppn_rate ?: 11) > 0)
+                                <span class="font-medium text-on-surface">Tanpa PPN (Exclude PPN {{ (int)($order->ppn_rate ?: 11) }}%)</span>
+                            @else
+                                <span class="font-medium text-on-surface">Tanpa PPN (Bebas PPN)</span>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -550,10 +588,16 @@
             <!-- Card: Item Produk Pesanan -->
             <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs overflow-hidden">
                 <div class="p-3.5 md:p-4 border-b border-outline-variant/40 flex items-center justify-between bg-surface-container-lowest">
-                    <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[17px] text-on-surface-variant">inventory_2</span>
-                        Rincian Item Produk ({{ $order->items->count() }} item)
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[17px] text-on-surface-variant">inventory_2</span>
+                            Rincian Item Produk ({{ $order->items->count() }} item)
+                        </span>
+                        <span class="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" title="Harga produk sudah termasuk PPN">
+                            <span class="material-symbols-outlined text-[12px]">verified</span>
+                            Harga + PPN ({{ (int)($order->ppn_rate ?: 11) }}%)
+                        </span>
+                    </div>
                     <span class="text-xs text-on-surface-variant font-medium">
                         Total: <strong>{{ $order->items->sum('quantity') }} Pcs</strong>
                     </span>
@@ -568,7 +612,7 @@
                                 <th class="py-2.5 px-3 text-right whitespace-nowrap">Harga Satuan</th>
                                 <th class="py-2.5 px-3 text-center whitespace-nowrap">Qty</th>
                                 <th class="py-2.5 px-3 text-right whitespace-nowrap">Diskon</th>
-                                <th class="py-2.5 px-3 text-right whitespace-nowrap">Subtotal</th>
+                                <th class="py-2.5 px-3 text-right whitespace-nowrap">Total Item</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-outline-variant/20">
@@ -640,11 +684,24 @@
                                         </div>
                                     </td>
 
-                                    <!-- Unit Price (Harga Asli) -->
+                                    <!-- Unit Price (Harga Asli Termasuk PPN) -->
                                     <td class="py-3 px-3 text-right font-medium text-on-surface align-top whitespace-nowrap">
-                                        <div>Rp {{ number_format($price, 0, ',', '.') }}</div>
+                                        <div class="font-bold">Rp {{ number_format($price, 0, ',', '.') }}</div>
+                                        @php
+                                            $unitRate = (float) ($item->ppn_rate ?? ($order->ppn_rate ?? 11.0));
+                                            $unitPpnActive = ($item->is_ppn_active ?? ($order->is_ppn_active ?? true)) && $unitRate > 0;
+                                        @endphp
+                                        @if($unitPpnActive)
+                                            <div class="text-[10px] text-on-surface-variant font-normal mt-0.5" title="Harga Sebelum PPN">
+                                                Sebelum PPN: Rp {{ number_format($item->dpp_price ?: round($price / (1 + ($unitRate / 100)), 2), 0, ',', '.') }}
+                                            </div>
+                                        @else
+                                            <div class="text-[10px] text-on-surface-variant font-normal mt-0.5">
+                                                <span class="text-[9px] text-gray-500 font-semibold">Bebas PPN</span>
+                                            </div>
+                                        @endif
                                         @if($qty > 1)
-                                            <div class="text-[10px] text-on-surface-variant font-normal mt-0.5">Total Asli: Rp {{ number_format($sub, 0, ',', '.') }}</div>
+                                            <div class="text-[10px] text-on-surface-variant font-normal opacity-75 mt-0.5">Total: Rp {{ number_format($sub, 0, ',', '.') }}</div>
                                         @endif
                                     </td>
 
@@ -665,9 +722,29 @@
                                         @endif
                                     </td>
 
-                                    <!-- Subtotal -->
-                                    <td class="py-3 px-3 text-right font-bold text-on-surface align-top whitespace-nowrap">
-                                        Rp {{ number_format($item->total, 0, ',', '.') }}
+                                    <!-- Total Item (Termasuk PPN) -->
+                                    <td class="py-3 px-3 text-right align-top whitespace-nowrap">
+                                        <div class="font-bold text-xs text-on-surface">Rp {{ number_format($item->total, 0, ',', '.') }}</div>
+                                        @if($item->getVoucherDiscountShare() > 0)
+                                            <div class="text-[10px] text-emerald-700 font-medium">Voucher: -Rp {{ number_format($item->getVoucherDiscountShare(), 0, ',', '.') }}</div>
+                                            <div class="text-[10px] font-semibold text-on-surface">Net: Rp {{ number_format($item->getNetTotal(), 0, ',', '.') }}</div>
+                                        @endif
+                                        @php
+                                            $itemRate = (float) ($item->ppn_rate ?? ($order->ppn_rate ?? 11.0));
+                                            $itemPpnActive = ($item->is_ppn_active ?? ($order->is_ppn_active ?? true)) && $itemRate > 0;
+                                        @endphp
+                                        @if($itemPpnActive)
+                                            <div class="text-[10px] text-on-surface-variant font-normal mt-0.5" title="Harga Sebelum PPN untuk Total Item">
+                                                Sebelum PPN: Rp {{ number_format($item->getDppTotal(), 0, ',', '.') }}
+                                            </div>
+                                            <div class="text-[9px] text-emerald-700 font-medium" title="Nilai PPN {{ (int)$itemRate }}% Termasuk">
+                                                PPN ({{ (int)$itemRate }}%): Rp {{ number_format($item->getPpnTotal(), 0, ',', '.') }}
+                                            </div>
+                                        @else
+                                            <div class="text-[10px] text-on-surface-variant font-normal mt-0.5">
+                                                <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[9px] font-semibold">Bebas PPN</span>
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -675,65 +752,219 @@
                     </table>
                 </div>
 
-                <!-- Financial Breakdown Panel -->
+                <!-- Financial Breakdown Panel (Sinkron dengan Thank You Pages) -->
+                @php
+                    $orderMeta = $order->meta ?? [];
+
+                    // 1. Gross Cart Subtotal (Original price before promo / voucher discounts)
+                    $originalCartTotal = (float) ($orderMeta['original_cart_total'] ?? 0);
+                    if ($originalCartTotal <= 0 && $order->items && count($order->items) > 0) {
+                        $originalCartTotal = (float) collect($order->items)->sum(function($it) {
+                            $meta = is_array($it->meta) ? $it->meta : (json_decode($it->meta ?? '[]', true) ?: []);
+                            $unitP = (float) ($it->unit_price ?? $meta['original_price'] ?? $meta['base_price'] ?? $it->sell_price ?? 0);
+                            return $unitP * (int) ($it->quantity ?? 1);
+                        });
+                    }
+                    if ($originalCartTotal <= 0) {
+                        $originalCartTotal = (float) ($order->subtotal ?? 0);
+                    }
+
+                    // 2. Catalog Promo Discounts & Tier Volume Discounts
+                    $priceProductSettingDiscount = (float) ($orderMeta['price_product_setting_discount'] ?? 0);
+                    $staticPromoDiscount = (float) ($orderMeta['total_static_discount'] ?? 0);
+                    if ($staticPromoDiscount <= 0 && !empty($orderMeta['promo_discount'])) {
+                        $staticPromoDiscount = max(0, (float) $orderMeta['promo_discount'] - $priceProductSettingDiscount);
+                    }
+                    if ($staticPromoDiscount <= 0 && $order->catalog_promo_discount > 0) {
+                        $staticPromoDiscount = (float) $order->catalog_promo_discount;
+                    }
+
+                    // 3. Shipping Cost & Subsidy
+                    $shippingCost = (float) ($order->shipping_cost ?? ($orderMeta['shipping_cost'] ?? 0));
+                    $shippingSubsidy = 0.0;
+                    if (!empty($orderMeta['shipping_voucher_discount']) && (float)$orderMeta['shipping_voucher_discount'] > 0) {
+                        $shippingSubsidy = (float)$orderMeta['shipping_voucher_discount'];
+                    } elseif (!empty($order->shipping_cost_subsidy) && (float)$order->shipping_cost_subsidy > 0) {
+                        $shippingSubsidy = (float)$order->shipping_cost_subsidy;
+                    } elseif (!empty($orderMeta['shipping_cost_subsidy']) && (float)$orderMeta['shipping_cost_subsidy'] > 0) {
+                        $shippingSubsidy = (float)$orderMeta['shipping_cost_subsidy'];
+                    } elseif (!empty($orderMeta['shipping_subsidy']) && (float)$orderMeta['shipping_subsidy'] > 0) {
+                        $shippingSubsidy = (float)$orderMeta['shipping_subsidy'];
+                    } elseif (!empty($orderMeta['shipping_discount']) && (float)$orderMeta['shipping_discount'] > 0) {
+                        $shippingSubsidy = (float)$orderMeta['shipping_discount'];
+                    }
+                    if ($order->shipping_voucher_discount > 0 && $shippingSubsidy <= 0) {
+                        $shippingSubsidy = (float) $order->shipping_voucher_discount;
+                    }
+
+                    // 4. Product Voucher Discount & Voucher Nominal
+                    $productVoucherDiscount = (float) ($orderMeta['product_voucher_discount'] ?? 0);
+                    $voucherNominal = (float) ($order->voucher_nominal ?? ($orderMeta['voucher_discount'] ?? 0));
+                    if ($productVoucherDiscount <= 0 && $voucherNominal > 0) {
+                        $productVoucherDiscount = max(0, $voucherNominal - $shippingSubsidy);
+                    }
+                    if ($order->product_voucher_discount > 0 && $productVoucherDiscount <= 0) {
+                        $productVoucherDiscount = (float) $order->product_voucher_discount;
+                    }
+
+                    // 5. Resolve Voucher Codes
+                    $shippingVoucherCode = null;
+                    $productVoucherCode = null;
+                    if (!empty($orderMeta['applied_vouchers'])) {
+                        foreach ($orderMeta['applied_vouchers'] as $av) {
+                            if (!empty($av['is_shipping'])) {
+                                $shippingVoucherCode = $av['code'] ?? ($av['voucher']['code'] ?? null);
+                            } else {
+                                $productVoucherCode = $av['code'] ?? ($av['voucher']['code'] ?? null);
+                            }
+                        }
+                    }
+                    if (!$shippingVoucherCode && !empty($orderMeta['voucher_codes'])) {
+                        foreach ($orderMeta['voucher_codes'] as $vc) {
+                            if (str_contains(strtoupper($vc), 'ONGKIR') || str_contains(strtoupper($vc), 'SHIP') || str_contains(strtoupper($vc), 'FREE')) {
+                                $shippingVoucherCode = $vc;
+                                break;
+                            }
+                        }
+                    }
+                    if (empty($productVoucherCode) && !empty($orderMeta['voucher_codes'])) {
+                        $productVoucherCode = collect($orderMeta['voucher_codes'])->filter(fn($c) => !str_contains(strtoupper($c), 'ONGKIR') && !str_contains(strtoupper($c), 'SHIP'))->first();
+                    }
+                    if (empty($productVoucherCode) && !empty($orderMeta['voucher_code'])) {
+                        $productVoucherCode = $orderMeta['voucher_code'];
+                    }
+                    if (empty($productVoucherCode) && $order->voucher && (int)$order->voucher->type !== 3) {
+                        $productVoucherCode = $order->voucher->code;
+                    }
+                    if (empty($shippingVoucherCode) && $order->voucher && (int)$order->voucher->type === 3) {
+                        $shippingVoucherCode = $order->voucher->code;
+                    }
+
+                    $courierDisplayName = strtoupper($order->courier_name ?? ($orderMeta['courier'] ?? 'Kurir'));
+                    $shippingServiceName = $orderMeta['shipping_service_name'] ?? null;
+                    if ($shippingServiceName && !str_contains($courierDisplayName, $shippingServiceName)) {
+                        $courierDisplayName .= ' (' . $shippingServiceName . ')';
+                    }
+
+                    $transactionFee = (float) ($order->transaction_fee ?? 0);
+                    $orderFinalTotal = (float) $order->total;
+                @endphp
+
                 <div class="p-4 bg-surface-container-lowest border-t border-outline-variant/40 flex justify-end">
                     <div class="w-full max-w-sm space-y-2 text-xs">
-                        <div class="flex justify-between py-0.5 text-on-surface-variant">
-                            <span>Subtotal Produk</span>
-                            <span class="font-semibold text-on-surface">Rp {{ number_format($originalSubtotal, 0, ',', '.') }}</span>
+                        {{-- 1. Harga Produk (Subtotal Produk sebelum diskon) --}}
+                        <div class="flex justify-between items-center py-0.5 text-on-surface-variant">
+                            <span>Harga Produk</span>
+                            <span class="font-semibold text-on-surface">Rp {{ number_format($originalCartTotal, 0, ',', '.') }}</span>
                         </div>
 
-                        @php
-                            $pureDiscount = (float) $order->pure_discount;
-                            $voucherNominal = (float) $order->effective_voucher_nominal;
-                            $voucher = $order->voucher;
-                        @endphp
-
-                        @if($pureDiscount > 0)
-                            <div class="flex justify-between py-0.5 text-danger font-medium">
-                                <span>Diskon</span>
-                                <span>-Rp {{ number_format($pureDiscount, 0, ',', '.') }}</span>
-                            </div>
-                        @endif
-
-                        @if($voucherNominal > 0 || $voucher)
-                            <div class="flex justify-between py-0.5 text-danger font-medium">
-                                <span>Voucher {{ $voucher ? '(' . $voucher->code . ')' : '' }}</span>
-                                <span>
-                                    -Rp {{ number_format($voucherNominal, 0, ',', '.') }}
-                                    @if($voucher && (int) $voucher->type === 1 && $voucher->value > 0)
-                                        <span class="text-[10px] font-normal opacity-75">({{ $voucher->value }}%)</span>
-                                    @endif
+                        {{-- 2. Diskon Promo Katalog --}}
+                        @if($staticPromoDiscount > 0)
+                            <div class="flex justify-between items-center py-0.5 text-danger font-medium">
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">local_offer</span>
+                                    <span>Diskon Promo</span>
                                 </span>
+                                <span>-Rp {{ number_format($staticPromoDiscount, 0, ',', '.') }}</span>
                             </div>
                         @endif
 
-                        @if($order->shipping_cost > 0)
-                            <div class="flex justify-between py-0.5 text-on-surface-variant">
-                                <span>Ongkos Kirim</span>
-                                <span class="font-semibold text-on-surface">Rp {{ number_format($order->shipping_cost, 0, ',', '.') }}</span>
+                        {{-- Diskon Volume Tier (jika ada) --}}
+                        @if($priceProductSettingDiscount > 0)
+                            <div class="flex justify-between items-center py-0.5 text-danger font-medium">
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">inventory</span>
+                                    <span>Diskon Volume</span>
+                                </span>
+                                <span>-Rp {{ number_format($priceProductSettingDiscount, 0, ',', '.') }}</span>
                             </div>
                         @endif
 
-                        @if($order->shipping_cost_subsidy > 0)
-                            <div class="flex justify-between py-0.5 text-emerald-700 font-medium">
-                                <span>Subsidi Ongkir</span>
-                                <span>-Rp {{ number_format($order->shipping_cost_subsidy, 0, ',', '.') }}</span>
+                        {{-- 3. Voucher Diskon Produk --}}
+                        @if($productVoucherDiscount > 0)
+                            <div class="flex justify-between items-center py-1 px-2.5 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200/80 font-medium">
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px] text-emerald-600">confirmation_number</span>
+                                    <span>Voucher Diskon{{ $productVoucherCode ? ' (' . $productVoucherCode . ')' : '' }}</span>
+                                </span>
+                                <span class="font-bold">-Rp {{ number_format($productVoucherDiscount, 0, ',', '.') }}</span>
                             </div>
                         @endif
 
-                        @if($order->transaction_fee > 0)
-                            <div class="flex justify-between py-0.5 text-on-surface-variant">
+                        {{-- 4. Sub Total (Produk Bersih setelah Diskon & Voucher) & Rincian PPN Dinamis --}}
+                        @php
+                            $orderPpnRate = (float) ($order->ppn_rate ?: 11.0);
+                            $isOrderPpnActive = ($order->is_ppn_active ?? true) && $orderPpnRate > 0;
+                            $netSubtotal = max(0, $originalCartTotal - $staticPromoDiscount - $priceProductSettingDiscount - $productVoucherDiscount);
+                            if ($isOrderPpnActive) {
+                                $orderDppAmount = round($netSubtotal / (1 + ($orderPpnRate / 100)), 2);
+                                $orderPpnAmount = round($netSubtotal - $orderDppAmount, 2);
+                            } else {
+                                $orderDppAmount = $netSubtotal;
+                                $orderPpnAmount = 0.0;
+                            }
+                        @endphp
+                        <div class="pt-1.5 border-t border-outline-variant/30">
+                            <div class="flex justify-between items-center py-1 text-on-surface font-bold">
+                                <span>Sub Total</span>
+                                <span class="font-mono text-sm">Rp {{ number_format($netSubtotal, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="p-2 bg-surface-container-low rounded-lg border border-outline-variant/30 text-[11px] space-y-1 text-on-surface-variant">
+                                @if($isOrderPpnActive)
+                                    <div class="flex justify-between items-center">
+                                        <span>├─ Sebelum PPN:</span>
+                                        <span class="font-mono font-medium text-on-surface">Rp {{ number_format($orderDppAmount, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-primary font-medium">
+                                        <span class="flex items-center gap-1">
+                                            <span>└─ PPN ({{ (int)$orderPpnRate == $orderPpnRate ? (int)$orderPpnRate : number_format($orderPpnRate, 1) }}% Termasuk):</span>
+                                        </span>
+                                        <span class="font-mono">Rp {{ number_format($orderPpnAmount, 0, ',', '.') }}</span>
+                                    </div>
+                                @else
+                                    <div class="flex justify-between items-center text-on-surface-variant font-medium">
+                                        <span class="flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[14px] text-gray-500">info</span>
+                                            <span>Status Pajak:</span>
+                                        </span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 border border-gray-300">Bebas PPN (Nonaktif)</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- 5. Ongkir (Biaya Pengiriman) --}}
+                        <div class="flex justify-between items-center py-0.5 text-on-surface-variant">
+                            <span>Ongkir <span class="text-[11px] opacity-75">({{ $courierDisplayName }})</span></span>
+                            <span class="font-semibold text-on-surface">Rp {{ number_format($shippingCost, 0, ',', '.') }}</span>
+                        </div>
+
+                        {{-- 6. Diskon Ongkir (Subsidi Ongkir) --}}
+                        @if($shippingSubsidy > 0)
+                            <div class="flex justify-between items-center py-1 px-2.5 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200/80 font-medium">
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px] text-emerald-600">local_shipping</span>
+                                    <span>Diskon Ongkir{{ $shippingVoucherCode ? ' (' . $shippingVoucherCode . ')' : '' }}</span>
+                                </span>
+                                <span class="font-bold">-Rp {{ number_format($shippingSubsidy, 0, ',', '.') }}</span>
+                            </div>
+                        @endif
+
+                        {{-- 7. Biaya Layanan / Transaksi jika ada --}}
+                        @if($transactionFee > 0)
+                            <div class="flex justify-between items-center py-0.5 text-on-surface-variant">
                                 <span>Biaya Layanan</span>
-                                <span class="font-semibold text-on-surface">Rp {{ number_format($order->transaction_fee, 0, ',', '.') }}</span>
+                                <span class="font-semibold text-on-surface">Rp {{ number_format($transactionFee, 0, ',', '.') }}</span>
                             </div>
                         @endif
 
-                        <div class="pt-2 border-t border-outline-variant flex justify-between items-center">
-                            <span class="font-bold text-sm text-on-surface">Total Tagihan</span>
-                            <span class="text-base font-bold text-primary font-mono">
-                                Rp {{ number_format($order->total, 0, ',', '.') }}
-                            </span>
+                        {{-- 8. Total Bayar (Total Tagihan Akhir) --}}
+                        <div class="border-t border-outline-variant/60 pt-2.5 flex justify-between items-center text-sm font-bold text-on-surface">
+                            <div>
+                                <span class="block">Total Bayar</span>
+                                <span class="text-[10px] text-on-surface-variant font-normal">Sudah termasuk PPN, diskon & ongkir</span>
+                            </div>
+                            <span class="text-base text-primary font-mono">Rp {{ number_format($orderFinalTotal, 0, ',', '.') }}</span>
                         </div>
                     </div>
                 </div>
@@ -760,83 +991,6 @@
                 <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-surface-container text-on-surface-variant border border-outline-variant/50">
                     {{ $order->logs->count() }} Aktivitas
                 </span>
-            </div>
-        </div>
-
-        <!-- Order Activity Highlights Strip -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-surface-container-low/30 border-b border-outline-variant/40 text-xs">
-            <!-- 1. Status Pesanan -->
-            <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
-                <div class="text-[10px] uppercase font-semibold text-on-surface-variant flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">order_approve</span>
-                    Status Pesanan
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
-                        <span class="w-1.5 h-1.5 rounded-full {{ in_array((int)$order->status, [4, 5]) ? 'bg-emerald-500' : (in_array((int)$order->status, [6, 7]) ? 'bg-rose-500' : ((int)$order->status === 0 ? 'bg-slate-400' : 'bg-blue-500')) }}"></span>
-                        <span>{{ $order->statusLabel() }}</span>
-                    </span>
-                    <span class="text-[10px] text-on-surface-variant">
-                        Update: {{ $order->updated_at?->format('d/m/Y H:i') }}
-                    </span>
-                </div>
-            </div>
-
-            <!-- 2. Status Pembayaran -->
-            <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
-                <div class="text-[10px] uppercase font-semibold text-on-surface-variant flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">payments</span>
-                    Pembayaran
-                </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
-                        <span class="w-1.5 h-1.5 rounded-full {{ $order->isPaymentPaid() ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
-                        <span>{{ $order->paymentStatusLabel() }}</span>
-                    </span>
-                    <span class="text-[11px] font-medium text-on-surface">
-                        {{ $order->payment_method_name }}
-                    </span>
-                </div>
-            </div>
-
-            <!-- 3. Status JDE -->
-            <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
-                <div class="text-[10px] uppercase font-semibold text-on-surface-variant flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">cloud_sync</span>
-                    Integrasi JDE
-                </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
-                        <span class="w-1.5 h-1.5 rounded-full {{ (int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_SUCCESS ? 'bg-emerald-500' : ((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_PROCESSING ? 'bg-blue-500 animate-pulse' : ((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED ? 'bg-rose-500' : 'bg-amber-500')) }}"></span>
-                        <span>{{ $order->jdePushStatusLabel }}</span>
-                    </span>
-                    @if($order->jde_push_date)
-                        <span class="text-[10px] text-on-surface-variant">
-                            {{ $order->jde_push_date->format('d/m/Y') }}
-                        </span>
-                    @endif
-                </div>
-                @if((int)$order->jde_push_status === \App\Models\Order\Order::JDE_STATUS_FAILED && !empty($order->getJdeErrorMessage()))
-                    <p class="text-[10px] text-rose-600 line-clamp-1 mt-0.5" title="{{ $order->getJdeErrorMessage() }}">
-                        {{ $order->getJdeErrorMessage() }}
-                    </p>
-                @endif
-            </div>
-
-            <!-- 4. Pengiriman & Resi -->
-            <div class="bg-white p-3 rounded-lg border border-outline-variant/40 space-y-1">
-                <div class="text-[10px] uppercase font-semibold text-on-surface-variant flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">local_shipping</span>
-                    Pengiriman
-                </div>
-                <div class="text-[11px] text-on-surface flex items-center gap-1.5 flex-wrap">
-                    <span class="font-medium">{{ $order->courier_name ?? 'Kurir Belum Ditentukan' }}</span>
-                    @if($order->resi)
-                        <span class="font-mono px-1.5 py-0.2 bg-surface-container rounded text-[10px] text-on-surface font-medium border border-outline-variant/40">
-                            {{ $order->resi }}
-                        </span>
-                    @endif
-                </div>
             </div>
         </div>
 

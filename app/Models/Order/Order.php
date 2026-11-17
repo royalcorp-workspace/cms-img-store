@@ -55,6 +55,9 @@ class Order extends Model
         'payment_method',
         'payment_status',
         'subtotal',
+        'dpp_amount',
+        'ppn_rate',
+        'ppn_amount',
         'tax',
         'discount',
         'total',
@@ -84,6 +87,9 @@ class Order extends Model
             'status' => 'integer',
             'payment_status' => 'integer',
             'subtotal' => 'decimal:2',
+            'dpp_amount' => 'decimal:2',
+            'ppn_rate' => 'decimal:2',
+            'ppn_amount' => 'decimal:2',
             'tax' => 'decimal:2',
             'discount' => 'decimal:2',
             'total' => 'decimal:2',
@@ -689,6 +695,82 @@ class Order extends Model
         return $this->belongsTo(Voucher::class, 'voucher_id', 'id');
     }
 
+    public function getProductVoucherDiscountAttribute(): float
+    {
+        $meta = is_array($this->meta) ? $this->meta : (json_decode($this->meta ?? '[]', true) ?: []);
+        if (isset($meta['product_voucher_discount']) && (float)$meta['product_voucher_discount'] > 0) {
+            return (float) $meta['product_voucher_discount'];
+        }
+
+        $voucherNominal = (float) ($this->voucher_nominal ?? 0);
+        $shippingSubsidy = (float) ($this->shipping_cost_subsidy ?? 0);
+
+        if ($this->voucher && (int) $this->voucher->type === 3) {
+            return 0.0;
+        }
+
+        return max(0.0, $voucherNominal - $shippingSubsidy);
+    }
+
+    public function getShippingVoucherDiscountAttribute(): float
+    {
+        $meta = is_array($this->meta) ? $this->meta : (json_decode($this->meta ?? '[]', true) ?: []);
+        if (isset($meta['shipping_voucher_discount']) && (float)$meta['shipping_voucher_discount'] > 0) {
+            return (float) $meta['shipping_voucher_discount'];
+        }
+        return (float) ($this->shipping_cost_subsidy ?? 0);
+    }
+
+    public function getCatalogPromoDiscountAttribute(): float
+    {
+        $meta = is_array($this->meta) ? $this->meta : (json_decode($this->meta ?? '[]', true) ?: []);
+        if (isset($meta['total_static_discount']) && (float)$meta['total_static_discount'] > 0) {
+            return (float) $meta['total_static_discount'];
+        }
+        if (isset($meta['promo_discount']) && (float)$meta['promo_discount'] > 0) {
+            return (float) $meta['promo_discount'];
+        }
+
+        $itemDisc = 0.0;
+        if ($this->items) {
+            foreach ($this->items as $item) {
+                $itemDisc += (float) ($item->discount_nominal ?? 0) * (int) max(1, $item->quantity);
+            }
+        }
+        if ($itemDisc > 0) {
+            return $itemDisc;
+        }
+
+        return max(0.0, (float)($this->discount ?? 0) - $this->product_voucher_discount);
+    }
+
+    public function getAppliedVouchersListAttribute(): array
+    {
+        $meta = is_array($this->meta) ? $this->meta : (json_decode($this->meta ?? '[]', true) ?: []);
+        if (!empty($meta['applied_vouchers']) && is_array($meta['applied_vouchers'])) {
+            return $meta['applied_vouchers'];
+        }
+
+        $list = [];
+        if ($this->voucher) {
+            $isShipping = (int) $this->voucher->type === 3;
+            $disc = $isShipping ? $this->shipping_voucher_discount : $this->product_voucher_discount;
+            if ($disc <= 0) {
+                $disc = (float) ($this->voucher_nominal ?? 0);
+            }
+            $list[] = [
+                'id' => $this->voucher->id,
+                'code' => $this->voucher->code,
+                'title' => $this->voucher->title,
+                'discount' => $disc,
+                'is_shipping' => $isShipping,
+                'discount_formatted' => 'Rp ' . number_format($disc, 0, ',', '.'),
+            ];
+        }
+
+        return $list;
+    }
+
     public function getEffectiveVoucherNominalAttribute(): float
     {
         $nominal = (float) ($this->voucher_nominal ?? 0);
@@ -1246,5 +1328,64 @@ class Order extends Model
         }
         $info = self::deliveryStatusInfo($this->delivery_status);
         return $info['badge_class'];
+    }
+
+    /**
+     * Dapatkan tarif PPN order (default 11.00%)
+     */
+    public function getPpnRateAttribute($value): float
+    {
+        return !empty($value) && (float) $value > 0
+            ? (float) $value
+            : (float) config('services.tax.ppn_rate', config('app.ppn_rate', env('PPN_RATE', 11.0)));
+    }
+
+    /**
+     * Dapatkan Sub Total Produk Bersih (setelah Diskon Promo & Voucher Diskon Produk)
+     * Mengikuti formula Excel "Cara Hitung PPN Website.xlsx":
+     * Sub Total = Harga Produk - Diskon - Voucher
+     */
+    public function getNetProductSubtotal(): float
+    {
+        $hargaProduk = (float) ($this->subtotal ?? 0);
+        $diskon = (float) ($this->catalog_promo_discount ?? 0);
+        $voucher = (float) ($this->product_voucher_discount ?? 0);
+
+        return max(0.0, round($hargaProduk - $diskon - $voucher, 2));
+    }
+
+    /**
+     * Dapatkan total nilai Sebelum PPN (DPP)
+     * Mengikuti formula Excel "Cara Hitung PPN Website.xlsx":
+     * DPP = Sub Total / (1 + (ppn_rate / 100))
+     */
+    public function getDppAmountAttribute($value): float
+    {
+        $netSubtotal = $this->getNetProductSubtotal();
+        if ($netSubtotal <= 0) {
+            return 0.0;
+        }
+
+        $rate = (float) $this->ppn_rate;
+        if ($rate <= 0) {
+            return $netSubtotal;
+        }
+
+        return round($netSubtotal / (1 + ($rate / 100)), 2);
+    }
+
+    /**
+     * Dapatkan total nominal PPN
+     * Mengikuti formula Excel "Cara Hitung PPN Website.xlsx":
+     * PPN = DPP * (ppn_rate / 100) atau Sub Total - DPP
+     */
+    public function getPpnAmountAttribute($value): float
+    {
+        $netSubtotal = $this->getNetProductSubtotal();
+        if ($netSubtotal <= 0) {
+            return 0.0;
+        }
+
+        return round($netSubtotal - $this->dpp_amount, 2);
     }
 }

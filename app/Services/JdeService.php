@@ -148,7 +148,13 @@ class JdeService
                 ? $item->getPriceAfterDiscount()
                 : (float) ($item->total && $item->quantity ? ($item->total / max(1, $item->quantity)) : ($item->unit_price ?? 0));
 
-            $harga = ($unitPriceAfterDisc == (int) $unitPriceAfterDisc) ? (int) $unitPriceAfterDisc : round($unitPriceAfterDisc, 2);
+            // JDE membutuhkan harga TANPA PAJAK (DPP / Exclude PPN)
+            $ppnRate = (float) ($item->ppn_rate ?? ($order->ppn_rate ?? config('services.tax.ppn_rate', 11.0)));
+            $hargaTanpaPajak = method_exists($item, 'getPriceWithoutTax')
+                ? $item->getPriceWithoutTax($ppnRate)
+                : round($unitPriceAfterDisc / (1 + ($ppnRate / 100)), 2);
+
+            $harga = ($hargaTanpaPajak == (int) $hargaTanpaPajak) ? (int) $hargaTanpaPajak : round($hargaTanpaPajak, 2);
 
             $orderLines[] = [
                 '2nd_item_number' => (string) $secondItemNumber,

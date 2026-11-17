@@ -26,6 +26,9 @@ class OrderItem extends Model
         'name',
         'quantity',
         'unit_price',
+        'dpp_price',
+        'ppn_rate',
+        'ppn_amount',
         'total',
         'discount_nominal',
         'discount_percent',
@@ -38,6 +41,9 @@ class OrderItem extends Model
         return [
             'quantity' => 'integer',
             'unit_price' => 'decimal:2',
+            'dpp_price' => 'decimal:2',
+            'ppn_rate' => 'decimal:2',
+            'ppn_amount' => 'decimal:2',
             'total' => 'decimal:2',
             'discount_nominal' => 'decimal:2',
             'discount_percent' => 'decimal:2',
@@ -120,5 +126,148 @@ class OrderItem extends Model
         $discount = (float) ($this->discount_nominal ?? 0);
 
         return max(0, $unitPrice - ($discount / $qty));
+    }
+
+    /**
+     * Dapatkan tarif PPN item (default 11%)
+     */
+    public function getPpnRateAttribute($value): float
+    {
+        return !empty($value) && (float) $value > 0
+            ? (float) $value
+            : (float) config('services.tax.ppn_rate', config('app.ppn_rate', env('PPN_RATE', 11.0)));
+    }
+
+    /**
+     * Dapatkan harga satuan sebelum PPN (DPP)
+     */
+    public function getDppPriceAttribute($value): float
+    {
+        if (!empty($value) && (float) $value > 0) {
+            return (float) $value;
+        }
+
+        $unitPrice = (float) ($this->unit_price ?? 0);
+        if ($unitPrice <= 0) {
+            return 0.0;
+        }
+
+        return round($unitPrice / (1 + ($this->ppn_rate / 100)), 2);
+    }
+
+    /**
+     * Dapatkan nominal PPN harga satuan
+     */
+    public function getPpnAmountAttribute($value): float
+    {
+        if (!empty($value) && (float) $value > 0) {
+            return (float) $value;
+        }
+
+        $unitPrice = (float) ($this->unit_price ?? 0);
+        if ($unitPrice <= 0) {
+            return 0.0;
+        }
+
+        return round($unitPrice - $this->dpp_price, 2);
+    }
+
+    /**
+     * Dapatkan alokasi diskon voucher produk untuk item ini (jika order memiliki voucher diskon produk).
+     * Mengikuti formula Excel "Cara Hitung PPN Website.xlsx" (Sub Total = Harga Produk - Diskon - Voucher).
+     */
+    public function getVoucherDiscountShare(): float
+    {
+        $order = $this->order;
+        if (!$order) {
+            return 0.0;
+        }
+
+        $orderProductVoucher = (float) ($order->product_voucher_discount ?? 0);
+        if ($orderProductVoucher <= 0) {
+            return 0.0;
+        }
+
+        // Hitung total nilai seluruh item setelah diskon promo di order ini
+        $totalItemsAfterPromo = 0.0;
+        if ($order->relationLoaded('items') || $order->items) {
+            foreach ($order->items as $it) {
+                $itQty = max(1, (int) $it->quantity);
+                $itBase = (float) ($it->unit_price ?? 0) * $itQty;
+                $itPromoDisc = (float) ($it->discount_nominal ?? 0);
+                $itSub = max(0.0, (float) (!empty($it->total) ? $it->total : ($itBase - $itPromoDisc)));
+                $totalItemsAfterPromo += $itSub;
+            }
+        }
+
+        if ($totalItemsAfterPromo <= 0) {
+            return 0.0;
+        }
+
+        $myQty = max(1, (int) $this->quantity);
+        $myBase = (float) ($this->unit_price ?? 0) * $myQty;
+        $myPromoDisc = (float) ($this->discount_nominal ?? 0);
+        $mySub = max(0.0, (float) (!empty($this->total) ? $this->total : ($myBase - $myPromoDisc)));
+
+        return round($orderProductVoucher * ($mySub / $totalItemsAfterPromo), 2);
+    }
+
+    /**
+     * Dapatkan total nilai bersih item ini (setelah diskon promo dan voucher produk).
+     * Mengikuti formula Excel "Cara Hitung PPN Website.xlsx" (Sub Total = Harga Produk - Diskon - Voucher).
+     */
+    public function getNetTotal(): float
+    {
+        $qty = max(1, (int) $this->quantity);
+        $myBase = (float) ($this->unit_price ?? 0) * $qty;
+        $myPromoDisc = (float) ($this->discount_nominal ?? 0);
+        $mySub = max(0.0, (float) (!empty($this->total) ? $this->total : ($myBase - $myPromoDisc)));
+        $voucherShare = $this->getVoucherDiscountShare();
+
+        return max(0.0, round($mySub - $voucherShare, 2));
+    }
+
+    /**
+     * Dapatkan harga satuan bersih (setelah diskon & voucher).
+     */
+    public function getNetUnitPrice(): float
+    {
+        $qty = max(1, (int) $this->quantity);
+        return round($this->getNetTotal() / $qty, 2);
+    }
+
+    /**
+     * Dapatkan harga satuan setelah seluruh diskon TANPA PAJAK (DPP untuk push ke JDE).
+     * Mengikuti formula Excel "Cara Hitung PPN Website.xlsx": DPP = Sub Total / 1.11
+     */
+    public function getPriceWithoutTax(?float $ppnRate = null): float
+    {
+        $rate = $ppnRate ?? $this->ppn_rate;
+        $qty = max(1, (int) $this->quantity);
+        $dppTotal = $this->getDppTotal($rate);
+        return round($dppTotal / $qty, 2);
+    }
+
+    /**
+     * Dapatkan total DPP untuk seluruh kuantiti item ini (setelah diskon promo & voucher).
+     * Formula Excel: DPP = Sub Total / (1 + (ppn_rate / 100))
+     */
+    public function getDppTotal(?float $ppnRate = null): float
+    {
+        $rate = $ppnRate ?? $this->ppn_rate;
+        if ($rate <= 0) {
+            return $this->getNetTotal();
+        }
+        return round($this->getNetTotal() / (1 + ($rate / 100)), 2);
+    }
+
+    /**
+     * Dapatkan total PPN untuk seluruh kuantiti item ini (setelah diskon promo & voucher).
+     * Formula Excel: PPN = DPP * (ppn_rate / 100) atau Sub Total - DPP
+     */
+    public function getPpnTotal(?float $ppnRate = null): float
+    {
+        $netTotal = $this->getNetTotal();
+        return round($netTotal - $this->getDppTotal($ppnRate), 2);
     }
 }

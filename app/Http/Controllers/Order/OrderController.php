@@ -214,6 +214,7 @@ class OrderController extends Controller
             'handover.courier',
             'invoice',
             'paymentMethod',
+            'voucher',
             'logs' => function ($q) {
                 $q->orderBy('created_at', 'desc');
             },
@@ -551,6 +552,15 @@ class OrderController extends Controller
                 'success' => false,
                 'is_warning' => true,
                 'message' => 'Layanan ekspedisi Biteship hanya tersedia untuk pesanan Online Retail. Pesanan toko fisik menggunakan armada toko atau resi surat jalan manual.',
+            ], 422);
+        }
+
+        if ((int) $order->status >= Order::STATUS_SHIPPED) {
+            $statusName = $order->statusLabel();
+            return response()->json([
+                'success' => false,
+                'is_warning' => true,
+                'message' => "Pesanan sudah dalam status {$statusName}. Pengambilan resi otomatis terkunci dan tidak dapat dilakukan.",
             ], 422);
         }
 

@@ -182,6 +182,15 @@
                     </p>
                 </div>
 
+                <!-- Status PPN Produk -->
+                <div class="p-3.5 bg-surface-container-lowest border border-outline-variant/40 rounded-xl space-y-1">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Pajak Pertambahan Nilai (PPN)</span>
+                    <p class="text-sm font-semibold flex items-center gap-1.5 {{ $product->is_ppn_active ? 'text-emerald-700' : 'text-on-surface-variant' }}">
+                        <span class="material-symbols-outlined text-[16px] {{ $product->is_ppn_active ? 'text-emerald-600' : 'text-gray-400' }}">receipt_long</span>
+                        {{ $product->is_ppn_active ? 'PPN ' . (int)$product->ppn_rate . '% (Termasuk Pajak)' : 'Bebas PPN / Nonaktif' }}
+                    </p>
+                </div>
+
                 <!-- Tag Produk -->
                 <div class="p-3.5 bg-surface-container-lowest border border-outline-variant/40 rounded-xl space-y-1 md:col-span-2">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Tag Produk</span>
@@ -582,6 +591,15 @@
                                                 <span class="font-bold text-primary font-mono text-xs">
                                                     Rp{{ number_format($v->sell_price ?? $v->base_price ?? 0, 0, ',', '.') }}
                                                 </span>
+                                                @if($v->is_ppn_active && $v->ppn_rate > 0)
+                                                    <span class="text-[10px] text-on-surface-variant block font-mono" title="Harga Sebelum PPN">
+                                                        Sebelum PPN: Rp{{ number_format($v->dpp_price, 0, ',', '.') }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-[10px] text-on-surface-variant block font-sans">
+                                                        Bebas PPN
+                                                    </span>
+                                                @endif
                                             </td>
 
                                             <!-- Stok -->

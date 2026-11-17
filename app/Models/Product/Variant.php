@@ -29,6 +29,10 @@ class Variant extends Model
         'attributes',
         'base_price',
         'sell_price',
+        'is_ppn_active',
+        'dpp_price',
+        'ppn_rate',
+        'ppn_amount',
         'stock_quantity',
         'min_order_qty',
         'sort_order',
@@ -52,6 +56,10 @@ class Variant extends Model
             'attributes' => 'array',
             'base_price' => 'decimal:2',
             'sell_price' => 'decimal:2',
+            'is_ppn_active' => 'boolean',
+            'dpp_price' => 'decimal:2',
+            'ppn_rate' => 'decimal:2',
+            'ppn_amount' => 'decimal:2',
             'stock_quantity' => 'integer',
             'min_order_qty' => 'integer',
             'sort_order' => 'integer',
@@ -232,5 +240,74 @@ class Variant extends Model
         }
         $prices = array_column($discounts, 'final_price');
         return min($prices);
+    }
+
+    /**
+     * Status PPN Aktif
+     */
+    public function getIsPpnActiveAttribute($value): bool
+    {
+        return $value !== null ? (bool) $value : true;
+    }
+
+    /**
+     * Tarif PPN yang berlaku (default 11.00%)
+     */
+    public function getPpnRateAttribute($value): float
+    {
+        if (!$this->is_ppn_active) {
+            return 0.0;
+        }
+
+        return !empty($value) && (float) $value > 0
+            ? (float) $value
+            : (float) config('services.tax.ppn_rate', config('app.ppn_rate', env('PPN_RATE', 11.0)));
+    }
+
+    /**
+     * Harga Sebelum PPN (Dasar Pengenaan Pajak)
+     */
+    public function getDppPriceAttribute($value): float
+    {
+        if (!$this->is_ppn_active) {
+            return (float) ($this->sell_price ?? 0);
+        }
+
+        if (!empty($value) && (float) $value > 0) {
+            return (float) $value;
+        }
+
+        $sellPrice = (float) ($this->sell_price ?? 0);
+        if ($sellPrice <= 0) {
+            return 0.0;
+        }
+
+        $rate = $this->ppn_rate;
+        if ($rate <= 0) {
+            return $sellPrice;
+        }
+
+        return round($sellPrice / (1 + ($rate / 100)), 2);
+    }
+
+    /**
+     * Nilai nominal PPN
+     */
+    public function getPpnAmountAttribute($value): float
+    {
+        if (!$this->is_ppn_active) {
+            return 0.0;
+        }
+
+        if (!empty($value) && (float) $value > 0) {
+            return (float) $value;
+        }
+
+        $sellPrice = (float) ($this->sell_price ?? 0);
+        if ($sellPrice <= 0) {
+            return 0.0;
+        }
+
+        return round($sellPrice - $this->dpp_price, 2);
     }
 }

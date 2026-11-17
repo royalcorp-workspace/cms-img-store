@@ -10,8 +10,9 @@
                     <h3 class="font-bold text-sm text-on-surface flex items-center gap-2">
                         <span>Penyelesaian & Pengiriman Pesanan</span>
                         <span id="modalOrderBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary">#ORD-</span>
+                        <span id="modalStatusBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"></span>
                     </h3>
-                    <p class="text-xs text-on-surface-variant mt-0.5">Lengkapi pengiriman: input resi manual untuk armada toko atau ambil resi otomatis melalui vendor ekspedisi</p>
+                    <p class="text-xs text-on-surface-variant mt-0.5" id="modalSubtitle">Lengkapi pengiriman: input resi manual untuk armada toko atau ambil resi otomatis melalui vendor ekspedisi</p>
                 </div>
             </div>
             <button type="button" onclick="closeResiModal()" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors">
@@ -55,11 +56,11 @@
                 </div>
 
                 <!-- Notice: Resi Terkunci jika pesanan sudah Shipped / Delivered -->
-                <div id="manualResiLockedNotice" class="hidden p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-900">
-                    <span class="material-symbols-outlined text-[20px] text-amber-600 mt-0.5 shrink-0">lock</span>
+                <div id="manualResiLockedNotice" class="hidden p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 transition-colors">
+                    <span class="material-symbols-outlined text-[20px] text-amber-600 mt-0.5 shrink-0" id="manualLockedIcon">lock</span>
                     <div class="space-y-0.5">
-                        <div class="font-bold">Nomor Resi & Pengiriman Terkunci</div>
-                        <p class="text-amber-800">Pesanan ini sudah berstatus <strong>Dikirim (Shipped)</strong> atau <strong>Diterima (Delivered)</strong>. Nomor resi dan data pengiriman sudah terkunci dan tidak dapat diubah atau ditambah lagi.</p>
+                        <div class="font-bold text-amber-950" id="manualLockedTitle">Nomor Resi & Pengiriman Terkunci</div>
+                        <p id="manualLockedDesc" class="text-amber-800">Pesanan ini sudah berstatus <strong>Dikirim (Shipped)</strong> atau <strong>Diterima (Delivered)</strong>. Nomor resi dan data pengiriman sudah terkunci dan tidak dapat diubah atau ditambah lagi.</p>
                     </div>
                 </div>
 
@@ -204,11 +205,11 @@
                 @endif
 
                 <!-- Notice: Resi Ekspedisi Sudah Terbit -->
-                <div id="biteshipAlreadyIssuedNotice" class="hidden p-3.5 bg-blue-50/90 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5">
-                    <span class="material-symbols-outlined text-[20px] text-blue-600 mt-0.5 shrink-0">verified</span>
+                <div id="biteshipAlreadyIssuedNotice" class="hidden p-3.5 bg-blue-50/90 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5 transition-colors">
+                    <span class="material-symbols-outlined text-[20px] text-blue-600 mt-0.5 shrink-0" id="biteshipNoticeIcon">verified</span>
                     <div class="space-y-1">
-                        <div class="font-bold text-blue-950">Nomor Resi Ekspedisi Sudah Terbit</div>
-                        <p class="text-blue-800">Nomor resi untuk pesanan ini telah aktif dari vendor ekspedisi. Pengambilan resi otomatis tidak dapat diulang guna mencegah duplikasi pengiriman. Silakan gunakan tab <strong>Lacak Pengiriman</strong> untuk memantau perjalanan kurir.</p>
+                        <div class="font-bold text-blue-950" id="biteshipNoticeTitle">Nomor Resi Ekspedisi Sudah Terbit</div>
+                        <p class="text-blue-800" id="biteshipNoticeDesc">Nomor resi untuk pesanan ini telah aktif dari vendor ekspedisi. Pengambilan resi otomatis tidak dapat diulang guna mencegah duplikasi pengiriman. Silakan gunakan tab <strong>Lacak Pengiriman</strong> untuk memantau perjalanan kurir.</p>
                     </div>
                 </div>
 
@@ -641,83 +642,244 @@ function openResiModal(order, defaultTab = 'manual') {
     // Trigger onBiteshipCourierSelected
     onBiteshipCourierSelected(resolvedCompany, targetServiceCode);
 
-    // Handle Already Issued Biteship Resi
+    // Detect Delivered vs Shipped
+    const statusCode = parseInt(order.status);
+    const statusLabelLower = String(order.status_label || '').toLowerCase();
+    const deliveryStatusLower = String(order.delivery_status || '').toLowerCase();
+
+    const isDelivered = (statusCode === 5 || deliveryStatusLower === 'delivered' || statusLabelLower.includes('delivered') || statusLabelLower.includes('terkirim') || statusLabelLower.includes('selesai'));
+    const isShipped = (statusCode === 4 || deliveryStatusLower === 'shipped' || statusLabelLower.includes('shipped') || statusLabelLower.includes('dikirim'));
+    const isShippedOrDelivered = isDelivered || isShipped || (statusCode >= 4);
+
+    // Modal Header indicator
+    const modalSubtitle = document.getElementById('modalSubtitle');
+    const modalStatusBadge = document.getElementById('modalStatusBadge');
+    if (modalStatusBadge) {
+        if (isDelivered) {
+            modalStatusBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase';
+            modalStatusBadge.textContent = 'Delivered (Selesai)';
+            modalStatusBadge.classList.remove('hidden');
+        } else if (isShipped) {
+            modalStatusBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300 uppercase';
+            modalStatusBadge.textContent = 'Shipped (Dikirim)';
+            modalStatusBadge.classList.remove('hidden');
+        } else {
+            modalStatusBadge.classList.add('hidden');
+        }
+    }
+    if (modalSubtitle) {
+        if (isDelivered) {
+            modalSubtitle.textContent = 'Pesanan telah selesai diterima oleh pelanggan. Seluruh data pengiriman terkunci permanen.';
+        } else if (isShipped) {
+            modalSubtitle.textContent = 'Pesanan sedang dalam proses pengiriman. Data pengiriman dan nomor resi telah terkunci.';
+        } else {
+            modalSubtitle.textContent = 'Lengkapi pengiriman: input resi manual untuk armada toko atau ambil resi otomatis melalui vendor ekspedisi';
+        }
+    }
+
+    // Helper to toggle disabled styling on form controls
+    function setFieldState(el, disabled) {
+        if (!el) return;
+        el.disabled = disabled;
+        if (disabled) {
+            el.classList.add('bg-slate-100', 'cursor-not-allowed', 'text-slate-500');
+            el.classList.remove('bg-white');
+        } else {
+            el.classList.remove('bg-slate-100', 'cursor-not-allowed', 'text-slate-500');
+            el.classList.add('bg-white');
+        }
+    }
+
+    // Elements in Tab 1 (Manual Resi)
+    const manualLockedNotice = document.getElementById('manualResiLockedNotice');
+    const manualLockedIcon = document.getElementById('manualLockedIcon');
+    const manualLockedTitle = document.getElementById('manualLockedTitle');
+    const manualLockedDesc = document.getElementById('manualLockedDesc');
+    const saveResiBtn = document.getElementById('saveResiBtn');
+    const inputTrackingNumber = document.getElementById('formTrackingNumber');
+    const selectCourierId = document.getElementById('formCourierId');
+    const selectTargetStatus = document.getElementById('formStatusTarget');
+    const inputEtaDate = document.getElementById('formEstimatedDeliveryAt');
+    const selectEtaDuration = document.getElementById('formEstimatedDuration');
+    const inputEtaNotes = document.getElementById('formEtaNotes');
+
+    // Elements in Tab 2 (Biteship)
     const hasBiteshipResi = !!(order.has_biteship_resi || (order.meta && order.meta.biteship_order_id) || (order.resi && (order.fulfillment_type === 'biteship' || (order.meta && order.meta.fulfillment_type === 'biteship'))));
     const biteshipIssuedNotice = document.getElementById('biteshipAlreadyIssuedNotice');
+    const biteshipNoticeIcon = document.getElementById('biteshipNoticeIcon');
+    const biteshipNoticeTitle = document.getElementById('biteshipNoticeTitle');
+    const biteshipNoticeDesc = document.getElementById('biteshipNoticeDesc');
+    const inputBiteshipPostal = document.getElementById('biteshipPostalCode');
+    const selectBiteshipStatus = document.getElementById('biteshipFinalStatus');
+    const inputBiteshipNote = document.getElementById('biteshipDestinationNote');
     const hitBiteshipBtn = document.getElementById('hitBiteshipBtn');
     const hitBiteshipText = document.getElementById('hitBiteshipText');
 
-    if (hasBiteshipResi) {
-        if (biteshipIssuedNotice) biteshipIssuedNotice.classList.remove('hidden');
+    if (isShippedOrDelivered) {
+        // TAB 1: Disable ALL form fields for manual resi
+        setFieldState(inputTrackingNumber, true);
+        setFieldState(selectCourierId, true);
+        setFieldState(selectTargetStatus, true);
+        setFieldState(inputEtaDate, true);
+        setFieldState(selectEtaDuration, true);
+        setFieldState(inputEtaNotes, true);
+
+        if (selectTargetStatus) {
+            selectTargetStatus.value = isDelivered ? '5' : '4';
+        }
+
+        if (saveResiBtn) {
+            saveResiBtn.disabled = true;
+            saveResiBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            saveResiBtn.classList.remove('hover:opacity-90', 'active:scale-95');
+            const lockLabel = isDelivered ? 'Pesanan Selesai (Delivered)' : 'Resi Terkunci (Dikirim)';
+            saveResiBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">lock</span><span>${lockLabel}</span>`;
+        }
+
+        if (manualLockedNotice) {
+            manualLockedNotice.classList.remove('hidden');
+            if (isDelivered) {
+                manualLockedNotice.className = 'p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 text-xs text-emerald-900 transition-colors';
+                if (manualLockedIcon) {
+                    manualLockedIcon.textContent = 'verified';
+                    manualLockedIcon.className = 'material-symbols-outlined text-[20px] text-emerald-600 mt-0.5 shrink-0';
+                }
+                if (manualLockedTitle) {
+                    manualLockedTitle.textContent = 'Pesanan Telah Diterima (Delivered) - Seluruh Data Terkunci';
+                    manualLockedTitle.className = 'font-bold text-emerald-950';
+                }
+                if (manualLockedDesc) {
+                    manualLockedDesc.innerHTML = 'Pesanan ini sudah berstatus <strong>Diterima (Delivered / Selesai)</strong>. Seluruh data nomor resi, armada pengiriman, dan estimasi tiba telah terkunci permanen dan tidak dapat diubah lagi.';
+                    manualLockedDesc.className = 'text-emerald-800';
+                }
+            } else {
+                manualLockedNotice.className = 'p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 transition-colors';
+                if (manualLockedIcon) {
+                    manualLockedIcon.textContent = 'lock';
+                    manualLockedIcon.className = 'material-symbols-outlined text-[20px] text-amber-600 mt-0.5 shrink-0';
+                }
+                if (manualLockedTitle) {
+                    manualLockedTitle.textContent = 'Nomor Resi & Pengiriman Terkunci (Shipped)';
+                    manualLockedTitle.className = 'font-bold text-amber-950';
+                }
+                if (manualLockedDesc) {
+                    manualLockedDesc.innerHTML = 'Pesanan ini sedang dalam pengiriman dan berstatus <strong>Dikirim (Shipped)</strong>. Nomor resi dan jadwal pengiriman sudah terkunci.';
+                    manualLockedDesc.className = 'text-amber-800';
+                }
+            }
+        }
+
+        // TAB 2: Disable ALL form fields for Biteship
+        setFieldState(inputBiteshipPostal, true);
+        setFieldState(selectBiteshipStatus, true);
+        setFieldState(inputBiteshipNote, true);
+
+        if (selectBiteshipStatus) {
+            selectBiteshipStatus.value = isDelivered ? '5' : '4';
+        }
+
         if (hitBiteshipBtn) {
             hitBiteshipBtn.disabled = true;
             hitBiteshipBtn.classList.add('opacity-50', 'cursor-not-allowed');
             hitBiteshipBtn.classList.remove('active:scale-95');
         }
-        if (hitBiteshipText) hitBiteshipText.textContent = 'Resi Ekspedisi Sudah Terbit';
-        // Auto-switch to tracking view if user opens modal
-        if (defaultTab === 'biteship' && order.resi) {
-            defaultTab = 'tracking';
+        if (hitBiteshipText) {
+            hitBiteshipText.textContent = isDelivered ? 'Pesanan Selesai (Delivered)' : 'Pesanan Sudah Dikirim (Shipped)';
         }
-    } else {
-        if (biteshipIssuedNotice) biteshipIssuedNotice.classList.add('hidden');
-        if (hitBiteshipBtn) {
-            hitBiteshipBtn.disabled = false;
-            hitBiteshipBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            hitBiteshipBtn.classList.add('active:scale-95');
-        }
-        if (hitBiteshipText) hitBiteshipText.textContent = 'Get Resi Otomatis';
-    }
 
-    // Handle Order status >= 4 (Shipped / Delivered): Lock manual resi input as well!
-    const isShippedOrDelivered = (parseInt(order.status) === 4 || parseInt(order.status) === 5);
-    const manualLockedNotice = document.getElementById('manualResiLockedNotice');
-    const saveResiBtn = document.getElementById('saveResiBtn');
-    const inputTrackingNumber = document.getElementById('formTrackingNumber');
-    const selectCourierId = document.getElementById('formCourierId');
-    const selectTargetStatus = document.getElementById('formStatusTarget');
+        if (biteshipIssuedNotice) {
+            biteshipIssuedNotice.classList.remove('hidden');
+            if (isDelivered) {
+                biteshipIssuedNotice.className = 'p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-start gap-2.5 transition-colors';
+                if (biteshipNoticeIcon) {
+                    biteshipNoticeIcon.textContent = 'verified';
+                    biteshipNoticeIcon.className = 'material-symbols-outlined text-[20px] text-emerald-600 mt-0.5 shrink-0';
+                }
+                if (biteshipNoticeTitle) {
+                    biteshipNoticeTitle.textContent = 'Pesanan Telah Selesai (Delivered)';
+                    biteshipNoticeTitle.className = 'font-bold text-emerald-950';
+                }
+                if (biteshipNoticeDesc) {
+                    biteshipNoticeDesc.innerHTML = 'Pesanan ini sudah berstatus <strong>Diterima (Delivered)</strong>. Seluruh proses pengiriman telah tuntas dan layanan ekspedisi tidak dapat diubah kembali. Pantau riwayat perjalanan pada tab <strong>Lacak Pengiriman</strong>.';
+                    biteshipNoticeDesc.className = 'text-emerald-800';
+                }
+            } else {
+                biteshipIssuedNotice.className = 'p-3.5 bg-blue-50/90 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5 transition-colors';
+                if (biteshipNoticeIcon) {
+                    biteshipNoticeIcon.textContent = 'local_shipping';
+                    biteshipNoticeIcon.className = 'material-symbols-outlined text-[20px] text-blue-600 mt-0.5 shrink-0';
+                }
+                if (biteshipNoticeTitle) {
+                    biteshipNoticeTitle.textContent = 'Pesanan Sedang Dikirim (Shipped)';
+                    biteshipNoticeTitle.className = 'font-bold text-blue-950';
+                }
+                if (biteshipNoticeDesc) {
+                    biteshipNoticeDesc.innerHTML = 'Nomor resi untuk pesanan ini telah aktif dan barang dalam perjalanan. Pengambilan resi otomatis tidak dapat diulang. Silakan gunakan tab <strong>Lacak Pengiriman</strong>.';
+                    biteshipNoticeDesc.className = 'text-blue-800';
+                }
+            }
+        }
 
-    if (isShippedOrDelivered) {
-        if (manualLockedNotice) manualLockedNotice.classList.remove('hidden');
-        if (saveResiBtn) {
-            saveResiBtn.disabled = true;
-            saveResiBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            saveResiBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">lock</span><span>Resi Terkunci (' + (order.status_label || 'Shipped') + ')</span>';
-        }
-        if (inputTrackingNumber) {
-            inputTrackingNumber.disabled = true;
-            inputTrackingNumber.classList.add('bg-slate-100', 'cursor-not-allowed');
-        }
-        if (selectCourierId) {
-            selectCourierId.disabled = true;
-            selectCourierId.classList.add('bg-slate-100', 'cursor-not-allowed');
-        }
-        if (selectTargetStatus) {
-            selectTargetStatus.disabled = true;
-            selectTargetStatus.classList.add('bg-slate-100', 'cursor-not-allowed');
-        }
-        // If opening default tab manual or biteship, switch to tracking if resi exists
+        // Switch to tracking tab by default if resi or delivery status exists
         if ((defaultTab === 'manual' || defaultTab === 'biteship') && (order.resi || order.delivery_status)) {
             defaultTab = 'tracking';
         }
     } else {
+        // Status < 4: ENABLE ALL form fields
+        setFieldState(inputTrackingNumber, false);
+        setFieldState(selectCourierId, false);
+        setFieldState(selectTargetStatus, false);
+        setFieldState(inputEtaDate, false);
+        setFieldState(selectEtaDuration, false);
+        setFieldState(inputEtaNotes, false);
+
+        setFieldState(inputBiteshipPostal, false);
+        setFieldState(selectBiteshipStatus, false);
+        setFieldState(inputBiteshipNote, false);
+
         if (manualLockedNotice) manualLockedNotice.classList.add('hidden');
+
         if (saveResiBtn) {
             saveResiBtn.disabled = false;
             saveResiBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            saveResiBtn.classList.add('hover:opacity-90');
             saveResiBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>Simpan Resi Manual</span>';
         }
-        if (inputTrackingNumber) {
-            inputTrackingNumber.disabled = false;
-            inputTrackingNumber.classList.remove('bg-slate-100', 'cursor-not-allowed');
-        }
-        if (selectCourierId) {
-            selectCourierId.disabled = false;
-            selectCourierId.classList.remove('bg-slate-100', 'cursor-not-allowed');
-        }
-        if (selectTargetStatus) {
-            selectTargetStatus.disabled = false;
-            selectTargetStatus.classList.remove('bg-slate-100', 'cursor-not-allowed');
+
+        if (hasBiteshipResi) {
+            if (biteshipIssuedNotice) {
+                biteshipIssuedNotice.classList.remove('hidden');
+                biteshipIssuedNotice.className = 'p-3.5 bg-blue-50/90 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5 transition-colors';
+                if (biteshipNoticeIcon) {
+                    biteshipNoticeIcon.textContent = 'verified';
+                    biteshipNoticeIcon.className = 'material-symbols-outlined text-[20px] text-blue-600 mt-0.5 shrink-0';
+                }
+                if (biteshipNoticeTitle) {
+                    biteshipNoticeTitle.textContent = 'Nomor Resi Ekspedisi Sudah Terbit';
+                    biteshipNoticeTitle.className = 'font-bold text-blue-950';
+                }
+                if (biteshipNoticeDesc) {
+                    biteshipNoticeDesc.innerHTML = 'Nomor resi untuk pesanan ini telah aktif dari vendor ekspedisi. Pengambilan resi otomatis tidak dapat diulang guna mencegah duplikasi pengiriman. Silakan gunakan tab <strong>Lacak Pengiriman</strong> untuk memantau perjalanan kurir.';
+                    biteshipNoticeDesc.className = 'text-blue-800';
+                }
+            }
+            if (hitBiteshipBtn) {
+                hitBiteshipBtn.disabled = true;
+                hitBiteshipBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                hitBiteshipBtn.classList.remove('active:scale-95');
+            }
+            if (hitBiteshipText) hitBiteshipText.textContent = 'Resi Ekspedisi Sudah Terbit';
+            if (defaultTab === 'biteship' && order.resi) {
+                defaultTab = 'tracking';
+            }
+        } else {
+            if (biteshipIssuedNotice) biteshipIssuedNotice.classList.add('hidden');
+            if (hitBiteshipBtn) {
+                hitBiteshipBtn.disabled = false;
+                hitBiteshipBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                hitBiteshipBtn.classList.add('active:scale-95');
+            }
+            if (hitBiteshipText) hitBiteshipText.textContent = 'Get Resi Otomatis';
         }
     }
 
@@ -781,6 +943,9 @@ function copyResiCode() {
 }
 
 function onDurationPresetChange(duration) {
+    if (currentActiveOrderData && (parseInt(currentActiveOrderData.status) >= 4)) {
+        return;
+    }
     const etaInput = document.getElementById('formEstimatedDeliveryAt');
     if (!etaInput) return;
 
@@ -823,14 +988,17 @@ async function submitResiForm(e) {
     const errorText = document.getElementById('formResiErrorText');
     const saveBtn = document.getElementById('saveResiBtn');
 
-    if (currentActiveOrderData && (parseInt(currentActiveOrderData.status) === 4 || parseInt(currentActiveOrderData.status) === 5)) {
-        const msg = 'Pesanan sudah berstatus Dikirim atau Diterima. Nomor resi sudah terkunci dan tidak dapat diubah lagi.';
+    if (currentActiveOrderData && (parseInt(currentActiveOrderData.status) >= 4)) {
+        const isDelivered = parseInt(currentActiveOrderData.status) === 5;
+        const msg = isDelivered 
+            ? 'Pesanan sudah berstatus Selesai (Delivered). Seluruh data pengiriman terkunci permanen dan tidak dapat diubah.' 
+            : 'Pesanan sudah berstatus Dikirim (Shipped). Nomor resi dan jadwal pengiriman sudah terkunci dan tidak dapat diubah.';
         errorText.textContent = msg;
         errorDiv.classList.remove('hidden');
         if (typeof Swal !== 'undefined') {
             Swal.fire({
-                icon: 'warning',
-                title: 'Resi Terkunci',
+                icon: isDelivered ? 'info' : 'warning',
+                title: isDelivered ? 'Pesanan Selesai (Delivered)' : 'Resi Terkunci',
                 text: msg,
                 confirmButtonColor: '#1e3a8a'
             });
@@ -940,6 +1108,25 @@ async function submitBiteshipForm(e) {
     const errorDiv = document.getElementById('biteshipError');
     const errorText = document.getElementById('biteshipErrorText');
     const hitBtn = document.getElementById('hitBiteshipBtn');
+
+    // Pengamanan Status Shipped / Delivered
+    if (currentActiveOrderData && (parseInt(currentActiveOrderData.status) >= 4)) {
+        const isDelivered = parseInt(currentActiveOrderData.status) === 5;
+        const msg = isDelivered 
+            ? 'Pesanan sudah berstatus Selesai (Delivered). Pengambilan resi ekspedisi otomatis tidak aktif.' 
+            : 'Pesanan sudah berstatus Dikirim (Shipped). Pengambilan resi otomatis sudah terkunci.';
+        errorText.textContent = msg;
+        errorDiv.classList.remove('hidden');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: isDelivered ? 'info' : 'warning',
+                title: isDelivered ? 'Pesanan Selesai (Delivered)' : 'Resi Terkunci',
+                text: msg,
+                confirmButtonColor: '#1e3a8a'
+            });
+        }
+        return;
+    }
 
     // Pengamanan Kurir Toko
     if (currentActiveOrderData?.is_kurir_toko) {
