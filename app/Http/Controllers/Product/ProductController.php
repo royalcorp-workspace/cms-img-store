@@ -558,6 +558,8 @@ class ProductController extends Controller
             'best_seller' => 'boolean',
             'is_new' => 'boolean',
             'show_on_web' => 'boolean',
+            'is_ppn_active' => 'nullable|boolean',
+            'ppn_rate' => 'nullable|numeric|min:0|max:100',
             'sort_order' => 'integer|min:0',
             'status' => 'boolean',
             'suggested_products' => 'nullable|array',
@@ -607,6 +609,12 @@ class ProductController extends Controller
 
             $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
             $validated['show_on_web'] = $request->has('show_on_web') ? (bool)$request->input('show_on_web') : true;
+
+            $isPpnActive = $request->has('is_ppn_active') ? filter_var($request->input('is_ppn_active'), FILTER_VALIDATE_BOOLEAN) : true;
+            $ppnRate = $isPpnActive ? (float)$request->input('ppn_rate', 11.0) : 0.0;
+            $validated['is_ppn_active'] = $isPpnActive;
+            $validated['ppn_rate'] = $ppnRate;
+
             $product = Product::create($validated);
 
             if ($request->has('tags')) {
@@ -687,6 +695,18 @@ class ProductController extends Controller
                         if (!isset($variantData[$dim]) || $variantData[$dim] === '' || $variantData[$dim] === null) {
                             $variantData[$dim] = $validated[$dim] ?? null;
                         }
+                    }
+
+                    // PPN and price calculation
+                    $variantData['is_ppn_active'] = $isPpnActive;
+                    $variantData['ppn_rate'] = $ppnRate;
+                    $sPrice = isset($variantData['sell_price']) ? (float)$variantData['sell_price'] : 0.0;
+                    if ($isPpnActive && $ppnRate > 0) {
+                        $variantData['dpp_price'] = round($sPrice / (1 + ($ppnRate / 100)), 2);
+                        $variantData['ppn_amount'] = round($sPrice - $variantData['dpp_price'], 2);
+                    } else {
+                        $variantData['dpp_price'] = $sPrice;
+                        $variantData['ppn_amount'] = 0.0;
                     }
 
                     $variant = \App\Models\Product\Variant::create(array_merge(['product_id' => $product->id], $variantData));
@@ -811,6 +831,8 @@ class ProductController extends Controller
             'is_new' => 'boolean',
             'status' => 'boolean',
             'show_on_web' => 'nullable|boolean',
+            'is_ppn_active' => 'nullable|boolean',
+            'ppn_rate' => 'nullable|numeric|min:0|max:100',
             'category_id' => 'nullable|string|exists:product_category,id',
             'brand_id' => 'nullable|string|exists:brands,id',
             'tags' => 'nullable|array',
@@ -864,6 +886,11 @@ class ProductController extends Controller
 
             $validated['courier_type'] = $validated['courier_type'] ?? 'keduanya';
             $validated['show_on_web'] = $request->has('show_on_web') ? (bool)$request->input('show_on_web') : ($product->show_on_web ?? true);
+
+            $isPpnActive = $request->has('is_ppn_active') ? filter_var($request->input('is_ppn_active'), FILTER_VALIDATE_BOOLEAN) : ($product->is_ppn_active ?? true);
+            $ppnRate = $isPpnActive ? (float)$request->input('ppn_rate', 11.0) : 0.0;
+            $validated['is_ppn_active'] = $isPpnActive;
+            $validated['ppn_rate'] = $ppnRate;
 
             $targetSlug = !empty($validated['slug']) ? $validated['slug'] : \Illuminate\Support\Str::slug($validated['name'] ?? $product->name);
             $oldSlug = $product->slug;
@@ -1008,6 +1035,18 @@ class ProductController extends Controller
                         $variant = \App\Models\Product\Variant::where('product_id', $product->id)
                             ->where('sku', $variantData['sku'])
                             ->first();
+                    }
+
+                    // PPN and price calculation
+                    $variantData['is_ppn_active'] = $isPpnActive;
+                    $variantData['ppn_rate'] = $ppnRate;
+                    $sPrice = isset($variantData['sell_price']) ? (float)$variantData['sell_price'] : 0.0;
+                    if ($isPpnActive && $ppnRate > 0) {
+                        $variantData['dpp_price'] = round($sPrice / (1 + ($ppnRate / 100)), 2);
+                        $variantData['ppn_amount'] = round($sPrice - $variantData['dpp_price'], 2);
+                    } else {
+                        $variantData['dpp_price'] = $sPrice;
+                        $variantData['ppn_amount'] = 0.0;
                     }
 
                     if ($variant) {

@@ -108,6 +108,8 @@ class Product extends Model
         'sort_order',
         'status',
         'show_on_web',
+        'is_ppn_active',
+        'ppn_rate',
         'is_bundle',
         'previous_slugs',
         'creator',
@@ -125,6 +127,8 @@ class Product extends Model
             'sort_order' => 'integer',
             'status' => 'boolean',
             'show_on_web' => 'boolean',
+            'is_ppn_active' => 'boolean',
+            'ppn_rate' => 'decimal:2',
             'is_bundle' => 'boolean',
             'deleted' => 'boolean',
             'created_at' => 'datetime',
@@ -298,5 +302,20 @@ class Product extends Model
     public function suggestBundleItems(): HasMany
     {
         return $this->hasMany(ProductBundlingItem::class, 'product_bundling_id')->where('is_suggest', true);
+    }
+
+    public function getIsPpnActiveAttribute($value): bool
+    {
+        return $value !== null ? (bool) $value : true;
+    }
+
+    public function getPpnRateAttribute($value): float
+    {
+        if (!$this->is_ppn_active) {
+            return 0.0;
+        }
+        return !empty($value) && (float) $value > 0
+            ? (float) $value
+            : (float) config('services.tax.ppn_rate', config('app.ppn_rate', env('PPN_RATE', 11.0)));
     }
 }
