@@ -521,8 +521,13 @@
                                 <span class="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
                                 <span>Harga Push JDE:</span>
                             </span>
-                            @if(($order->is_ppn_active ?? true) && (float)($order->ppn_rate ?: 11) > 0)
-                                <span class="font-medium text-on-surface">Tanpa PPN (Exclude PPN {{ (int)($order->ppn_rate ?: 11) }}%)</span>
+                            @php
+                                $jdePushRate = (float) ($order->ppn_rate ?? 0);
+                                $isJdePpnActive = ($order->is_ppn_active ?? true) && $jdePushRate > 0;
+                                $jdeRateLabel = (int)$jdePushRate == $jdePushRate ? (int)$jdePushRate : number_format($jdePushRate, 1);
+                            @endphp
+                            @if($isJdePpnActive)
+                                <span class="font-medium text-on-surface">Tanpa PPN (Exclude PPN)</span>
                             @else
                                 <span class="font-medium text-on-surface">Tanpa PPN (Bebas PPN)</span>
                             @endif
@@ -593,10 +598,22 @@
                             <span class="material-symbols-outlined text-[17px] text-on-surface-variant">inventory_2</span>
                             Rincian Item Produk ({{ $order->items->count() }} item)
                         </span>
-                        <span class="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" title="Harga produk sudah termasuk PPN">
-                            <span class="material-symbols-outlined text-[12px]">verified</span>
-                            Harga + PPN ({{ (int)($order->ppn_rate ?: 11) }}%)
-                        </span>
+                        @php
+                            $headerOrderRate = (float) ($order->ppn_rate ?? 0);
+                            $headerPpnActive = ($order->is_ppn_active ?? true) && $headerOrderRate > 0;
+                            $headerRateLabel = (int)$headerOrderRate == $headerOrderRate ? (int)$headerOrderRate : number_format($headerOrderRate, 1);
+                        @endphp
+                        @if($headerPpnActive)
+                            <span class="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" title="Harga produk sudah termasuk PPN">
+                                <span class="material-symbols-outlined text-[12px]">verified</span>
+                                Harga + PPN
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 text-[10px] font-medium text-gray-700 bg-gray-50 px-2 py-0.5 rounded border border-gray-200" title="Harga produk bebas PPN">
+                                <span class="material-symbols-outlined text-[12px]">verified</span>
+                                Bebas PPN
+                            </span>
+                        @endif
                     </div>
                     <span class="text-xs text-on-surface-variant font-medium">
                         Total: <strong>{{ $order->items->sum('quantity') }} Pcs</strong>
@@ -688,7 +705,7 @@
                                     <td class="py-3 px-3 text-right font-medium text-on-surface align-top whitespace-nowrap">
                                         <div class="font-bold">Rp {{ number_format($price, 0, ',', '.') }}</div>
                                         @php
-                                            $unitRate = (float) ($item->ppn_rate ?? ($order->ppn_rate ?? 11.0));
+                                            $unitRate = (float) ($item->ppn_rate ?? ($order->ppn_rate ?? 0.0));
                                             $unitPpnActive = ($item->is_ppn_active ?? ($order->is_ppn_active ?? true)) && $unitRate > 0;
                                         @endphp
                                         @if($unitPpnActive)
@@ -730,15 +747,16 @@
                                             <div class="text-[10px] font-semibold text-on-surface">Net: Rp {{ number_format($item->getNetTotal(), 0, ',', '.') }}</div>
                                         @endif
                                         @php
-                                            $itemRate = (float) ($item->ppn_rate ?? ($order->ppn_rate ?? 11.0));
+                                            $itemRate = (float) ($item->ppn_rate ?? ($order->ppn_rate ?? 0.0));
                                             $itemPpnActive = ($item->is_ppn_active ?? ($order->is_ppn_active ?? true)) && $itemRate > 0;
+                                            $itemRateLabel = (int)$itemRate == $itemRate ? (int)$itemRate : number_format($itemRate, 1);
                                         @endphp
                                         @if($itemPpnActive)
                                             <div class="text-[10px] text-on-surface-variant font-normal mt-0.5" title="Harga Sebelum PPN untuk Total Item">
                                                 Sebelum PPN: Rp {{ number_format($item->getDppTotal(), 0, ',', '.') }}
                                             </div>
-                                            <div class="text-[9px] text-emerald-700 font-medium" title="Nilai PPN {{ (int)$itemRate }}% Termasuk">
-                                                PPN ({{ (int)$itemRate }}%): Rp {{ number_format($item->getPpnTotal(), 0, ',', '.') }}
+                                            <div class="text-[9px] text-emerald-700 font-medium" title="Nilai PPN Termasuk">
+                                                PPN: Rp {{ number_format($item->getPpnTotal(), 0, ',', '.') }}
                                             </div>
                                         @else
                                             <div class="text-[10px] text-on-surface-variant font-normal mt-0.5">
@@ -893,8 +911,9 @@
 
                         {{-- 4. Sub Total (Produk Bersih setelah Diskon & Voucher) & Rincian PPN Dinamis --}}
                         @php
-                            $orderPpnRate = (float) ($order->ppn_rate ?: 11.0);
+                            $orderPpnRate = $order->ppn_rate !== null ? (float) $order->ppn_rate : 0.0;
                             $isOrderPpnActive = ($order->is_ppn_active ?? true) && $orderPpnRate > 0;
+                            $orderRateLabel = (int)$orderPpnRate == $orderPpnRate ? (int)$orderPpnRate : number_format($orderPpnRate, 1);
                             $netSubtotal = max(0, $originalCartTotal - $staticPromoDiscount - $priceProductSettingDiscount - $productVoucherDiscount);
                             if ($isOrderPpnActive) {
                                 $orderDppAmount = round($netSubtotal / (1 + ($orderPpnRate / 100)), 2);
@@ -917,7 +936,7 @@
                                     </div>
                                     <div class="flex justify-between items-center text-primary font-medium">
                                         <span class="flex items-center gap-1">
-                                            <span>└─ PPN ({{ (int)$orderPpnRate == $orderPpnRate ? (int)$orderPpnRate : number_format($orderPpnRate, 1) }}% Termasuk):</span>
+                                            <span>└─ PPN:</span>
                                         </span>
                                         <span class="font-mono">Rp {{ number_format($orderPpnAmount, 0, ',', '.') }}</span>
                                     </div>

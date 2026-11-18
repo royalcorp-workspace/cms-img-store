@@ -251,17 +251,19 @@ class Variant extends Model
     }
 
     /**
-     * Tarif PPN yang berlaku (default 11.00%)
+     * Tarif PPN yang berlaku secara dinamis
      */
     public function getPpnRateAttribute($value): float
     {
-        if (!$this->is_ppn_active) {
+        if (isset($this->attributes['is_ppn_active']) && !$this->attributes['is_ppn_active']) {
             return 0.0;
         }
 
-        return !empty($value) && (float) $value > 0
-            ? (float) $value
-            : (float) config('services.tax.ppn_rate', config('app.ppn_rate', env('PPN_RATE', 11.0)));
+        if ($value !== null && $value !== '') {
+            return (float) $value;
+        }
+
+        return (float) config('services.tax.ppn_rate', config('app.ppn_rate', env('PPN_RATE', 11.0)));
     }
 
     /**

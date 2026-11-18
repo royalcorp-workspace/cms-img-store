@@ -837,8 +837,13 @@
                         <div class="space-y-1">
                             <div class="flex items-center gap-2.5 flex-wrap">
                                 <h3 class="text-sm font-bold text-on-surface">Pengaturan PPN (Pajak Pertambahan Nilai)</h3>
-                                <span id="ppnStatusBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                    {{ old('is_ppn_active', $product->is_ppn_active ?? true) ? 'PPN ' . (int)old('ppn_rate', $product->ppn_rate ?? 11) . '% Aktif' : 'Bebas PPN / Nonaktif' }}
+                                @php
+                                    $currIsActive = (bool) old('is_ppn_active', $product->is_ppn_active ?? true);
+                                    $currRate = (float) old('ppn_rate', $product->ppn_rate ?? 11);
+                                    $currRateLabel = (int)$currRate == $currRate ? (int)$currRate : $currRate;
+                                @endphp
+                                <span id="ppnStatusBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider {{ $currIsActive && $currRate > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-700 border border-gray-300' }}">
+                                    {{ $currIsActive && $currRate > 0 ? 'PPN ' . $currRateLabel . '% Aktif' : ($currIsActive ? 'Bebas PPN (0%)' : 'Bebas PPN / Nonaktif') }}
                                 </span>
                             </div>
                             <p class="text-xs text-on-surface-variant max-w-2xl leading-relaxed">
@@ -864,11 +869,11 @@
 
                         <div class="h-8 w-px bg-outline-variant/40"></div>
 
-                        <!-- Adjustable Rate Input (Default 11%) -->
+                        <!-- Adjustable Rate Input (Dynamic Rate) -->
                         <div class="flex items-center gap-2" id="ppnRateInputContainer">
                             <div>
-                                <label for="productPpnRate" class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block">Tarif Pajak:</label>
-                                <span class="text-[9px] text-emerald-700 font-semibold block">Default 11%</span>
+                                <label for="productPpnRate" class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block">Tarif Pajak (%):</label>
+                                <span class="text-[9px] text-emerald-700 font-semibold block" id="ppnRateHint">Tarif Pajak Berjalan</span>
                             </div>
                             <div class="relative w-20">
                                 <input type="number" step="0.1" min="0" max="100" name="ppn_rate" id="productPpnRate" value="{{ old('ppn_rate', $product->ppn_rate ?? 11) }}" class="w-full pl-2 pr-6 py-1.5 border border-outline-variant rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50/40 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none text-right font-mono" oninput="onPpnSettingChanged()" {{ old('is_ppn_active', $product->is_ppn_active ?? true) ? '' : 'disabled' }}>
@@ -2240,7 +2245,7 @@ function renderVariantsTable() {
                             <th class="px-3 py-2 min-w-[210px]">SKU</th>
                             <th class="px-3 py-2 min-w-[180px]">Nama Kombinasi</th>
                             <th class="px-3 py-2 min-w-[120px]">Harga Modal (Rp)</th>
-                            <th class="px-3 py-2 min-w-[130px]">Harga Jual (Rp) <span class="text-danger">*</span><span class="block text-[9px] text-emerald-700 font-normal lowercase">(+ PPN 11%)</span></th>
+                            ${getPpnHeaderLabelHtml()}
                             <th class="px-1.5 py-2 min-w-[65px] text-center">P (cm)</th>
                             <th class="px-1.5 py-2 min-w-[65px] text-center">L (cm)</th>
                             <th class="px-1.5 py-2 min-w-[65px] text-center">T (cm)</th>
@@ -2345,9 +2350,18 @@ function getActivePpnConfig() {
     const isPpnActiveEl = document.getElementById('isPpnActiveToggle');
     const isPpnActive = isPpnActiveEl ? isPpnActiveEl.checked : true;
     const rateEl = document.getElementById('productPpnRate');
-    let rate = rateEl ? parseFloat(rateEl.value) : 11;
+    let rate = rateEl && rateEl.value !== '' ? parseFloat(rateEl.value) : 11;
     if (isNaN(rate) || rate < 0) rate = 0;
     return { isPpnActive, rate };
+}
+
+function getPpnHeaderLabelHtml() {
+    const { isPpnActive, rate } = getActivePpnConfig();
+    const rateLabel = Number.isInteger(rate) ? rate : rate.toFixed(1);
+    if (!isPpnActive || rate <= 0) {
+        return '<th class="px-3 py-2 min-w-[130px] ppn-sell-price-col">Harga Jual (Rp) <span class="text-danger">*</span><span class="block text-[9px] text-gray-500 font-normal lowercase">(Bebas PPN)</span></th>';
+    }
+    return `<th class="px-3 py-2 min-w-[130px] ppn-sell-price-col">Harga Jual (Rp) <span class="text-danger">*</span><span class="block text-[9px] text-emerald-700 font-normal lowercase">(+ PPN ${rateLabel}%)</span></th>`;
 }
 
 function getPpnRowSubtitleHtml(sellPrice) {
@@ -2358,7 +2372,8 @@ function getPpnRowSubtitleHtml(sellPrice) {
     }
     const dpp = Math.round(val / (1 + (rate / 100)));
     const ppn = Math.round(val - dpp);
-    return `Sebelum PPN: Rp ${dpp.toLocaleString('id-ID')} <span class="text-emerald-700 font-semibold" title="Nominal PPN ${rate}%">(PPN: Rp ${ppn.toLocaleString('id-ID')})</span>`;
+    const rateLabel = Number.isInteger(rate) ? rate : rate.toFixed(1);
+    return `Sebelum PPN: Rp ${dpp.toLocaleString('id-ID')} <span class="text-emerald-700 font-semibold" title="Nominal PPN ${rateLabel}%">(PPN: Rp ${ppn.toLocaleString('id-ID')})</span>`;
 }
 
 function updateRowPpnDisplay(input, idx) {
@@ -2374,6 +2389,7 @@ function updateRowPpnDisplay(input, idx) {
 
 function onPpnSettingChanged() {
     const { isPpnActive, rate } = getActivePpnConfig();
+    const rateLabel = Number.isInteger(rate) ? rate : rate.toFixed(1);
     const badgeEl = document.getElementById('ppnStatusBadge');
     const labelEl = document.getElementById('ppnToggleLabel');
     const subLabelEl = document.getElementById('ppnToggleSub');
@@ -2381,27 +2397,42 @@ function onPpnSettingChanged() {
     const rateInput = document.getElementById('productPpnRate');
     const batchLabelEl = document.getElementById('batchPpnLabel');
 
-    if (isPpnActive) {
+    if (isPpnActive && rate > 0) {
         if (badgeEl) {
             badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300';
-            badgeEl.textContent = `PPN ${rate}% Aktif`;
+            badgeEl.textContent = `PPN ${rateLabel}% Aktif`;
         }
         if (labelEl) labelEl.textContent = 'Kenakan PPN';
-        if (subLabelEl) subLabelEl.textContent = 'Harga sudah + Pajak';
+        if (subLabelEl) subLabelEl.textContent = `Harga sudah + Pajak (${rateLabel}%)`;
         if (rateInput) rateInput.disabled = false;
         if (rateContainer) rateContainer.classList.remove('opacity-40', 'pointer-events-none');
-        if (batchLabelEl) batchLabelEl.innerHTML = `(+ PPN ${rate}%)`;
+        if (batchLabelEl) batchLabelEl.innerHTML = `(+ PPN ${rateLabel}%)`;
     } else {
         if (badgeEl) {
             badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gray-100 text-gray-700 border border-gray-300';
-            badgeEl.textContent = 'Bebas PPN / Nonaktif';
+            badgeEl.textContent = isPpnActive ? 'Bebas PPN (0%)' : 'Bebas PPN / Nonaktif';
         }
-        if (labelEl) labelEl.textContent = 'Bebas PPN';
+        if (labelEl) labelEl.textContent = isPpnActive ? 'Tarif PPN 0%' : 'Bebas PPN';
         if (subLabelEl) subLabelEl.textContent = 'Tanpa PPN (0%)';
-        if (rateInput) rateInput.disabled = true;
-        if (rateContainer) rateContainer.classList.add('opacity-40', 'pointer-events-none');
+        if (rateInput) rateInput.disabled = !isPpnActive;
+        if (rateContainer) {
+            if (isPpnActive) {
+                rateContainer.classList.remove('opacity-40', 'pointer-events-none');
+            } else {
+                rateContainer.classList.add('opacity-40', 'pointer-events-none');
+            }
+        }
         if (batchLabelEl) batchLabelEl.innerHTML = `(Bebas PPN)`;
     }
+
+    // Update all table headers for sell price
+    document.querySelectorAll('.ppn-sell-price-col').forEach(th => {
+        if (!isPpnActive || rate <= 0) {
+            th.innerHTML = 'Harga Jual (Rp) <span class="text-danger">*</span><span class="block text-[9px] text-gray-500 font-normal lowercase">(Bebas PPN)</span>';
+        } else {
+            th.innerHTML = `Harga Jual (Rp) <span class="text-danger">*</span><span class="block text-[9px] text-emerald-700 font-normal lowercase">(+ PPN ${rateLabel}%)</span>`;
+        }
+    });
 
     // Refresh all rendered variant rows
     document.querySelectorAll('[id^="row_ppn_info_"]').forEach(el => {
