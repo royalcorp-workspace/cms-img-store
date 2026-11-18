@@ -192,19 +192,6 @@
                         </div>
                     @endif
                 </div>
-
-                @php
-                    $customerOrderNote = $order->notes ?: ($order->meta['notes'] ?? ($order->meta['customer_notes'] ?? null));
-                @endphp
-                @if($customerOrderNote)
-                    <div class="p-2.5 bg-amber-50/70 border border-amber-200/80 rounded-lg text-xs text-amber-950">
-                        <span class="text-[10px] font-bold uppercase flex items-center gap-1 text-amber-800">
-                            <span class="material-symbols-outlined text-[13px] text-amber-600">sticky_note_2</span>
-                            Catatan Pembeli / Pesanan:
-                        </span>
-                        <p class="mt-0.5 italic leading-relaxed font-medium">"{{ $customerOrderNote }}"</p>
-                    </div>
-                @endif
             </div>
 
             <!-- Card: Pelanggan & Tujuan Pengiriman -->
@@ -283,6 +270,9 @@
                             </p>
                         </div>
 
+                        @php
+                            $customerOrderNote = $order->notes ?: ($order->meta['notes'] ?? ($order->meta['customer_notes'] ?? null));
+                        @endphp
                         @if($customerOrderNote)
                             <div class="pt-1.5">
                                 <span class="text-[10px] text-on-surface-variant font-semibold block mb-0.5 flex items-center gap-1">
