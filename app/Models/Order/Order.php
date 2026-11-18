@@ -1331,13 +1331,33 @@ class Order extends Model
     }
 
     /**
-     * Dapatkan tarif PPN order (default 11.00%)
+     * Dapatkan status aktif PPN order
+     */
+    public function getIsPpnActiveAttribute(): bool
+    {
+        if (isset($this->attributes['is_ppn_active'])) {
+            return (bool) $this->attributes['is_ppn_active'];
+        }
+        if (isset($this->meta['is_ppn_active'])) {
+            return (bool) $this->meta['is_ppn_active'];
+        }
+        return (float) ($this->attributes['ppn_rate'] ?? 0) > 0;
+    }
+
+    /**
+     * Dapatkan tarif PPN order secara dinamis (0, 11, 12, 13, dll)
      */
     public function getPpnRateAttribute($value): float
     {
-        return !empty($value) && (float) $value > 0
-            ? (float) $value
-            : (float) config('services.tax.ppn_rate', config('app.ppn_rate', env('PPN_RATE', 11.0)));
+        if (isset($this->attributes['is_ppn_active']) && !$this->attributes['is_ppn_active']) {
+            return 0.0;
+        }
+
+        if ($value !== null && $value !== '') {
+            return (float) $value;
+        }
+
+        return (float) config('services.tax.ppn_rate', config('app.ppn_rate', env('PPN_RATE', 11.0)));
     }
 
     /**
@@ -1383,6 +1403,11 @@ class Order extends Model
     {
         $netSubtotal = $this->getNetProductSubtotal();
         if ($netSubtotal <= 0) {
+            return 0.0;
+        }
+
+        $rate = (float) $this->ppn_rate;
+        if ($rate <= 0) {
             return 0.0;
         }
 

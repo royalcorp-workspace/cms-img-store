@@ -611,7 +611,10 @@ class ProductController extends Controller
             $validated['show_on_web'] = $request->has('show_on_web') ? (bool)$request->input('show_on_web') : true;
 
             $isPpnActive = $request->has('is_ppn_active') ? filter_var($request->input('is_ppn_active'), FILTER_VALIDATE_BOOLEAN) : true;
-            $ppnRate = $isPpnActive ? (float)$request->input('ppn_rate', 11.0) : 0.0;
+            $rawRate = $request->input('ppn_rate');
+            $ppnRate = $isPpnActive 
+                ? ($rawRate !== null && $rawRate !== '' ? (float) $rawRate : (float) config('services.tax.ppn_rate', 11.0))
+                : 0.0;
             $validated['is_ppn_active'] = $isPpnActive;
             $validated['ppn_rate'] = $ppnRate;
 
@@ -888,7 +891,10 @@ class ProductController extends Controller
             $validated['show_on_web'] = $request->has('show_on_web') ? (bool)$request->input('show_on_web') : ($product->show_on_web ?? true);
 
             $isPpnActive = $request->has('is_ppn_active') ? filter_var($request->input('is_ppn_active'), FILTER_VALIDATE_BOOLEAN) : ($product->is_ppn_active ?? true);
-            $ppnRate = $isPpnActive ? (float)$request->input('ppn_rate', 11.0) : 0.0;
+            $rawRate = $request->input('ppn_rate');
+            $ppnRate = $isPpnActive 
+                ? ($rawRate !== null && $rawRate !== '' ? (float) $rawRate : (float) ($product->ppn_rate ?? config('services.tax.ppn_rate', 11.0)))
+                : 0.0;
             $validated['is_ppn_active'] = $isPpnActive;
             $validated['ppn_rate'] = $ppnRate;
 

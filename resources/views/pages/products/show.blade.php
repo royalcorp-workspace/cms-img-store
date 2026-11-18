@@ -187,7 +187,7 @@
                     <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Pajak Pertambahan Nilai (PPN)</span>
                     <p class="text-sm font-semibold flex items-center gap-1.5 {{ $product->is_ppn_active ? 'text-emerald-700' : 'text-on-surface-variant' }}">
                         <span class="material-symbols-outlined text-[16px] {{ $product->is_ppn_active ? 'text-emerald-600' : 'text-gray-400' }}">receipt_long</span>
-                        {{ $product->is_ppn_active ? 'PPN ' . (int)$product->ppn_rate . '% (Termasuk Pajak)' : 'Bebas PPN / Nonaktif' }}
+                        {{ $product->is_ppn_active && (float)$product->ppn_rate > 0 ? 'PPN ' . ((int)$product->ppn_rate == (float)$product->ppn_rate ? (int)$product->ppn_rate : number_format($product->ppn_rate, 1)) . '% (Termasuk Pajak)' : 'Bebas PPN / Nonaktif' }}
                     </p>
                 </div>
 
