@@ -142,6 +142,12 @@ class JdeService
         $orderLines = [];
         foreach ($order->items as $item) {
             $secondItemNumber = method_exists($item, 'getJdeItemNumber') ? $item->getJdeItemNumber() : ($item->sku ?? '');
+            $secondItemNumber = trim((string) $secondItemNumber);
+
+            // Validasi: seluruh item wajib memiliki SKU JDE valid agar tidak masuk sebagian
+            if (empty($secondItemNumber)) {
+                throw new \InvalidArgumentException("JDE_VALIDATION_ERROR: Empty SKU for item '{$item->name}' (Order #{$order->order_number})");
+            }
             
             // Harga satuan setelah diskon (Net Price after discount)
             $unitPriceAfterDisc = method_exists($item, 'getPriceAfterDiscount')
@@ -200,7 +206,33 @@ class JdeService
         $order->jde_push_status = Order::JDE_STATUS_PROCESSING;
         $order->saveQuietly();
 
-        $payload = $this->buildPayload($order);
+        $meta = $order->meta ?? [];
+        $retryCount = (int) ($meta['jde_push_retry_count'] ?? 0);
+
+        try {
+            $payload = $this->buildPayload($order);
+        } catch (\Throwable $e) {
+            $order->jde_push_status = Order::JDE_STATUS_FAILED;
+            $meta['jde_push_error'] = $e->getMessage();
+            $meta['jde_push_failed_at'] = now()->toDateTimeString();
+            $order->meta = $meta;
+            $order->saveQuietly();
+
+            $this->logJde('warning', 'Push Order Validation Aborted', [
+                'order_number' => $order->order_number,
+                'order_id' => $order->id,
+                'reason' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'error' => $e->getMessage(),
+                'jde_push_status' => Order::JDE_STATUS_FAILED,
+                'jde_push_status_label' => $order->jdePushStatusLabel(),
+            ];
+        }
+
         $jsonPayload = json_encode($payload, JSON_UNESCAPED_SLASHES);
 
         // Masking password untuk logging & meta
@@ -216,8 +248,6 @@ class JdeService
         }
 
         $timeout = (int) config('services.jde.timeout', 30);
-        $meta = $order->meta ?? [];
-        $retryCount = (int) ($meta['jde_push_retry_count'] ?? 0);
 
         if (empty($endpoint)) {
             $order->jde_push_status = Order::JDE_STATUS_FAILED;
@@ -272,8 +302,27 @@ class JdeService
                 $responseData = $response->json();
                 $isOk = $response->successful();
 
-                if ($isOk && is_array($responseData) && isset($responseData['hasErrors']) && $responseData['hasErrors'] === true) {
-                    $isOk = false;
+                $partialError = null;
+                if ($isOk && is_array($responseData)) {
+                    if (isset($responseData['hasErrors']) && $responseData['hasErrors'] === true) {
+                        $isOk = false;
+                    }
+
+                    // Validasi: seluruh step / item wajib sukses dan affectedRows > 0 agar tidak masuk sebagian
+                    foreach ($responseData as $stepKey => $stepVal) {
+                        if (is_array($stepVal)) {
+                            if (isset($stepVal['status']) && (str_starts_with((string) $stepVal['status'], 'FAILED') || str_starts_with((string) $stepVal['status'], 'SKIPPED'))) {
+                                $isOk = false;
+                                $partialError = "JDE_CONNECTOR_ERROR [{$stepKey}]: " . $stepVal['status'];
+                                break;
+                            }
+                            if (isset($stepVal['affectedRows']) && (int) $stepVal['affectedRows'] === 0) {
+                                $isOk = false;
+                                $partialError = "JDE_PARTIAL_ERROR [{$stepKey}]: Item record not found in F4211 (affectedRows: 0)";
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -308,7 +357,7 @@ class JdeService
                 ];
             }
 
-            $cleanErrorMessage = $this->extractErrorMessage(
+            $cleanErrorMessage = $partialError ?? $this->extractErrorMessage(
                 $responseData,
                 isset($response) ? $response->body() : null,
                 isset($response) ? $response->status() : 500
