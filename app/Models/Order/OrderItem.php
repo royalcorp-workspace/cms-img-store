@@ -86,8 +86,7 @@ class OrderItem extends Model
     {
         $raw = $this->variant?->sku
             ?? ($this->meta['sku'] ?? null)
-            ?? $this->product?->code
-            ?? $this->name;
+            ?? $this->product?->code;
 
         $clean = trim((string) $raw);
         if (str_contains($clean, '-')) {

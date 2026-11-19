@@ -1130,12 +1130,20 @@ class Order extends Model
             return false;
         }
 
-        // 4. Harus memiliki item produk
-        if ($this->relationLoaded('items')) {
-            return $this->items->isNotEmpty();
+        // 4. Harus memiliki item produk dan semua item wajib memiliki SKU JDE valid
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+        if ($items->isEmpty()) {
+            return false;
         }
 
-        return $this->items()->exists();
+        foreach ($items as $item) {
+            $sku = method_exists($item, 'getJdeItemNumber') ? $item->getJdeItemNumber() : ($item->sku ?? null);
+            if (empty(trim((string) $sku))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function deliveryLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
