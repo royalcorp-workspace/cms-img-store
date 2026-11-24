@@ -320,6 +320,27 @@ class Order extends Model
                 \Illuminate\Support\Facades\Log::warning('Failed logging order update / dispatching JDE job: ' . $e->getMessage());
             }
         });
+
+        static::saved(function ($model) {
+            try {
+                // 1. Saat customer bayar / order masuk status Processing (3) atau lebih:
+                $isPaidOrProcessing = ((int)$model->payment_status === self::PAYMENT_PAID || (int)$model->status >= self::STATUS_PROCESSING)
+                    && (int)$model->status !== self::STATUS_CANCELLED
+                    && (int)$model->status !== self::STATUS_DRAFT;
+
+                if ($isPaidOrProcessing) {
+                    $model->ensureCreditMemoRecorded();
+                }
+
+                // 2. Saat pesanan dikirimkan (Shipped / 4) atau diterima (Delivered / 5):
+                $isShippedOrDelivered = in_array((int)$model->status, [self::STATUS_SHIPPED, self::STATUS_DELIVERED], true);
+                if ($isShippedOrDelivered) {
+                    $model->ensurePaymentRecorded();
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Failed ensuring CreditMemo / Payment for Order #{$model->order_number}: " . $e->getMessage());
+            }
+        });
     }
 
     public function logs(): HasMany
@@ -345,6 +366,21 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class, 'order_id', 'id');
+    }
+
+    public function creditMemo(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\CreditMemo::class, 'order_id', 'id')->latest('created_at');
+    }
+
+    public function creditMemos(): HasMany
+    {
+        return $this->hasMany(\App\Models\CreditMemo::class, 'order_id', 'id');
+    }
+
+    public function payment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Payment::class, 'order_id', 'id')->latest('created_at');
     }
 
     public function payments(): HasMany
@@ -1144,6 +1180,72 @@ class Order extends Model
         }
 
         return true;
+    }
+
+    /**
+     * Catat pembayaran pelanggan ke tabel sales.credit_memos saat status pesanan Paid / Processing.
+     */
+    public function ensureCreditMemoRecorded(array $overrides = []): ?\App\Models\CreditMemo
+    {
+        $existing = \App\Models\CreditMemo::where('order_id', $this->id)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        $gateway = $overrides['gateway'] ?? null;
+        if (!$gateway) {
+            if ($this->relationLoaded('paymentMethod') && $this->paymentMethod) {
+                $gateway = $this->paymentMethod->code ?? $this->paymentMethod->name;
+            } elseif ($this->payment_method) {
+                $pm = \App\Models\PaymentMethod::find($this->payment_method);
+                $gateway = $pm?->code ?? ($pm?->name ?? 'manual');
+            }
+            $gateway = $gateway ?: ($this->meta['gateway'] ?? ($this->meta['payment_gateway'] ?? 'manual_transfer'));
+        }
+
+        $trxId = $overrides['transaction_id'] ?? ($this->meta['trx_id'] ?? ($this->meta['reference'] ?? ($this->meta['espay_reference'] ?? (string) \Illuminate\Support\Str::uuid())));
+        $payload = $overrides['payload'] ?? ($this->meta ?? []);
+        $amount = isset($overrides['amount']) ? (float) $overrides['amount'] : (float) ($this->total ?? 0);
+
+        return \App\Models\CreditMemo::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'credit_memo_number' => \App\Models\CreditMemo::generateNumber(),
+            'order_id' => $this->id,
+            'gateway' => (string) $gateway,
+            'transaction_id' => (string) $trxId,
+            'amount' => $amount,
+            'status' => 'paid',
+            'payload' => $payload,
+            'paid_at' => now(),
+        ]);
+    }
+
+    /**
+     * Pindahkan / catat pembayaran resmi ke sales.payments saat pesanan Dikirim (Shipped) atau Diterima (Delivered).
+     */
+    public function ensurePaymentRecorded(array $overrides = []): ?\App\Models\Payment
+    {
+        $existing = Payment::where('order_id', $this->id)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        $creditMemo = \App\Models\CreditMemo::where('order_id', $this->id)->first();
+        if (!$creditMemo) {
+            $creditMemo = $this->ensureCreditMemoRecorded($overrides);
+        }
+
+        return Payment::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'payment_number' => Payment::generateNumber(),
+            'order_id' => $this->id,
+            'gateway' => $overrides['gateway'] ?? ($creditMemo->gateway ?? 'manual'),
+            'transaction_id' => $overrides['transaction_id'] ?? ($creditMemo->transaction_id ?? (string) \Illuminate\Support\Str::uuid()),
+            'amount' => isset($overrides['amount']) ? (float) $overrides['amount'] : (float) ($creditMemo->amount ?? $this->total),
+            'status' => 'settlement',
+            'payload' => $overrides['payload'] ?? ($creditMemo->payload ?? ($this->meta ?? [])),
+            'paid_at' => $creditMemo->paid_at ?: now(),
+        ]);
     }
 
     public function deliveryLogs(): \Illuminate\Database\Eloquent\Relations\HasMany

@@ -100,20 +100,7 @@ class PackingOutController extends Controller
             }
 
             // 3. Move Credit Memo to Payment
-            $creditMemo = \App\Models\CreditMemo::where('order_id', $order->id)->first();
-            if ($creditMemo) {
-                \App\Models\Payment::create([
-                    'id' => \Illuminate\Support\Str::uuid()->toString(),
-                    'payment_number' => 'PAY-' . $order->order_number . '-' . rand(100, 999),
-                    'order_id' => $creditMemo->order_id,
-                    'gateway' => $creditMemo->gateway,
-                    'transaction_id' => $creditMemo->transaction_id,
-                    'amount' => $creditMemo->amount,
-                    'status' => $creditMemo->status,
-                    'payload' => $creditMemo->payload,
-                    'paid_at' => $creditMemo->paid_at,
-                ]);
-            }
+            $order->ensurePaymentRecorded();
         }
 
         return redirect()->route('packing-out.show', $packingOut->id)->with('success', 'Packing out created');

@@ -54,7 +54,15 @@
                 @forelse($settlements as $item)
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ $item->settlement_date ? $item->settlement_date->format('d M Y H:i') : '-' }}
+                        @if($item->settlement_date)
+                            <div class="font-medium text-gray-900">{{ $item->settlement_date->format('d M Y H:i') }}</div>
+                            <div class="text-[11px] text-emerald-600 font-medium">Tgl Settlement</div>
+                        @elseif($item->created_at)
+                            <div class="font-medium text-gray-900">{{ $item->created_at->format('d M Y H:i') }}</div>
+                            <div class="text-[11px] text-amber-600 font-medium">Tgl Transaksi</div>
+                        @else
+                            <span class="text-gray-400">-</span>
+                        @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {{ $item->reference_id }}
