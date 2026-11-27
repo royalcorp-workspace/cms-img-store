@@ -729,15 +729,18 @@ class ProductController extends Controller
 
             \Log::channel('product')->info("Product created successfully: " . $product->id);
 
+            $successMsg = 'Produk berhasil ditambahkan.';
+            session()->flash('success', $successMsg);
+
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Produk berhasil ditambahkan.',
+                    'message' => $successMsg,
                     'redirect_url' => route('products.show', $product->id),
                 ]);
             }
 
-            return redirect()->route('products.show', $product->id)->with('success', 'Produk berhasil ditambahkan.');
+            return redirect()->route('products.show', $product->id)->with('success', $successMsg);
         } catch (\Exception $e) {
             \Log::channel('product')->error("Create Product Error: " . $e->getMessage());
 
@@ -1134,15 +1137,18 @@ class ProductController extends Controller
 
             \Log::channel('product')->info("Product updated successfully: " . $product->id);
 
+            $successMsg = 'Produk berhasil diperbarui.';
+            session()->flash('success', $successMsg);
+
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Produk berhasil diperbarui.',
+                    'message' => $successMsg,
                     'redirect_url' => route('products.show', $product->id),
                 ]);
             }
 
-            return redirect()->route('products.show', $product->id)->with('success', 'Produk berhasil diperbarui.');
+            return redirect()->route('products.show', $product->id)->with('success', $successMsg);
         } catch (\Exception $e) {
             \Log::channel('product')->error("Update Product Error: " . $e->getMessage());
 
