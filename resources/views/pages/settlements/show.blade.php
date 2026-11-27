@@ -22,18 +22,27 @@
 
     @include('layouts.partials.sales-submenu')
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div class="bg-white rounded-lg shadow p-6 border-t-4 border-gray-400">
-            <p class="text-sm font-medium text-gray-500 mb-1">Gross Amount</p>
-            <p class="text-2xl font-bold text-gray-900">Rp {{ number_format($settlement->gross_amount, 0, ',', '.') }}</p>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-5 border-t-4 border-gray-400">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Tanggal</p>
+            <p class="text-base font-bold text-gray-900">
+                {{ ($settlement->settlement_date ?? $settlement->created_at)?->format('d M Y H:i') ?? '-' }}
+            </p>
+            <p class="text-xs text-gray-500 mt-1">
+                {{ $settlement->settlement_date ? 'Tgl Settlement' : 'Tgl Transaksi (Pending)' }}
+            </p>
         </div>
-        <div class="bg-white rounded-lg shadow p-6 border-t-4 border-red-500">
-            <p class="text-sm font-medium text-gray-500 mb-1">Espay Fee (MDR)</p>
-            <p class="text-2xl font-bold text-red-600">- Rp {{ number_format($settlement->fee_amount, 0, ',', '.') }}</p>
+        <div class="bg-white rounded-lg shadow p-5 border-t-4 border-primary">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Gross Amount</p>
+            <p class="text-xl font-bold text-gray-900">Rp {{ number_format($settlement->gross_amount, 0, ',', '.') }}</p>
         </div>
-        <div class="bg-white rounded-lg shadow p-6 border-t-4 border-green-500">
-            <p class="text-sm font-medium text-gray-500 mb-1">Net Amount Received</p>
-            <p class="text-2xl font-bold text-green-600">Rp {{ number_format($settlement->net_amount, 0, ',', '.') }}</p>
+        <div class="bg-white rounded-lg shadow p-5 border-t-4 border-red-500">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Espay Fee (MDR)</p>
+            <p class="text-xl font-bold text-red-600">- Rp {{ number_format($settlement->fee_amount, 0, ',', '.') }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-5 border-t-4 border-green-500">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Net Amount Received</p>
+            <p class="text-xl font-bold text-green-600">Rp {{ number_format($settlement->net_amount, 0, ',', '.') }}</p>
         </div>
     </div>
 
@@ -67,7 +76,7 @@
                         {{ $order->payment_method_name ?? ($order->payment_method ?? 'Espay') }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
-                        Rp {{ number_format($order->grand_total ?? $order->total_amount, 0, ',', '.') }}
+                        Rp {{ number_format((float)($order->total ?? ($order->grand_total ?? 0)), 0, ',', '.') }}
                     </td>
                 </tr>
                 @empty

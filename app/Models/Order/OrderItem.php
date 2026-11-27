@@ -266,13 +266,43 @@ class OrderItem extends Model
     }
 
     /**
+     * Dapatkan total nilai barang item ini (setelah diskon promo/D1, sebelum voucher).
+     * Nilai ini menjadi dasar DPP pembentukan Faktur Penjualan (RX) di JDE.
+     */
+    public function getSubtotalBeforeVoucher(): float
+    {
+        $qty = max(1, (int) $this->quantity);
+        $myBase = (float) ($this->unit_price ?? 0) * $qty;
+        $myPromoDisc = (float) ($this->discount_nominal ?? 0);
+
+        if (!empty($this->total) && (float) $this->total > 0) {
+            return (float) $this->total;
+        }
+
+        return max(0.0, $myBase - $myPromoDisc);
+    }
+
+    /**
      * Dapatkan harga satuan setelah seluruh diskon TANPA PAJAK (DPP untuk push ke JDE).
+     * Parameter $excludeVoucher = true (default) memastikan harga produk yang dikirim ke JDE
+     * murni harga barang untuk faktur RX (sebelum voucher), sehingga tidak terjadi double deduction
+     * saat JDE menerbitkan Credit Memo RM untuk voucher promo.
      * Mengikuti formula Excel "Cara Hitung PPN Website.xlsx": DPP = Sub Total / 1.11
      */
-    public function getPriceWithoutTax(?float $ppnRate = null): float
+    public function getPriceWithoutTax(?float $ppnRate = null, bool $excludeVoucher = true): float
     {
         $rate = $ppnRate ?? $this->ppn_rate;
         $qty = max(1, (int) $this->quantity);
+
+        if ($excludeVoucher) {
+            $subtotal = $this->getSubtotalBeforeVoucher();
+            if ($rate <= 0) {
+                return round($subtotal / $qty, 2);
+            }
+            $dppTotal = round($subtotal / (1 + ($rate / 100)), 2);
+            return round($dppTotal / $qty, 2);
+        }
+
         $dppTotal = $this->getDppTotal($rate);
         return round($dppTotal / $qty, 2);
     }

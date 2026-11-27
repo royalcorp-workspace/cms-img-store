@@ -20,7 +20,7 @@ class SettlementController extends Controller
             $query->where('status', $status);
         }
 
-        $settlements = $query->orderBy('settlement_date', 'desc')->paginate(15)->appends($request->query());
+        $settlements = $query->orderByRaw('COALESCE(settlement_date, created_at) DESC')->paginate(15)->appends($request->query());
 
         return view('pages.settlements.index', compact('settlements'));
     }

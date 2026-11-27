@@ -110,9 +110,9 @@ class JdeService
             }
         }
 
-        // 5. Default fallback dari environment / konfigurasi
-        $businessUnit = (string) ($businessUnit ?: config('services.jde.business_unit', env('JDE_BUSINESS_UNIT', '18011')));
-        $addressNumber = (int) ($addressNumber ?: config('services.jde.address_number', env('JDE_ADDRESS_NUMBER', 100228)));
+        // 5. Default fallback murni dari environment (.env)
+        $businessUnit = (string) ($businessUnit ?: config('services.jde.business_unit', env('JDE_BUSINESS_UNIT', '')));
+        $addressNumber = (int) ($addressNumber ?: config('services.jde.address_number', env('JDE_ADDRESS_NUMBER', 0)));
 
         // Persist ke order jika ada perubahan
         if ($order->business_unit !== $businessUnit || (int) $order->address_number !== $addressNumber) {
@@ -154,10 +154,11 @@ class JdeService
                 ? $item->getPriceAfterDiscount()
                 : (float) ($item->total && $item->quantity ? ($item->total / max(1, $item->quantity)) : ($item->unit_price ?? 0));
 
-            // JDE membutuhkan harga TANPA PAJAK (DPP / Exclude PPN)
+            // JDE membutuhkan harga TANPA PAJAK (DPP / Exclude PPN) SEBELUM VOUCHER untuk Faktur RX
+            // Parameter $excludeVoucher = true memastikan tidak ada double-potongan saat JDE menerbitkan Credit Memo RM untuk voucher
             $ppnRate = (float) ($item->ppn_rate ?? ($order->ppn_rate ?? config('services.tax.ppn_rate', 11.0)));
             $hargaTanpaPajak = method_exists($item, 'getPriceWithoutTax')
-                ? $item->getPriceWithoutTax($ppnRate)
+                ? $item->getPriceWithoutTax($ppnRate, true)
                 : round($unitPriceAfterDisc / (1 + ($ppnRate / 100)), 2);
 
             $harga = ($hargaTanpaPajak == (int) $hargaTanpaPajak) ? (int) $hargaTanpaPajak : round($hargaTanpaPajak, 2);
@@ -168,6 +169,17 @@ class JdeService
                 'harga' => $harga,
             ];
         }
+
+        // Rincian Voucher Promo untuk pembentukan Credit Memo RM di JDE
+        $voucherNominal = (float) ($order->product_voucher_discount ?? ($order->voucher_nominal ?? 0));
+        $ppnRateOrder = (float) ($order->ppn_rate ?? config('services.tax.ppn_rate', 11.0));
+        $voucherDpp = 0.0;
+        $voucherPpn = 0.0;
+        if ($voucherNominal > 0) {
+            $voucherDpp = round($voucherNominal / (1 + ($ppnRateOrder / 100)), 2);
+            $voucherPpn = round($voucherNominal - $voucherDpp, 2);
+        }
+        $voucherCode = $order->voucher?->code ?? ($order->meta['voucher_code'] ?? null);
 
         $username = config('services.jde.username', env('JDE_USERNAME', 'UDO'));
         $password = config('services.jde.password', env('JDE_PASSWORD', 'udoroyal'));
@@ -182,6 +194,10 @@ class JdeService
             'business_unit' => $businessUnit,
             'address_number' => $addressNumber,
             'keterangan' => $keterangan,
+            'voucher_nominal' => $voucherNominal,
+            'voucher_dpp' => $voucherDpp,
+            'voucher_ppn' => $voucherPpn,
+            'voucher_code' => $voucherCode,
             'orderLines' => $orderLines,
         ];
     }

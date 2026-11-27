@@ -214,6 +214,8 @@ class OrderController extends Controller
             'handover.courier',
             'invoice',
             'paymentMethod',
+            'payment',
+            'creditMemo',
             'voucher',
             'logs' => function ($q) {
                 $q->orderBy('created_at', 'desc');
@@ -242,17 +244,23 @@ class OrderController extends Controller
         ]);
 
         $meta = $order->meta ?? [];
-        $meta['reconciliation_notes'] = $validated['reconciliation_notes'];
+        if (!empty($validated['reconciliation_notes'])) {
+            $meta['reconciliation_notes'] = $validated['reconciliation_notes'];
+        }
         $meta['reconciled_at'] = now()->toDateTimeString();
-        $meta['reconciled_by'] = auth()->user()->name ?? 'admin';
+        $meta['reconciled_by'] = auth()->user()?->name ?? 'admin';
 
         $oldStatus = (int)$order->status;
         $order->update([
             'payment_status' => $validated['payment_status'],
             'status' => $validated['status'],
             'meta' => $meta,
-            'editor' => auth()->user()->name ?? 'admin',
+            'editor' => auth()->user()?->name ?? 'admin',
         ]);
+
+        if ((int)$validated['payment_status'] === Order::PAYMENT_PAID || (int)$validated['status'] >= Order::STATUS_PROCESSING) {
+            $order->ensureCreditMemoRecorded();
+        }
 
         if ((int)$validated['status'] === Order::STATUS_CANCELLED && $oldStatus !== Order::STATUS_CANCELLED) {
             foreach ($order->items as $item) {
@@ -326,6 +334,10 @@ class OrderController extends Controller
         }
 
         $order->update($updateData);
+
+        if (in_array($newStatus, [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED], true)) {
+            $order->ensurePaymentRecorded();
+        }
 
         // Inventory movements
         if ($newStatus === Order::STATUS_CANCELLED && $oldStatus !== Order::STATUS_CANCELLED) {
@@ -459,6 +471,10 @@ class OrderController extends Controller
 
         $oldStatus = (int) $order->status;
         $order->update($updateData);
+
+        if (in_array($newStatus, [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED], true)) {
+            $order->ensurePaymentRecorded();
+        }
 
         // Inventory movements
         if ($targetStatus === Order::STATUS_SHIPPED && $oldStatus < Order::STATUS_SHIPPED) {
@@ -712,6 +728,10 @@ class OrderController extends Controller
         }
 
         $order->update($updateData);
+
+        if (in_array($newStatus, [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED], true)) {
+            $order->ensurePaymentRecorded();
+        }
 
         // Deduct inventory
         if ($targetStatus === Order::STATUS_SHIPPED && $oldStatus < Order::STATUS_SHIPPED) {
@@ -1094,6 +1114,10 @@ class OrderController extends Controller
         }
 
         $order->update($updateData);
+
+        if (in_array($newStatus, [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED], true)) {
+            $order->ensurePaymentRecorded();
+        }
 
         return response()->json([
             'success' => true,

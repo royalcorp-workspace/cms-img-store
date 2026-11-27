@@ -194,100 +194,6 @@
                 </div>
             </div>
 
-            <!-- Card: Pelanggan & Tujuan Pengiriman -->
-            <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs p-4 space-y-3">
-                <div class="flex items-center justify-between border-b border-outline-variant/40 pb-2.5">
-                    <span class="font-bold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">person</span>
-                        Pelanggan & Tujuan
-                    </span>
-                    @if(!empty($shippingMeta['postal_code']))
-                        <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-surface-container text-on-surface border border-outline-variant/40">
-                            {{ $shippingMeta['postal_code'] }}
-                        </span>
-                    @endif
-                </div>
-
-                <div class="space-y-3 text-xs">
-                    <!-- Akun Pemesan -->
-                    <div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant/30 space-y-1">
-                        <span class="text-[10px] text-on-surface-variant uppercase font-semibold block">Akun Pemesan</span>
-                        <div class="font-bold text-on-surface text-xs flex items-center justify-between">
-                            <span>{{ $order->customer?->name ?? 'Tamu (Guest)' }}</span>
-                            @if($order->customer?->customer_code)
-                                <span class="font-mono text-[10px] font-normal text-on-surface-variant">{{ $order->customer->customer_code }}</span>
-                            @endif
-                        </div>
-                        @if($order->customer?->email)
-                            <div class="text-[11px] text-on-surface-variant flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[13px]">mail</span>
-                                <span>{{ $order->customer->email }}</span>
-                            </div>
-                        @endif
-                        @if($order->customer?->phone)
-                            <div class="text-[11px] text-on-surface-variant flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[13px]">call</span>
-                                <span class="font-mono">{{ $order->customer->phone }}</span>
-                            </div>
-                        @endif
-                    </div>
-
-                    <!-- Penerima Pengiriman -->
-                    <div class="space-y-2">
-                        <div>
-                            <span class="text-[10px] text-on-surface-variant font-semibold block">Nama Penerima</span>
-                            <div class="font-bold text-on-surface text-sm">
-                                {{ $shippingMeta['recipient_name'] ?? ($order->customer?->name ?? 'Pelanggan') }}
-                            </div>
-                        </div>
-
-                        <div>
-                            <span class="text-[10px] text-on-surface-variant font-semibold block">No. Telepon Penerima</span>
-                            <div class="flex items-center justify-between mt-0.5">
-                                <span class="font-mono font-medium text-on-surface">{{ $customerPhone ?? '-' }}</span>
-                                @if($waPhone)
-                                    <a href="https://wa.me/{{ $waPhone }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-surface-container border border-outline-variant text-on-surface rounded text-[11px] font-medium transition-colors">
-                                        <span class="material-symbols-outlined text-[13px] text-emerald-600">chat</span>
-                                        <span>WhatsApp</span>
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-
-                        <div class="pt-0.5">
-                            <span class="text-[10px] text-on-surface-variant font-semibold block">Alamat Lengkap</span>
-                            <p class="text-on-surface text-xs leading-relaxed mt-0.5 bg-surface-container-low p-2 rounded-lg border border-outline-variant/30">
-                                @if(!empty($shippingMeta['address']))
-                                    {{ $shippingMeta['address'] }}
-                                    @if(!empty($shippingMeta['sub_district'])), Kec. {{ $shippingMeta['sub_district'] }}@endif
-                                    @if(!empty($shippingMeta['city'])), {{ $shippingMeta['city'] }}@endif
-                                    @if(!empty($shippingMeta['province'])), {{ $shippingMeta['province'] }}@endif
-                                @elseif($order->customer && method_exists($order->customer, 'addresses') && $order->customer->addresses->isNotEmpty())
-                                    {{ $order->customer->addresses->first()->address }}
-                                @else
-                                    Alamat belum tercatat lengkap.
-                                @endif
-                            </p>
-                        </div>
-
-                        @php
-                            $customerOrderNote = $order->notes ?: ($order->meta['notes'] ?? ($order->meta['customer_notes'] ?? null));
-                        @endphp
-                        @if($customerOrderNote)
-                            <div class="pt-1.5">
-                                <span class="text-[10px] text-on-surface-variant font-semibold block mb-0.5 flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[13px] text-amber-600">note</span>
-                                    Catatan Pembeli / Pengiriman
-                                </span>
-                                <div class="p-2.5 bg-amber-50/70 border border-amber-200/80 rounded-lg text-xs text-amber-950 font-medium italic leading-relaxed">
-                                    "{{ $customerOrderNote }}"
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
             <!-- Card: Kurir & Logistik Pengiriman -->
             <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs p-4 space-y-3">
                 <div class="flex items-center justify-between border-b border-outline-variant/40 pb-2.5">
@@ -494,14 +400,14 @@
                     <div class="grid grid-cols-2 gap-1.5 text-[11px] bg-surface-container-low p-2 rounded-lg border border-outline-variant/40">
                         <div>
                             <span class="text-[10px] text-on-surface-variant block font-medium">Business Unit (Store):</span>
-                            <span class="font-bold text-on-surface font-mono text-xs">{{ $order->business_unit ?? ($order->store?->code ?? ($order->storeChannel?->code ?? config('services.jde.business_unit', '18011'))) }}</span>
+                            <span class="font-bold text-on-surface font-mono text-xs">{{ $order->business_unit ?? ($order->store?->code ?? ($order->storeChannel?->code ?? config('services.jde.business_unit', env('JDE_BUSINESS_UNIT', '')))) }}</span>
                             @if($order->store || $order->storeChannel)
                                 <span class="text-[10px] text-on-surface-variant block truncate" title="{{ $order->store?->name ?? $order->storeChannel?->name }}">{{ $order->store?->name ?? $order->storeChannel?->name }}</span>
                             @endif
                         </div>
                         <div>
                             <span class="text-[10px] text-on-surface-variant block font-medium">Address Number (Store):</span>
-                            <span class="font-bold text-on-surface font-mono text-xs">{{ $order->address_number ?? ($order->store?->address_number ?? ($order->storeChannel?->address_number ?? config('services.jde.address_number', 100228))) }}</span>
+                            <span class="font-bold text-on-surface font-mono text-xs">{{ $order->address_number ?? ($order->store?->address_number ?? ($order->storeChannel?->address_number ?? config('services.jde.address_number', env('JDE_ADDRESS_NUMBER', 0)))) }}</span>
                             @if($order->customer?->customer_code)
                                 <span class="text-[10px] text-on-surface-variant block font-mono">Customer: {{ $order->customer->customer_code }}</span>
                             @endif
@@ -517,7 +423,7 @@
                                 $jdeRateLabel = (int)$jdePushRate == $jdePushRate ? (int)$jdePushRate : number_format($jdePushRate, 1);
                             @endphp
                             @if($isJdePpnActive)
-                                <span class="font-medium text-on-surface">Tanpa PPN (Exclude PPN)</span>
+                                <span class="font-medium text-on-surface">Tanpa PPN (Exclude PPN - RX)</span>
                             @else
                                 <span class="font-medium text-on-surface">Tanpa PPN (Bebas PPN)</span>
                             @endif
@@ -552,6 +458,60 @@
                         </div>
                     @endif
 
+                    {{-- Credit Memo Section (Saat Processing / Pra-Kirim) --}}
+                    @if($order->creditMemo)
+                        <div class="p-2.5 rounded-lg border {{ in_array((int)$order->status, [4, 5]) ? 'bg-surface-container-low border-outline-variant/40' : 'bg-blue-50/70 border-blue-200' }} space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-primary flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">receipt_long</span>
+                                    Credit Memo (Pra-Kirim)
+                                </span>
+                                <span class="font-mono text-[11px] font-semibold text-primary">{{ $order->creditMemo->credit_memo_number }}</span>
+                            </div>
+                            <div class="flex justify-between text-[11px] text-on-surface-variant">
+                                <span>Nominal CM</span>
+                                <span class="font-semibold text-on-surface">Rp {{ number_format($order->creditMemo->amount, 0, ',', '.') }}</span>
+                            </div>
+                            @if($order->creditMemo->paid_at)
+                                <div class="flex justify-between text-[11px] text-on-surface-variant">
+                                    <span>Tgl Bayar</span>
+                                    <span>{{ \Carbon\Carbon::parse($order->creditMemo->paid_at)->format('d/m/Y H:i') }} WIB</span>
+                                </div>
+                            @endif
+                            @if(!in_array((int)$order->status, [4, 5]))
+                                <div class="text-[10px] text-blue-700 bg-blue-100/60 p-1.5 rounded mt-1">
+                                    <span class="font-medium">Relasi saat Processing:</span> Pembayaran tercatat di Credit Memo. Tabel Payment akan terbit otomatis saat pesanan Dikirim / Diterima.
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+
+                    {{-- Payment Resmi Section (Saat Dikirim / Diterima) --}}
+                    @if($order->payment)
+                        <div class="p-2.5 rounded-lg border bg-emerald-50/70 border-emerald-200 space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-emerald-800 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">verified</span>
+                                    Payment Resmi
+                                </span>
+                                <span class="font-mono text-[11px] font-semibold text-emerald-800">{{ $order->payment->payment_number }}</span>
+                            </div>
+                            <div class="flex justify-between text-[11px] text-on-surface-variant">
+                                <span>Nominal</span>
+                                <span class="font-semibold text-on-surface">Rp {{ number_format($order->payment->amount, 0, ',', '.') }}</span>
+                            </div>
+                            @if($order->payment->paid_at)
+                                <div class="flex justify-between text-[11px] text-on-surface-variant">
+                                    <span>Tgl Tercatat</span>
+                                    <span>{{ \Carbon\Carbon::parse($order->payment->paid_at)->format('d/m/Y H:i') }} WIB</span>
+                                </div>
+                            @endif
+                            <div class="text-[10px] text-emerald-700 bg-emerald-100/60 p-1.5 rounded mt-1">
+                                <span class="font-medium">Final:</span> Pembayaran telah dipindah dan resmi tercatat di tabel Payment.
+                            </div>
+                        </div>
+                    @endif
+
                     @if(!empty($order->meta['payment_proof']))
                         <div class="pt-2 space-y-1.5">
                             <span class="text-[10px] font-semibold uppercase text-on-surface-variant block">Bukti Transfer Pelanggan</span>
@@ -561,11 +521,12 @@
                         </div>
                     @endif
 
-                    @if($order->isManualTransfer())
+                    @if($order->isManualTransfer() && !$order->isPaymentPaid())
                         <form method="POST" action="{{ route('orders.verify-payment', $order->id) }}" class="pt-2 border-t border-outline-variant/40 space-y-2">
                             @csrf
                             <input type="hidden" name="status" value="3">
                             <input type="hidden" name="payment_status" value="1">
+                            <input type="hidden" name="reconciliation_notes" value="Disetujui manual oleh admin">
                             <button type="submit" class="w-full py-2 px-4 bg-primary hover:opacity-90 text-white rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5">
                                 <span class="material-symbols-outlined text-[16px]">check_circle</span>
                                 <span>Setujui Pembayaran (Mark Paid)</span>
@@ -974,6 +935,127 @@
                                 <span class="text-[10px] text-on-surface-variant font-normal">Sudah termasuk PPN, diskon & ongkir</span>
                             </div>
                             <span class="text-base text-primary font-mono">Rp {{ number_format($orderFinalTotal, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Pelanggan & Tujuan Pengiriman (Pindah di Bawah Card Item Order) -->
+            <div class="bg-white rounded-xl border border-outline-variant/60 shadow-xs overflow-hidden">
+                <div class="p-3.5 md:p-4 border-b border-outline-variant/40 flex items-center justify-between bg-surface-container-lowest">
+                    <span class="font-bold text-xs md:text-sm text-on-surface uppercase tracking-wider flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px] text-primary">person_pin_circle</span>
+                        Pelanggan & Tujuan Pengiriman
+                    </span>
+                    @if(!empty($shippingMeta['postal_code']))
+                        <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-surface-container text-on-surface border border-outline-variant/40">
+                            Kode Pos: {{ $shippingMeta['postal_code'] }}
+                        </span>
+                    @endif
+                </div>
+
+                <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <!-- Kolom Kiri: Akun Pemesan -->
+                    <div class="p-3 bg-surface-container-low rounded-xl border border-outline-variant/30 space-y-2.5">
+                        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-2">
+                            <span class="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[15px] text-primary">badge</span>
+                                Akun Pemesan
+                            </span>
+                            @if($order->customer?->customer_code)
+                                <span class="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-white border border-outline-variant/40 text-on-surface-variant">
+                                    {{ $order->customer->customer_code }}
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="space-y-2">
+                            <div>
+                                <span class="text-[10px] text-on-surface-variant block">Nama Pemesan</span>
+                                <span class="font-bold text-sm text-on-surface">{{ $order->customer?->name ?? 'Tamu (Guest)' }}</span>
+                            </div>
+                            @if($order->customer?->email)
+                                <div>
+                                    <span class="text-[10px] text-on-surface-variant block">Email</span>
+                                    <span class="text-xs text-on-surface flex items-center gap-1 mt-0.5">
+                                        <span class="material-symbols-outlined text-[14px] text-on-surface-variant">mail</span>
+                                        {{ $order->customer->email }}
+                                    </span>
+                                </div>
+                            @endif
+                            @if($order->customer?->phone)
+                                <div>
+                                    <span class="text-[10px] text-on-surface-variant block">Nomor Telepon</span>
+                                    <span class="font-mono text-xs text-on-surface flex items-center gap-1 mt-0.5">
+                                        <span class="material-symbols-outlined text-[14px] text-on-surface-variant">call</span>
+                                        {{ $order->customer->phone }}
+                                    </span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Kolom Kanan: Penerima Pengiriman & Alamat -->
+                    <div class="p-3 bg-surface-container-low rounded-xl border border-outline-variant/30 space-y-2.5">
+                        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-2">
+                            <span class="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[15px] text-primary">local_shipping</span>
+                                Penerima & Alamat Kirim
+                            </span>
+                            @if($waPhone)
+                                <a href="https://wa.me/{{ $waPhone }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white hover:bg-surface-container border border-outline-variant text-on-surface rounded text-[11px] font-medium transition-colors">
+                                    <span class="material-symbols-outlined text-[13px] text-emerald-600">chat</span>
+                                    <span>WhatsApp</span>
+                                </a>
+                            @endif
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <span class="text-[10px] text-on-surface-variant block">Nama Penerima</span>
+                                    <span class="font-bold text-xs text-on-surface block mt-0.5">
+                                        {{ $shippingMeta['recipient_name'] ?? ($order->customer?->name ?? 'Pelanggan') }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-on-surface-variant block">No. Telepon Penerima</span>
+                                    <span class="font-mono text-xs font-medium text-on-surface block mt-0.5">
+                                        {{ $customerPhone ?? '-' }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <span class="text-[10px] text-on-surface-variant block">Alamat Lengkap</span>
+                                <p class="text-on-surface text-xs leading-relaxed mt-0.5 bg-white p-2.5 rounded-lg border border-outline-variant/30">
+                                    @if(!empty($shippingMeta['address']))
+                                        {{ $shippingMeta['address'] }}
+                                        @if(!empty($shippingMeta['sub_district'])), Kec. {{ $shippingMeta['sub_district'] }}@endif
+                                        @if(!empty($shippingMeta['city'])), {{ $shippingMeta['city'] }}@endif
+                                        @if(!empty($shippingMeta['province'])), {{ $shippingMeta['province'] }}@endif
+                                    @elseif($order->customer && method_exists($order->customer, 'addresses') && $order->customer->addresses->isNotEmpty())
+                                        {{ $order->customer->addresses->first()->address }}
+                                    @else
+                                        Alamat belum tercatat lengkap.
+                                    @endif
+                                </p>
+                            </div>
+
+                            @php
+                                $customerOrderNote = $order->notes ?: ($order->meta['notes'] ?? ($order->meta['customer_notes'] ?? null));
+                            @endphp
+                            @if($customerOrderNote)
+                                <div class="pt-1">
+                                    <span class="text-[10px] text-on-surface-variant font-semibold block mb-0.5 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[13px] text-amber-600">note</span>
+                                        Catatan Pembeli / Pengiriman
+                                    </span>
+                                    <div class="p-2 bg-amber-50/70 border border-amber-200/80 rounded-lg text-xs text-amber-950 font-medium italic leading-relaxed">
+                                        "{{ $customerOrderNote }}"
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>

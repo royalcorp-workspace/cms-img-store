@@ -103,7 +103,7 @@ class SyncJdeMasterDataCommand extends Command
                 'store_group_id' => $storeGroup11001006->id,
                 'tier_id' => $defaultTierId,
                 'code' => '11001006',
-                'address_number' => 100228,
+                'address_number' => (int) env('JDE_ADDRESS_NUMBER', 10167651),
                 'name' => 'Store 11001006',
                 'credit_limit' => 0,
                 'outstanding_balance' => 0,
@@ -115,7 +115,7 @@ class SyncJdeMasterDataCommand extends Command
             $this->info("-> Store 11001006 berhasil dibuat.");
         } else {
             if (!$store11001006->address_number) {
-                $store11001006->address_number = 100228;
+                $store11001006->address_number = (int) env('JDE_ADDRESS_NUMBER', 10167651);
                 $store11001006->save();
             }
             $this->info("-> Store 11001006 sudah ada.");
@@ -203,7 +203,7 @@ class SyncJdeMasterDataCommand extends Command
 
         // 4. Update order yang sudah ada dengan store_id, business_unit, dan address_number
         $this->info('4. Menghubungkan orders yang ada ke Store & Channel...');
-        $defaultStore = Store::where('code', '18011')->orWhere('code', '11001006')->first() ?? $store11001006;
+        $defaultStore = Store::where('code', env('JDE_BUSINESS_UNIT', '11001006'))->first() ?? $store11001006;
         $defaultChannel = StoreChannel::where('store_id', $defaultStore->id)->first() ?? $ch11001006;
 
         $orders = Order::all();
@@ -223,7 +223,7 @@ class SyncJdeMasterDataCommand extends Command
                 $ordUpdated = true;
             }
             if (!$ord->address_number) {
-                $ord->address_number = $defaultStore->address_number ?: 100228;
+                $ord->address_number = $defaultStore->address_number ?: (int) env('JDE_ADDRESS_NUMBER', 10167651);
                 $ordUpdated = true;
             }
             if ($ordUpdated) {
