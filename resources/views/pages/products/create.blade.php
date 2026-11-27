@@ -2717,24 +2717,29 @@ function initVariantsFromBackend() {
             const rawAttrs = v.attributes || {};
 
             // Detect custom size attribute title (e.g. Ukuran or Dimensi)
-            if (rawAttrs._size_title) {
+            if (rawAttrs._size_title && !rawAttrs._size_title.startsWith('_')) {
                 sizeAttributeTitle = rawAttrs._size_title;
             }
 
             // Detect custom completeness / attribute title (e.g. Feel or Kelengkapan)
-            if (rawAttrs._completeness_title) {
+            if (rawAttrs._completeness_title && !rawAttrs._completeness_title.startsWith('_')) {
                 completenessAttributeTitle = rawAttrs._completeness_title;
             } else {
                 for (const k in rawAttrs) {
-                    if (!['width', 'length', 'height', 'weight', 'status', 'image', 'image_url', 'Ukuran', 'Ketebalan', 'thickness'].includes(k)) {
+                    if (!k.startsWith('_') && !['width', 'length', 'height', 'weight', 'status', 'image', 'image_url', 'Ukuran', 'Ketebalan', 'thickness', 'tebal'].includes(k)) {
                         completenessAttributeTitle = k;
                         break;
                     }
                 }
             }
+            if (!completenessAttributeTitle || completenessAttributeTitle.startsWith('_')) {
+                completenessAttributeTitle = 'Kelengkapan';
+            }
 
-            const compVal = rawAttrs._completeness_title ? rawAttrs[rawAttrs._completeness_title] : (rawAttrs.Kelengkapan || rawAttrs[completenessAttributeTitle] || null);
-            if (compVal) {
+            const compVal = (rawAttrs._completeness_title && !rawAttrs._completeness_title.startsWith('_')) 
+                ? rawAttrs[rawAttrs._completeness_title] 
+                : (rawAttrs.Kelengkapan || (completenessAttributeTitle && !completenessAttributeTitle.startsWith('_') ? rawAttrs[completenessAttributeTitle] : null));
+            if (compVal && compVal !== sizeAttributeTitle && !String(compVal).startsWith('_') && !/^\d{2,3}\s*[xX]\s*\d{2,3}$/.test(String(compVal).trim())) {
                 const cName = normalizeCompletenessName(compVal);
                 if (cName) detectedComps.add(cName);
             } else if (v.variant_name) {
@@ -3370,7 +3375,8 @@ async function submitProductForm() {
 
             // If kelengkapan/custom option is enabled, pass dynamic attribute title & Ukuran attributes for pos-dealer-web
             if (hasCompleteness && v.kelengkapan) {
-                const compTitle = (document.getElementById('completenessTitleInput')?.value || completenessAttributeTitle || 'Kelengkapan').trim();
+                let compTitle = (document.getElementById('completenessTitleInput')?.value || completenessAttributeTitle || 'Kelengkapan').trim();
+                if (!compTitle || compTitle.startsWith('_') || compTitle === sizeTitle) compTitle = 'Kelengkapan';
                 attrObj[compTitle] = v.kelengkapan;
                 attrObj['_completeness_title'] = compTitle;
             }
