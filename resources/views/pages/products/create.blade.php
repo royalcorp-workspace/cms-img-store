@@ -1483,7 +1483,12 @@ function renderCompletenessCheckboxes() {
                 </div>
                 <span class="text-xs font-semibold ${isChecked ? 'text-primary font-bold' : 'text-on-surface'}">${escapeHtml(c.label || c.name)}</span>
             </div>
-            <span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono font-bold text-[10px] uppercase ml-2 pointer-events-none">${escapeHtml(c.code || 'VAR')}</span>
+            <div class="flex items-center gap-1.5 ml-2">
+                <span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono font-bold text-[10px] uppercase pointer-events-none">${escapeHtml(c.code || 'VAR')}</span>
+                <button type="button" title="Hapus opsi ini" onclick="event.stopPropagation(); removeCompletenessOption('${escapeHtml(c.name)}');" class="w-6 h-6 rounded-lg text-outline-variant hover:text-error hover:bg-error/10 flex items-center justify-center transition-colors">
+                    <span class="material-symbols-outlined text-[16px]">close</span>
+                </button>
+            </div>
         `;
         item.onclick = (e) => {
             e.preventDefault();
@@ -1491,6 +1496,40 @@ function renderCompletenessCheckboxes() {
         };
         container.appendChild(item);
     });
+}
+
+function removeCompletenessOption(compName) {
+    if (completenessList.length <= 1) {
+        showToast('warning', 'Minimal harus ada 1 pilihan kelengkapan.');
+        return;
+    }
+    saveCurrentTableInputs();
+    
+    const listIdx = completenessList.findIndex(c => c.name.toLowerCase() === compName.toLowerCase());
+    if (listIdx !== -1) {
+        completenessList.splice(listIdx, 1);
+    }
+
+    const cObj = findCompleteness(compName);
+    const targetName = cObj ? cObj.name : compName;
+    const targetShort = cObj ? cObj.short : compName;
+    const activeIdx = activeCompleteness.findIndex(item => {
+        const iLower = String(item).toLowerCase().trim();
+        return iLower === targetName.toLowerCase() || 
+            (targetShort && iLower === targetShort.toLowerCase()) ||
+            (iLower.includes('full set') && targetName.toLowerCase().includes('full set'));
+    });
+    if (activeIdx !== -1) {
+        activeCompleteness.splice(activeIdx, 1);
+    }
+
+    if (activeCompleteness.length === 0 && completenessList.length > 0) {
+        activeCompleteness.push(completenessList[0].name);
+    }
+
+    renderCompletenessCheckboxes();
+    rebuildCombinations();
+    showToast('success', `Pilihan kelengkapan "${compName}" berhasil dihapus.`);
 }
 
 function toggleCompletenessOption(compName) {
