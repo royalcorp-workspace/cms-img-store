@@ -2742,8 +2742,20 @@ function initVariantsFromBackend() {
                 if (detected) detectedComps.add(detected);
             }
             if (rawAttrs.Ketebalan) {
-                const num = parseFloat(String(rawAttrs.Ketebalan).replace(/\D+/g, ''));
+                const num = parseFloat(String(rawAttrs.Ketebalan).replace(/[^\d.]/g, ''));
                 if (num) detectedHeights.add(num);
+            } else if (rawAttrs.tebal) {
+                const num = parseFloat(rawAttrs.tebal);
+                if (num) detectedHeights.add(num);
+            } else if (rawAttrs.height && parseFloat(rawAttrs.height) > 0) {
+                detectedHeights.add(parseFloat(rawAttrs.height));
+            } else if (v.height && parseFloat(v.height) > 0) {
+                detectedHeights.add(parseFloat(v.height));
+            } else if (v.variant_name) {
+                const matchTh = v.variant_name.match(/[Tt]\.?\s*(\d+)/i) || v.variant_name.match(/(?:tebal|tinggi)\s*(\d+)/i);
+                if (matchTh) {
+                    detectedHeights.add(parseFloat(matchTh[1]));
+                }
             }
 
             // Detect size with robust fallbacks
